@@ -10,9 +10,9 @@ if archivo is not None:
     st.dataframe(df_nuevo.head())
     
     if st.button("Insertar en base de datos"):
-    datos = df_nuevo.to_dict(orient="records")
-    supabase.table("eta_cruda").insert(datos).execute()
-    st.success("Datos insertados correctamente")
+        datos = df_nuevo.to_dict(orient="records")
+        supabase.table("eta_cruda").insert(datos).execute()
+        st.success("Datos insertados correctamente")
 
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
@@ -36,6 +36,7 @@ while True:
 df = pd.DataFrame(all_data)
 
 st.dataframe(df)
+
 
 
 

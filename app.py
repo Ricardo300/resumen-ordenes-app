@@ -3,21 +3,18 @@ from supabase import create_client
 import pandas as pd
 
 st.title("Base de datos ETA")
-archivo = st.file_uploader("Subir archivo ETA (Excel)", type=["xlsx"])
-if archivo is not None:
-    df_nuevo = pd.read_excel(archivo, engine="openpyxl")
-    st.write("Vista previa del archivo cargado:")
-    st.dataframe(df_nuevo.head())
-    
-    if st.button("Insertar en base de datos"):
-        datos = df_nuevo.to_dict(orient="records")
-        supabase.table("eta_cruda").insert(datos).execute()
-        st.success("Datos insertados correctamente")
 
+# Conexión Supabase
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
     st.secrets["SUPABASE_KEY"]
 )
+
+# ===============================
+# 1️⃣ MOSTRAR BASE COMPLETA
+# ===============================
+
+st.subheader("Datos actuales en base")
 
 all_data = []
 offset = 0
@@ -38,6 +35,24 @@ df = pd.DataFrame(all_data)
 st.dataframe(df)
 
 
+# ===============================
+# 2️⃣ SUBIR Y INSERTAR EXCEL
+# ===============================
+
+st.subheader("Subir archivo ETA (Excel)")
+
+archivo = st.file_uploader("Seleccionar archivo Excel", type=["xlsx"])
+
+if archivo is not None:
+    df_nuevo = pd.read_excel(archivo, engine="openpyxl")
+
+    st.write("Vista previa del archivo cargado:")
+    st.dataframe(df_nuevo.head())
+
+    if st.button("Insertar en base de datos"):
+        datos = df_nuevo.to_dict(orient="records")
+        supabase.table("eta_cruda").insert(datos).execute()
+        st.success("Datos insertados correctamente")
 
 
 

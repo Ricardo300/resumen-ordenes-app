@@ -12,4 +12,11 @@ if archivo is not None:
     resumen.columns = ["Técnico", "Órdenes"]
 
     st.subheader("Resultado:")
+
     st.dataframe(resumen)
+    st.subheader("Resumen por Contrata")
+
+resumen_contrata = df["Contrata"].value_counts().reset_index()
+resumen_contrata.columns = ["Contrata", "Órdenes"]
+
+st.dataframe(resumen_contrata)

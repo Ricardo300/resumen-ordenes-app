@@ -4,14 +4,17 @@ import pandas as pd
 
 st.title("Base de datos ETA")
 
-# Conexión Supabase
+# ===============================
+# 🔐 CONEXIÓN SUPABASE
+# ===============================
+
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
     st.secrets["SUPABASE_KEY"]
 )
 
 # ===============================
-# 1️⃣ MOSTRAR BASE COMPLETA
+# 📊 MOSTRAR BASE COMPLETA
 # ===============================
 
 st.subheader("Datos actuales en base")
@@ -34,29 +37,39 @@ df = pd.DataFrame(all_data)
 
 st.dataframe(df)
 
-
 # ===============================
-# 2️⃣ SUBIR Y INSERTAR EXCEL
+# 📤 SUBIR EXCEL E INSERTAR
 # ===============================
 
-if st.button("Insertar en base de datos"):
+st.subheader("Subir archivo ETA (Excel)")
 
-    # Limpiar nombres de columnas (quitar espacios raros)
-    df_nuevo.columns = df_nuevo.columns.str.strip()
+archivo = st.file_uploader("Seleccionar archivo Excel", type=["xlsx"])
 
-    # Convertir NaN en None para Supabase
-    df_nuevo = df_nuevo.where(pd.notnull(df_nuevo), None)
+if archivo is not None:
 
-    datos = df_nuevo.to_dict(orient="records")
+    df_nuevo = pd.read_excel(archivo, engine="openpyxl")
 
-    # Insertar en bloques de 500
-    batch_size = 500
-    for i in range(0, len(datos), batch_size):
-        batch = datos[i:i+batch_size]
-        supabase.table("eta_cruda").insert(batch).execute()
+    st.write("Vista previa del archivo cargado:")
+    st.dataframe(df_nuevo.head())
 
-    st.success("Datos insertados correctamente")
+    if st.button("Insertar en base de datos"):
 
+        # Limpiar nombres de columnas
+        df_nuevo.columns = df_nuevo.columns.str.strip()
+
+        # Convertir NaN en None
+        df_nuevo = df_nuevo.where(pd.notnull(df_nuevo), None)
+
+        # Convertir a lista de diccionarios
+        datos = df_nuevo.to_dict(orient="records")
+
+        # Insertar en bloques de 500
+        batch_size = 500
+        for i in range(0, len(datos), batch_size):
+            batch = datos[i:i+batch_size]
+            supabase.table("eta_cruda").insert(batch).execute()
+
+        st.success("Datos insertados correctamente")
 
 
 

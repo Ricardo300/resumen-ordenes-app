@@ -12,7 +12,7 @@ if archivo is not None:
     contrata_seleccionada = st.selectbox("Filtrar por Contrata", ["Todas"] + list(contratas))
 
     if contrata_seleccionada != "Todas":
-    df = df[df["Contrata"] == contrata_seleccionada]
+        df = df[df["Contrata"] == contrata_seleccionada]
 
     # Resumen por técnico
     resumen = df["Técnico"].value_counts().reset_index()
@@ -26,4 +26,5 @@ if archivo is not None:
     resumen_contrata = df["Contrata"].value_counts().reset_index()
     resumen_contrata.columns = ["Contrata", "Órdenes"]
     st.dataframe(resumen_contrata)
+
 

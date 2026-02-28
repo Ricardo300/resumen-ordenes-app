@@ -3,6 +3,7 @@ from supabase import create_client
 import pandas as pd
 
 st.title("Base de datos ETA")
+archivo = st.file_uploader("Subir archivo ETA (Excel)", type=["xlsx"])
 
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
@@ -26,3 +27,4 @@ while True:
 df = pd.DataFrame(all_data)
 
 st.dataframe(df)
+

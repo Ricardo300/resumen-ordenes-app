@@ -4,6 +4,10 @@ import pandas as pd
 
 st.title("Base de datos ETA")
 archivo = st.file_uploader("Subir archivo ETA (Excel)", type=["xlsx"])
+if archivo is not None:
+    df_nuevo = pd.read_excel(archivo)
+    st.write("Vista previa del archivo cargado:")
+    st.dataframe(df_nuevo.head())
 
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
@@ -27,4 +31,5 @@ while True:
 df = pd.DataFrame(all_data)
 
 st.dataframe(df)
+
 

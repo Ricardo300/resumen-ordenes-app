@@ -4,18 +4,25 @@ import pandas as pd
 
 st.title("Base de datos ETA")
 
-# Conexión
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
     st.secrets["SUPABASE_KEY"]
 )
 
-# Consulta simple
-response = supabase.table("eta_cruda").select("*").execute()
+all_data = []
+offset = 0
+limit = 1000
 
-# Convertir a DataFrame
-df = pd.DataFrame(response.data)
+while True:
+    response = supabase.table("eta_cruda").select("*").range(offset, offset + limit - 1).execute()
+    data = response.data
+    
+    if not data:
+        break
+        
+    all_data.extend(data)
+    offset += limit
 
-# Mostrar
+df = pd.DataFrame(all_data)
+
 st.dataframe(df)
-

@@ -39,20 +39,24 @@ st.dataframe(df)
 # 2️⃣ SUBIR Y INSERTAR EXCEL
 # ===============================
 
-st.subheader("Subir archivo ETA (Excel)")
+if st.button("Insertar en base de datos"):
 
-archivo = st.file_uploader("Seleccionar archivo Excel", type=["xlsx"])
+    # Limpiar nombres de columnas (quitar espacios raros)
+    df_nuevo.columns = df_nuevo.columns.str.strip()
 
-if archivo is not None:
-    df_nuevo = pd.read_excel(archivo, engine="openpyxl")
+    # Convertir NaN en None para Supabase
+    df_nuevo = df_nuevo.where(pd.notnull(df_nuevo), None)
 
-    st.write("Vista previa del archivo cargado:")
-    st.dataframe(df_nuevo.head())
+    datos = df_nuevo.to_dict(orient="records")
 
-    if st.button("Insertar en base de datos"):
-        datos = df_nuevo.to_dict(orient="records")
-        supabase.table("eta_cruda").insert(datos).execute()
-        st.success("Datos insertados correctamente")
+    # Insertar en bloques de 500
+    batch_size = 500
+    for i in range(0, len(datos), batch_size):
+        batch = datos[i:i+batch_size]
+        supabase.table("eta_cruda").insert(batch).execute()
+
+    st.success("Datos insertados correctamente")
+
 
 
 

@@ -11,10 +11,11 @@ supabase = create_client(
 )
 
 # Consulta simple
-response = supabase.table("eta_cruda").select("*").limit(200).execute()
+response = supabase.table("eta_cruda").select("*").execute()
 
 # Convertir a DataFrame
 df = pd.DataFrame(response.data)
 
 # Mostrar
 st.dataframe(df)
+

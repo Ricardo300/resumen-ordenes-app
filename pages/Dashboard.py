@@ -3,7 +3,9 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 
-st.title("Dashboard KPI ETA - Febrero")
+st.set_page_config(layout="wide")
+
+st.title("Dashboard KPI ETA - Febrero 2026")
 
 # 🔐 Conexión
 supabase = create_client(
@@ -11,67 +13,69 @@ supabase = create_client(
     st.secrets["SUPABASE_KEY"]
 )
 
-# 🔄 Traer datos
-response = supabase.table("kpi_ordenes_completadas").select("*").execute()
+# 🔎 Traer TODOS los registros (hasta 20k)
+response = supabase.table("kpi_ordenes_completadas") \
+    .select("*") \
+    .range(0, 20000) \
+    .execute()
 
 data = response.data
 
 if not data:
-    st.warning("No hay datos en la base")
+    st.warning("No hay datos en la base.")
     st.stop()
 
 df = pd.DataFrame(data)
 
-# 🔄 Convertir fechas y horas
+# 🔧 Convertir fecha correctamente
 df["fecha"] = pd.to_datetime(df["fecha"])
-df["inicio"] = pd.to_datetime(df["inicio"], errors="coerce")
 
-# 🔹 KPI 1: Total órdenes
-total_ordenes = len(df)
+# 🔥 FILTRAR SOLO FEBRERO 2026
+df = df[
+    (df["fecha"].dt.month == 2) &
+    (df["fecha"].dt.year == 2026)
+]
 
-# 🔹 KPI 2: % Garantías
+# 🔢 MÉTRICAS
+total_ordenes = df["orden_trabajo"].nunique()
+
 porcentaje_garantia = (
-    (df["garantia"].str.upper() == "SI").sum() / total_ordenes * 100
+    df["garantia"].str.upper().eq("SI").sum() / total_ordenes * 100
+    if total_ordenes > 0 else 0
 )
 
-# 🔹 KPI 3: Promedio hora inicio
-hora_promedio = df["inicio"].dt.hour.mean()
+hora_promedio = df["inicio"].mean()
+hora_promedio_horas = round(hora_promedio.hour + hora_promedio.minute / 60, 2)
 
-# 🔹 Mostrar KPIs
+# 📊 Mostrar KPIs
 col1, col2, col3 = st.columns(3)
 
 col1.metric("Total Órdenes", total_ordenes)
 col2.metric("% Garantías", f"{porcentaje_garantia:.2f}%")
-col3.metric("Hora Promedio Inicio", f"{hora_promedio:.2f} h")
+col3.metric("Hora Promedio Inicio", f"{hora_promedio_horas} h")
 
 st.divider()
 
-# 🔹 Órdenes por día
-ordenes_dia = df.groupby("fecha").size().reset_index(name="cantidad")
+# 📈 Órdenes por Día
+ordenes_dia = (
+    df.groupby("fecha")["orden_trabajo"]
+    .nunique()
+    .reset_index()
+    .sort_values("fecha")
+)
 
-fig1 = px.line(
+fig = px.line(
     ordenes_dia,
     x="fecha",
-    y="cantidad",
-    title="Órdenes por Día"
+    y="orden_trabajo",
+    markers=True,
+    title="Órdenes por Día - Febrero 2026"
 )
 
-st.plotly_chart(fig1, use_container_width=True)
-
-# 🔹 Órdenes por técnico
-ordenes_tecnico = (
-    df.groupby("identificador_tecnico")
-    .size()
-    .reset_index(name="cantidad")
-    .sort_values("cantidad", ascending=False)
-    .head(10)
+fig.update_layout(
+    xaxis_title="Fecha",
+    yaxis_title="Cantidad",
+    template="plotly_dark"
 )
 
-fig2 = px.bar(
-    ordenes_tecnico,
-    x="identificador_tecnico",
-    y="cantidad",
-    title="Top 10 Técnicos por Producción"
-)
-
-st.plotly_chart(fig2, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)

@@ -13,11 +13,14 @@ supabase = create_client(
     st.secrets["SUPABASE_KEY"]
 )
 
-# 🔎 Traer TODOS los registros (hasta 20k)
-response = supabase.table("kpi_ordenes_completadas") \
-    .select("*") \
-    .range(0, 20000) \
+# 🔎 Traer datos (hasta 20k registros)
+response = (
+    supabase
+    .table("kpi_ordenes_completadas")
+    .select("*")
+    .range(0, 20000)
     .execute()
+)
 
 data = response.data
 
@@ -27,25 +30,42 @@ if not data:
 
 df = pd.DataFrame(data)
 
-# 🔧 Convertir fecha correctamente
-df["fecha"] = pd.to_datetime(df["fecha"])
+# 🔧 Convertir fecha
+df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
-# 🔥 FILTRAR SOLO FEBRERO 2026
+# 🔥 Filtrar SOLO febrero 2026
 df = df[
     (df["fecha"].dt.month == 2) &
     (df["fecha"].dt.year == 2026)
 ]
 
+if df.empty:
+    st.warning("No hay datos para febrero 2026.")
+    st.stop()
+
 # 🔢 MÉTRICAS
+
+# Total órdenes únicas
 total_ordenes = df["orden_trabajo"].nunique()
 
+# % Garantías
+df["garantia"] = df["garantia"].astype(str).str.upper()
+
+total_garantias = df[df["garantia"] == "SI"]["orden_trabajo"].nunique()
+
 porcentaje_garantia = (
-    df["garantia"].str.upper().eq("SI").sum() / total_ordenes * 100
+    (total_garantias / total_ordenes) * 100
     if total_ordenes > 0 else 0
 )
 
-hora_promedio = df["inicio"].mean()
-hora_promedio_horas = round(hora_promedio.hour + hora_promedio.minute / 60, 2)
+# 🕒 Hora promedio de inicio
+df["inicio"] = pd.to_datetime(df["inicio"], format="%H:%M:%S", errors="coerce")
+
+df["inicio_minutos"] = df["inicio"].dt.hour * 60 + df["inicio"].dt.minute
+
+hora_promedio_min = df["inicio_minutos"].mean()
+
+hora_promedio_horas = round(hora_promedio_min / 60, 2)
 
 # 📊 Mostrar KPIs
 col1, col2, col3 = st.columns(3)

@@ -12,17 +12,42 @@ supabase = create_client(
     st.secrets["SUPABASE_KEY"]
 )
 
-# 🔎 Traer SOLO febrero 2026 desde Supabase
-response = (
-    supabase
-    .table("kpi_ordenes_completadas")
-    .select("*")
-    .gte("fecha", "2026-02-01")
-    .lte("fecha", "2026-02-28")
-    .execute()
-)
+# =============================
+# 🔁 FUNCIÓN PARA TRAER TODO
+# =============================
 
-data = response.data
+def obtener_datos_febrero():
+    todos_los_datos = []
+    limite = 1000
+    inicio = 0
+
+    while True:
+        response = (
+            supabase
+            .table("kpi_ordenes_completadas")
+            .select("*")
+            .gte("fecha", "2026-02-01")
+            .lte("fecha", "2026-02-28")
+            .range(inicio, inicio + limite - 1)
+            .execute()
+        )
+
+        data = response.data
+
+        if not data:
+            break
+
+        todos_los_datos.extend(data)
+
+        if len(data) < limite:
+            break
+
+        inicio += limite
+
+    return todos_los_datos
+
+
+data = obtener_datos_febrero()
 
 if not data:
     st.warning("No hay datos para febrero 2026.")
@@ -30,14 +55,12 @@ if not data:
 
 df = pd.DataFrame(data)
 
-# =====================
+# =============================
 # 🔢 MÉTRICAS
-# =====================
+# =============================
 
-# Total órdenes únicas
 total_ordenes = df["orden_trabajo"].nunique()
 
-# % Garantías
 df["garantia"] = df["garantia"].astype(str).str.upper()
 total_garantias = df[df["garantia"] == "SI"]["orden_trabajo"].nunique()
 
@@ -46,16 +69,15 @@ porcentaje_garantia = (
     if total_ordenes > 0 else 0
 )
 
-# Hora promedio inicio
 df["inicio"] = pd.to_datetime(df["inicio"], format="%H:%M:%S", errors="coerce")
 df["inicio_minutos"] = df["inicio"].dt.hour * 60 + df["inicio"].dt.minute
 
 hora_promedio_min = df["inicio_minutos"].mean()
 hora_promedio_horas = round(hora_promedio_min / 60, 2) if pd.notnull(hora_promedio_min) else 0
 
-# =====================
+# =============================
 # 📊 KPI CARDS
-# =====================
+# =============================
 
 c1, c2, c3 = st.columns(3)
 c1.metric("Total Órdenes (únicas)", total_ordenes)
@@ -64,9 +86,9 @@ c3.metric("Hora Promedio Inicio", f"{hora_promedio_horas} h")
 
 st.divider()
 
-# =====================
+# =============================
 # 📋 TABLA POR PROVINCIA
-# =====================
+# =============================
 
 st.subheader("Órdenes por Provincia - Febrero 2026")
 
@@ -79,9 +101,9 @@ ordenes_provincia = (
 
 st.dataframe(ordenes_provincia, use_container_width=True)
 
-# =====================
-# 📊 GRÁFICO BARRAS POR DÍA
-# =====================
+# =============================
+# 📊 GRÁFICO POR DÍA
+# =============================
 
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 df["dia_mes"] = df["fecha"].dt.day
@@ -97,7 +119,7 @@ fig = px.bar(
     ordenes_dia,
     x="dia_mes",
     y="ordenes",
-    title="Órdenes por Día - Febrero 2026"
+    title="Órdenes por Día - Febrero 2026",
 )
 
 fig.update_layout(

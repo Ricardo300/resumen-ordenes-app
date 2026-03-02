@@ -30,7 +30,7 @@ if archivo is not None:
         estado_orden = columnas_estado[0]      # Estado de la orden
         estado_provincia = columnas_estado[1]  # Provincia
 
-        # 🔥 Filtrar solo completadas (robusto contra espacios y mayúsculas)
+        # 🔥 Filtrar solo completadas
         df = df[
             df[estado_orden]
             .astype(str)
@@ -90,23 +90,22 @@ if archivo is not None:
             "fecha_programacion"
         ]
 
-        # 🔄 Convertir fechas
-        df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce").dt.date
+        # 🔄 Convertir fechas a string (JSON compatible)
+        df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce").dt.strftime("%Y-%m-%d")
         df["fecha_programacion"] = pd.to_datetime(
             df["fecha_programacion"], errors="coerce"
-        ).dt.date
+        ).dt.strftime("%Y-%m-%d")
 
-        # 🔄 Convertir horas
-        df["inicio"] = pd.to_datetime(df["inicio"], errors="coerce").dt.time
-        df["finalizacion"] = pd.to_datetime(df["finalizacion"], errors="coerce").dt.time
+        # 🔄 Convertir horas a string 24h
+        df["inicio"] = pd.to_datetime(df["inicio"], errors="coerce").dt.strftime("%H:%M:%S")
+        df["finalizacion"] = pd.to_datetime(df["finalizacion"], errors="coerce").dt.strftime("%H:%M:%S")
 
         # 🔄 Convertir timestamp completo
         df["hora_reserva_actividad"] = pd.to_datetime(
             df["hora_reserva_actividad"], errors="coerce"
-        )
+        ).dt.strftime("%Y-%m-%d %H:%M:%S")
 
         # 🔄 Limpiar NaN
-        df = df.astype(object)
         df = df.where(pd.notnull(df), None)
 
         st.write("Cantidad de registros a insertar:", len(df))

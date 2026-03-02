@@ -20,7 +20,7 @@ if archivo is not None:
 
     if st.button("Insertar en base de datos"):
 
-        # 🔍 Detectar columnas duplicadas "Estado"
+        # 🔍 Detectar columnas "Estado"
         columnas_estado = [col for col in df.columns if col.startswith("Estado")]
 
         if len(columnas_estado) < 2:
@@ -30,14 +30,21 @@ if archivo is not None:
         estado_orden = columnas_estado[0]      # Estado de la orden
         estado_provincia = columnas_estado[1]  # Provincia
 
-        # 🔥 Filtrar solo completadas (robusto)
-        df = df[df[estado_orden].astype(str).str.strip().str.upper() == "COMPLETADO"]
+        # 🔥 Filtrar solo completadas (robusto contra espacios y mayúsculas)
+        df = df[
+            df[estado_orden]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            == "COMPLETADO"
+        ]
 
         # 🔥 Eliminar tiempos de almuerzo
         df = df[
-            ~df["Tipo Actividad"].astype(str).str.strip().isin(
-                ["Tiempo de almuerzo", "Tiempo Almuerzo LU"]
-            )
+            ~df["Tipo Actividad"]
+            .astype(str)
+            .str.strip()
+            .isin(["Tiempo de almuerzo", "Tiempo Almuerzo LU"])
         ]
 
         # 🔥 Seleccionar columnas necesarias
@@ -65,7 +72,7 @@ if archivo is not None:
 
         df = df[columnas_necesarias].copy()
 
-        # 🔄 Renombrar columnas para Supabase
+        # 🔄 Renombrar columnas
         df.columns = [
             "orden_trabajo",
             "identificador_tecnico",
@@ -89,7 +96,7 @@ if archivo is not None:
             df["fecha_programacion"], errors="coerce"
         ).dt.date
 
-        # 🔄 Convertir horas (soporta 12h y 24h mezclado)
+        # 🔄 Convertir horas
         df["inicio"] = pd.to_datetime(df["inicio"], errors="coerce").dt.time
         df["finalizacion"] = pd.to_datetime(df["finalizacion"], errors="coerce").dt.time
 
@@ -103,6 +110,7 @@ if archivo is not None:
         df = df.where(pd.notnull(df), None)
 
         st.write("Cantidad de registros a insertar:", len(df))
+        st.write("Órdenes duplicadas en el archivo:", df["orden_trabajo"].duplicated().sum())
 
         if len(df) == 0:
             st.warning("No hay registros para insertar después del filtrado.")
@@ -110,9 +118,13 @@ if archivo is not None:
 
         datos = df.to_dict(orient="records")
 
-        respuesta = supabase.table(TABLE).insert(datos).execute()
+        try:
+            respuesta = supabase.table(TABLE).upsert(
+                datos,
+                on_conflict="orden_trabajo"
+            ).execute()
 
-        if hasattr(respuesta, "error") and respuesta.error:
-            st.error(f"Error al insertar: {respuesta.error}")
-        else:
-            st.success("Datos insertados correctamente")
+            st.success("Datos insertados / actualizados correctamente")
+
+        except Exception as e:
+            st.error(f"Error al insertar: {e}")

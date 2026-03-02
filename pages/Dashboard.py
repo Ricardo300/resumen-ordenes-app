@@ -22,15 +22,15 @@ def obtener_datos_febrero():
     inicio = 0
 
     while True:
-        response = (
-            supabase
-            .table("kpi_ordenes_completadas")
-            .select("*")
-            .gte("fecha", "2026-02-01")
-            .lte("fecha", "2026-02-28")
-            .range(inicio, inicio + limite - 1)
-            .execute()
-        )
+           response = (
+                supabase
+                .table("kpi_ordenes_completadas")
+                .select("*")
+                .gte("fecha", "2026-02-01")
+                .lt("fecha", "2026-03-01")
+                .range(inicio, inicio + limite - 1)
+                .execute()
+            )
 
         data = response.data
 

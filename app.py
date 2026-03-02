@@ -90,35 +90,49 @@ if archivo is not None:
             "fecha_programacion"
         ]
 
-       # 🔄 Convertir fechas FORZANDO día primero (dd/mm/yyyy)
+        # =====================================================
+        # 🔒 NORMALIZAR FECHAS (FORZAR DÍA PRIMERO)
+        # =====================================================
 
-df["fecha"] = pd.to_datetime(
-    df["fecha"],
-    dayfirst=True,
-    errors="coerce"
-)
+        df["fecha"] = pd.to_datetime(
+            df["fecha"],
+            dayfirst=True,
+            errors="coerce"
+        )
 
-df["fecha_programacion"] = pd.to_datetime(
-    df["fecha_programacion"],
-    dayfirst=True,
-    errors="coerce"
-)
+        df["fecha_programacion"] = pd.to_datetime(
+            df["fecha_programacion"],
+            dayfirst=True,
+            errors="coerce"
+        )
 
-# 🚨 Validar que no haya fechas inválidas
-if df["fecha"].isnull().any():
-    st.error("Hay fechas inválidas en la columna Fecha.")
-    st.stop()
+        # 🚨 Validar fechas inválidas
+        if df["fecha"].isnull().any():
+            st.error("Hay fechas inválidas en la columna Fecha.")
+            st.stop()
 
-# 🔄 Convertir a formato ISO seguro
-df["fecha"] = df["fecha"].dt.strftime("%Y-%m-%d")
-df["fecha_programacion"] = df["fecha_programacion"].dt.strftime("%Y-%m-%d")
-        # 🔄 Convertir horas a string 24h
-        df["inicio"] = pd.to_datetime(df["inicio"], errors="coerce").dt.strftime("%H:%M:%S")
-        df["finalizacion"] = pd.to_datetime(df["finalizacion"], errors="coerce").dt.strftime("%H:%M:%S")
+        # 🔄 Convertir a formato ISO seguro
+        df["fecha"] = df["fecha"].dt.strftime("%Y-%m-%d")
+        df["fecha_programacion"] = df["fecha_programacion"].dt.strftime("%Y-%m-%d")
 
-        # 🔄 Convertir timestamp completo
+        # =====================================================
+        # 🔄 Convertir horas a formato 24h
+        # =====================================================
+
+        df["inicio"] = pd.to_datetime(
+            df["inicio"],
+            errors="coerce"
+        ).dt.strftime("%H:%M:%S")
+
+        df["finalizacion"] = pd.to_datetime(
+            df["finalizacion"],
+            errors="coerce"
+        ).dt.strftime("%H:%M:%S")
+
         df["hora_reserva_actividad"] = pd.to_datetime(
-            df["hora_reserva_actividad"], errors="coerce"
+            df["hora_reserva_actividad"],
+            dayfirst=True,
+            errors="coerce"
         ).dt.strftime("%Y-%m-%d %H:%M:%S")
 
         # 🔄 Limpiar NaN
@@ -143,4 +157,3 @@ df["fecha_programacion"] = df["fecha_programacion"].dt.strftime("%Y-%m-%d")
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
-

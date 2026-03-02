@@ -1,4 +1,5 @@
 # 📊 Órdenes por Día del mes (BARRAS)
+
 df["dia_mes"] = df["fecha"].dt.day
 
 ordenes_dia = (
@@ -7,10 +8,6 @@ ordenes_dia = (
     .reset_index(name="ordenes")
     .sort_values("dia_mes")
 )
-
-# Asegurar que salgan TODOS los días del mes (aunque haya 0)
-dias = pd.DataFrame({"dia_mes": range(1, df["fecha"].dt.days_in_month.max() + 1)})
-ordenes_dia = dias.merge(ordenes_dia, on="dia_mes", how="left").fillna({"ordenes": 0})
 
 fig = px.bar(
     ordenes_dia,

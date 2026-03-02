@@ -2,50 +2,90 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 
-st.title("Prueba tabla simple ETA")
+st.title("Carga KPI ETA")
 
-# 🔐 Conexión
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
     st.secrets["SUPABASE_KEY"]
 )
 
-TABLE = "eta_test"
+TABLE = "kpi_ordenes_completadas"
 
-# 📤 Subir Excel
 archivo = st.file_uploader("Subir archivo Excel", type=["xlsx"])
 
 if archivo is not None:
 
     df = pd.read_excel(archivo, engine="openpyxl")
 
-    st.write("Vista previa del Excel:")
-    st.dataframe(df.head())
-
     if st.button("Insertar en base de datos"):
 
-        # 🔥 Nos quedamos SOLO con las 3 columnas
-        columnas_necesarias = ["Técnico", "Fecha", "Estado"]
+        # 🔥 Filtrar solo completadas (primer Estado)
+        df = df[df["Estado"] == "Completado"]
 
-        # Verificar que existan en el Excel
-        for col in columnas_necesarias:
-            if col not in df.columns:
-                st.error(f"No existe la columna {col} en el Excel")
-                st.stop()
+        # 🔥 Eliminar tiempos de almuerzo
+        df = df[
+            ~df["Tipo Actividad"].isin(
+                ["Tiempo de almuerzo", "Tiempo Almuerzo LU"]
+            )
+        ]
 
-        df_filtrado = df[columnas_necesarias].copy()
+        # 🔥 Seleccionar columnas necesarias
+        columnas_necesarias = [
+            "Orden de Trabajo",
+            "Identificador Tecnico",
+            "Identidad",
+            "Fecha",
+            "Estado.1",  # ← Segundo Estado = Provincia
+            "Municipio/Canton",
+            "Colonia",
+            "Sub Tipo de Orden",
+            "Tipo Actividad",
+            "Garantia",
+            "Inicio",
+            "Finalización",
+            "Hora de reserva de actividad",
+            "Fecha Programación"
+        ]
 
-        # Renombrar para que coincida con la tabla
-        df_filtrado.columns = ["tecnico", "fecha", "estado"]
+        df = df[columnas_necesarias].copy()
+
+        # 🔥 Renombrar columnas
+        df.columns = [
+            "orden_trabajo",
+            "identificador_tecnico",
+            "identidad",
+            "fecha",
+            "provincia",
+            "municipio_canton",
+            "colonia",
+            "sub_tipo_orden",
+            "tipo_actividad",
+            "garantia",
+            "inicio",
+            "finalizacion",
+            "hora_reserva_actividad",
+            "fecha_programacion"
+        ]
+
+        # 🔥 Convertir tipos
+        df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce").dt.date
+        df["fecha_programacion"] = pd.to_datetime(
+            df["fecha_programacion"], errors="coerce"
+        ).dt.date
+
+        df["inicio"] = pd.to_datetime(df["inicio"], errors="coerce").dt.time
+        df["finalizacion"] = pd.to_datetime(df["finalizacion"], errors="coerce").dt.time
+
+        df["hora_reserva_actividad"] = pd.to_datetime(
+            df["hora_reserva_actividad"], errors="coerce"
+        )
 
         # Limpiar NaN
-        df_filtrado = df_filtrado.astype(object)
-        df_filtrado = df_filtrado.where(pd.notnull(df_filtrado), None)
+        df = df.astype(object)
+        df = df.where(pd.notnull(df), None)
 
-        datos = df_filtrado.to_dict(orient="records")
+        datos = df.to_dict(orient="records")
 
-        # Insertar
         supabase.table(TABLE).insert(datos).execute()
 
         st.success("Datos insertados correctamente")
-

@@ -67,6 +67,19 @@ tecnologia_seleccionada = st.selectbox(
 
 if tecnologia_seleccionada != "TODAS":
     df = df[df["tecnologia"] == tecnologia_seleccionada]
+# ============================================
+# 🔎 FILTRO POR CONTRATA
+# ============================================
+
+opciones_contrata = ["TODAS"] + sorted(df["contrata"].dropna().unique().tolist())
+
+contrata_seleccionada = st.selectbox(
+    "Filtrar por Contrata",
+    opciones_contrata
+)
+
+if contrata_seleccionada != "TODAS":
+    df = df[df["contrata"] == contrata_seleccionada]
 # =============================
 # 🔢 MÉTRICAS
 # =============================

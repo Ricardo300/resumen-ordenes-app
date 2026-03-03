@@ -182,9 +182,7 @@ total_ordenes = len(df)
 total_tecnicos = df["identificador_tecnico"].nunique()
 dias_operativos = df["fecha"].nunique()
 promedio_diario = round(total_ordenes / dias_operativos, 2) if dias_operativos else 0
-total_garantias = len(
-    df[df["garantia"].astype(str).str.strip().str.upper() == "SI"]
-)
+total_garantias = len(df[df["garantia"].astype(str).str.strip().str.upper() == "SI"])
 
 c1, c2, c3, c4 = st.columns(5)
 c1.metric("Órdenes", f"{total_ordenes:,}")

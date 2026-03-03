@@ -73,9 +73,18 @@ with colp2:
 
     mes = meses_dict[mes_nombre]
 
+# Primer día del mes
 primer_dia = f"{año}-{mes:02d}-01"
-ultimo_dia_num = calendar.monthrange(año, mes)[1]
-ultimo_dia = f"{año}-{mes:02d}-{ultimo_dia_num}"
+
+# Primer día del mes siguiente (FILTRO ROBUSTO)
+if mes == 12:
+    siguiente_mes = 1
+    siguiente_año = año + 1
+else:
+    siguiente_mes = mes + 1
+    siguiente_año = año
+
+primer_dia_siguiente = f"{siguiente_año}-{siguiente_mes:02d}-01"
 
 st.markdown(f"**📅 Periodo Analizado:** {mes_nombre} {año}")
 
@@ -91,7 +100,7 @@ supabase = create_client(
 # FUNCIÓN CARGA DATOS
 # ==========================================
 @st.cache_data
-def obtener_datos(primer_dia, ultimo_dia):
+def obtener_datos(primer_dia, primer_dia_siguiente):
     todos = []
     limite = 1000
     inicio = 0
@@ -102,7 +111,7 @@ def obtener_datos(primer_dia, ultimo_dia):
             .table("kpi_ordenes_completadas")
             .select("*")
             .gte("fecha", primer_dia)
-            .lte("fecha", ultimo_dia)
+            .lt("fecha", primer_dia_siguiente)  # 👈 CLAVE
             .range(inicio, inicio + limite - 1)
             .execute()
         )
@@ -122,7 +131,7 @@ def obtener_datos(primer_dia, ultimo_dia):
     return todos
 
 
-data = obtener_datos(primer_dia, ultimo_dia)
+data = obtener_datos(primer_dia, primer_dia_siguiente)
 
 if not data:
     st.warning("No hay datos para el período seleccionado.")
@@ -132,7 +141,7 @@ df = pd.DataFrame(data)
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FILTROS (3 COLUMNAS)
+# FILTROS
 # ==========================================
 colf1, colf2, colf3 = st.columns(3)
 
@@ -148,7 +157,6 @@ with colf3:
     opciones_tipo = ["TODAS"] + sorted(df["tipo_actividad"].dropna().unique().tolist())
     tipo_actividad = st.selectbox("Tipo Actividad", opciones_tipo)
 
-# Aplicar filtros
 if tecnologia != "TODAS":
     df = df[df["tecnologia"] == tecnologia]
 

@@ -107,10 +107,10 @@ if archivo is not None:
             "Traslado Interno Linea fIja (GPON) + Internet (GPON) + TV (GPON)": "GPON",
         }
 
-df["tecnologia"] = df["sub_tipo_orden"].map(map_tecnologia)
+        df["tecnologia"] = df["sub_tipo_orden"].map(map_tecnologia)
 
-# Si algún subtipo no está mapeado
-df["tecnologia"] = df["tecnologia"].fillna("NO_CLASIFICADO")
+        # Si algún subtipo no está mapeado
+        df["tecnologia"] = df["tecnologia"].fillna("NO_CLASIFICADO")
 
         for col in columnas_necesarias:
             if col not in df.columns:
@@ -204,4 +204,5 @@ df["tecnologia"] = df["tecnologia"].fillna("NO_CLASIFICADO")
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 

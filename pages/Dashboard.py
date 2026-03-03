@@ -7,7 +7,7 @@ from datetime import datetime
 # ==========================================
 # CONFIGURACIÓN
 # ==========================================
-st.set_page_config(page_title="Dashboard KPI ETA", layout="wide")
+st.set_page_config(page_title="Dashboard KPI ", layout="wide")
 
 # ==========================================
 # ESTILO COMPACTO

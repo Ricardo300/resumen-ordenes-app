@@ -137,6 +137,7 @@ if archivo is not None:
             "Instalacion Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
             "Reparación Internet (DGPON) + TV (GPON)": "GPON",
             "Reparación Internet (GPON)": "GPON",
+            "Reparación Línea fija (VGPON) + Internet (DGPON)":"GPON",
             "Reparación Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
             "Traslado Externo Internet (DGPON) + TV (GPON)": "GPON",
             "Traslado Externo Internet (GPON)": "GPON",
@@ -201,4 +202,5 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 

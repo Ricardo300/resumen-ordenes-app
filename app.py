@@ -64,6 +64,53 @@ if archivo is not None:
             "Hora de reserva de actividad",
             "Fecha Programación"
         ]
+        # ============================================
+        # 🔥 CLASIFICAR TECNOLOGÍA POR SUB TIPO
+        # ============================================
+
+        map_tecnologia = {
+
+            # -------- DTH --------
+            "Cambio de Plan con Cambio de Equipo DTH": "DTH",
+            "Equipo Adicional TV": "DTH",
+            "Instalación de Cajas Adicionales DTH": "DTH",
+            "Instalación de servicio televisión DTH": "DTH",
+            "Instalación de TV (DTH)": "DTH",
+            "Reparacion DTH": "DTH",
+            "Reparacion Linea Fija LFI": "DTH",
+            "Reparación servicio DTH": "DTH",
+            "Traslado Externo de TV (DTH)": "DTH",
+            "Traslado Interno de Servicio de DTH": "DTH",
+            "Traslado Interno de TV (DTH)": "DTH",
+            "Traslado TV (DTH)": "DTH",
+        
+            # -------- GPON --------
+            "Cambio de Plan con Cambio de Equipo Datos y TV": "GPON",
+            "Cambio de Plan con Cambio de Equipo Triple Play": "GPON",
+            "Equipo Adicional Datos": "GPON",
+            "Equipo Adicional Datos y TV": "GPON",
+            "Equipo Adicional Triple Play": "GPON",
+            "Instalacion Internet (DGPON)+TV (GPON)": "GPON",
+            "Instalacion Internet (GPON)": "GPON",
+            "Instalacion Línea fija (VGPON) + Internet (DGPON)": "GPON",
+            "Instalacion Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
+            "Reparación Internet (DGPON) + TV (GPON)": "GPON",
+            "Reparación Internet (GPON)": "GPON",
+            "Reparación Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
+            "Traslado Externo Internet (DGPON) + TV (GPON)": "GPON",
+            "Traslado Externo Internet (GPON)": "GPON",
+            "Traslado Externo Línea fija (VGPON) + Internet (DGPON)": "GPON",
+            "Traslado Externo Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
+            "Traslado Interno de Internet (GPON) + TV (GPON)": "GPON",
+            "Traslado Interno Internet (GPON)": "GPON",
+            "Traslado Interno Linea fIja (GPON) + Internet (GPON)": "GPON",
+            "Traslado Interno Linea fIja (GPON) + Internet (GPON) + TV (GPON)": "GPON",
+        }
+
+df["tecnologia"] = df["sub_tipo_orden"].map(map_tecnologia)
+
+# Si algún subtipo no está mapeado
+df["tecnologia"] = df["tecnologia"].fillna("NO_CLASIFICADO")
 
         for col in columnas_necesarias:
             if col not in df.columns:
@@ -157,3 +204,4 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+

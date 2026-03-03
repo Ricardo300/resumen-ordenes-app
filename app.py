@@ -18,6 +18,17 @@ if archivo is not None:
 
     df = pd.read_excel(archivo, engine="openpyxl")
 
+# ==========================================
+# 🔧 REGLA DE NEGOCIO - MantenimientoPX es GPON
+# ==========================================
+
+df["tipo_actividad"] = df["tipo_actividad"].astype(str).str.strip()
+
+df.loc[
+    df["tipo_actividad"].str.upper().eq("MANTENIMIENTOPX"),
+    "tecnologia"
+] = "GPON"
+
     if st.button("Insertar en base de datos"):
 
         # ============================================
@@ -221,6 +232,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

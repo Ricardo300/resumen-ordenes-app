@@ -18,14 +18,11 @@ st.set_page_config(
 # ==========================================
 st.markdown("""
 <style>
-
-/* Márgenes compactos */
 .block-container {
     padding-top: 1rem;
     padding-bottom: 0rem;
 }
 
-/* Métricas compactas */
 div[data-testid="stMetric"] {
     background-color: #111827;
     padding: 8px 12px;
@@ -41,23 +38,20 @@ div[data-testid="stMetricLabel"] {
     color: #9ca3af;
 }
 
-/* Tablas más pequeñas */
 [data-testid="stDataFrame"] div {
     font-size: 12px;
 }
 
-/* Selectbox compacto */
 div[data-baseweb="select"] {
     font-size: 13px;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
 st.title("📊 Dashboard KPI ETA")
 
 # ==========================================
-# SELECTOR DE PERIODO (MES EN TEXTO)
+# SELECTOR DE PERIODO
 # ==========================================
 colp1, colp2 = st.columns(2)
 
@@ -66,18 +60,9 @@ with colp1:
 
 with colp2:
     meses_dict = {
-        "Enero": 1,
-        "Febrero": 2,
-        "Marzo": 3,
-        "Abril": 4,
-        "Mayo": 5,
-        "Junio": 6,
-        "Julio": 7,
-        "Agosto": 8,
-        "Septiembre": 9,
-        "Octubre": 10,
-        "Noviembre": 11,
-        "Diciembre": 12
+        "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4,
+        "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8,
+        "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12
     }
 
     mes_nombre = st.selectbox(
@@ -103,7 +88,7 @@ supabase = create_client(
 )
 
 # ==========================================
-# FUNCIÓN CARGA DATOS DINÁMICA
+# FUNCIÓN CARGA DATOS
 # ==========================================
 @st.cache_data
 def obtener_datos(primer_dia, ultimo_dia):
@@ -147,9 +132,9 @@ df = pd.DataFrame(data)
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FILTROS
+# FILTROS (3 COLUMNAS)
 # ==========================================
-colf1, colf2 = st.columns(2)
+colf1, colf2, colf3 = st.columns(3)
 
 with colf1:
     opciones_tecnologia = ["TODAS"] + sorted(df["tecnologia"].dropna().unique().tolist())
@@ -159,11 +144,19 @@ with colf2:
     opciones_contrata = ["TODAS"] + sorted(df["contrata"].dropna().unique().tolist())
     contrata = st.selectbox("Contrata", opciones_contrata)
 
+with colf3:
+    opciones_tipo = ["TODAS"] + sorted(df["tipo_actividad"].dropna().unique().tolist())
+    tipo_actividad = st.selectbox("Tipo Actividad", opciones_tipo)
+
+# Aplicar filtros
 if tecnologia != "TODAS":
     df = df[df["tecnologia"] == tecnologia]
 
 if contrata != "TODAS":
     df = df[df["contrata"] == contrata]
+
+if tipo_actividad != "TODAS":
+    df = df[df["tipo_actividad"] == tipo_actividad]
 
 # ==========================================
 # MÉTRICAS
@@ -181,7 +174,7 @@ col3.metric("Días Operativos", dias_operativos)
 col4.metric("Promedio Día", promedio_diario)
 
 # ==========================================
-# GRÁFICO ÓRDENES POR DÍA
+# GRÁFICO
 # ==========================================
 df["dia_mes"] = df["fecha"].dt.day
 
@@ -213,11 +206,10 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # ==========================================
-# TABLAS LADO A LADO
+# TABLAS
 # ==========================================
 col_tab1, col_tab2 = st.columns([1, 2])
 
-# Provincia
 with col_tab1:
     st.markdown("### 📍 Provincia")
 
@@ -228,13 +220,8 @@ with col_tab1:
         .sort_values("Órdenes", ascending=False)
     )
 
-    st.dataframe(
-        ordenes_provincia,
-        use_container_width=True,
-        height=260
-    )
+    st.dataframe(ordenes_provincia, use_container_width=True, height=260)
 
-# Producción Técnico
 with col_tab2:
     st.markdown("### 👷 Producción Técnico")
 
@@ -254,8 +241,4 @@ with col_tab2:
     df_prod = df_prod.drop(columns=["Dias_Trabajados"])
     df_prod = df_prod.sort_values("Producción", ascending=False)
 
-    st.dataframe(
-        df_prod,
-        use_container_width=True,
-        height=260
-    )
+    st.dataframe(df_prod, use_container_width=True, height=260)

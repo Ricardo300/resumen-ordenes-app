@@ -2,12 +2,14 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 import plotly.express as px
+from datetime import datetime
+import calendar
 
 # ==========================================
 # CONFIGURACIÓN GENERAL
 # ==========================================
 st.set_page_config(
-    page_title="KPI ETA Febrero 2026",
+    page_title="Dashboard KPI ETA",
     layout="wide"
 )
 
@@ -17,15 +19,10 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-/* Reduce márgenes generales */
+/* Márgenes compactos */
 .block-container {
-    padding-top: 0.8rem;
+    padding-top: 1rem;
     padding-bottom: 0rem;
-}
-
-/* Reduce espacio entre elementos */
-div[data-testid="stVerticalBlock"] > div {
-    gap: 0.5rem;
 }
 
 /* Métricas compactas */
@@ -44,28 +41,38 @@ div[data-testid="stMetricLabel"] {
     color: #9ca3af;
 }
 
-/* Selectbox más pequeño */
-div[data-baseweb="select"] {
-    font-size: 13px;
-}
-
 /* Tablas más pequeñas */
 [data-testid="stDataFrame"] div {
     font-size: 12px;
 }
 
-/* Quitar espacio extra debajo de títulos */
-h3 {
-    margin-bottom: 0.3rem;
+/* Selectbox compacto */
+div[data-baseweb="select"] {
+    font-size: 13px;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("## 📊 Dashboard KPI ETA - Febrero 2026")
+st.title("📊 Dashboard KPI ETA")
 
 # ==========================================
-# 🔐 CONEXIÓN SUPABASE
+# SELECTOR DE PERIODO
+# ==========================================
+colp1, colp2 = st.columns(2)
+
+with colp1:
+    año = st.selectbox("Año", [2026, 2025, 2024], index=0)
+
+with colp2:
+    mes = st.selectbox("Mes", list(range(1, 13)), index=datetime.now().month - 1)
+
+primer_dia = f"{año}-{mes:02d}-01"
+ultimo_dia_num = calendar.monthrange(año, mes)[1]
+ultimo_dia = f"{año}-{mes:02d}-{ultimo_dia_num}"
+
+# ==========================================
+# CONEXIÓN SUPABASE
 # ==========================================
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
@@ -73,10 +80,10 @@ supabase = create_client(
 )
 
 # ==========================================
-# FUNCIÓN CARGA DATOS
+# FUNCIÓN CARGA DATOS DINÁMICA
 # ==========================================
 @st.cache_data
-def obtener_datos():
+def obtener_datos(primer_dia, ultimo_dia):
     todos = []
     limite = 1000
     inicio = 0
@@ -86,8 +93,8 @@ def obtener_datos():
             supabase
             .table("kpi_ordenes_completadas")
             .select("*")
-            .gte("fecha", "2026-02-01")
-            .lt("fecha", "2026-03-01")
+            .gte("fecha", primer_dia)
+            .lte("fecha", ultimo_dia)
             .range(inicio, inicio + limite - 1)
             .execute()
         )
@@ -107,19 +114,19 @@ def obtener_datos():
     return todos
 
 
-data = obtener_datos()
+data = obtener_datos(primer_dia, ultimo_dia)
 
 if not data:
-    st.warning("No hay datos para febrero 2026.")
+    st.warning("No hay datos para el período seleccionado.")
     st.stop()
 
 df = pd.DataFrame(data)
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FILTROS COMPACTOS
+# FILTROS
 # ==========================================
-colf1, colf2, colf3 = st.columns([1,1,3])
+colf1, colf2 = st.columns(2)
 
 with colf1:
     opciones_tecnologia = ["TODAS"] + sorted(df["tecnologia"].dropna().unique().tolist())
@@ -147,11 +154,11 @@ col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("Órdenes", f"{total_ordenes:,}")
 col2.metric("Técnicos", total_tecnicos)
-col3.metric("Días", dias_operativos)
+col3.metric("Días Operativos", dias_operativos)
 col4.metric("Promedio Día", promedio_diario)
 
 # ==========================================
-# GRÁFICO COMPACTO
+# GRÁFICO ÓRDENES POR DÍA
 # ==========================================
 df["dia_mes"] = df["fecha"].dt.day
 
@@ -185,11 +192,9 @@ st.plotly_chart(fig, use_container_width=True)
 # ==========================================
 # TABLAS LADO A LADO
 # ==========================================
-col_tab1, col_tab2 = st.columns([1,2])
+col_tab1, col_tab2 = st.columns([1, 2])
 
-# -------------------------
 # Provincia
-# -------------------------
 with col_tab1:
     st.markdown("### 📍 Provincia")
 
@@ -206,9 +211,7 @@ with col_tab1:
         height=260
     )
 
-# -------------------------
 # Producción Técnico
-# -------------------------
 with col_tab2:
     st.markdown("### 👷 Producción Técnico")
 

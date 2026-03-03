@@ -183,11 +183,15 @@ total_tecnicos = df["identificador_tecnico"].nunique()
 dias_operativos = df["fecha"].nunique()
 promedio_diario = round(total_ordenes / dias_operativos, 2) if dias_operativos else 0
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4 = st.columns(5)
 c1.metric("Órdenes", f"{total_ordenes:,}")
 c2.metric("Técnicos", total_tecnicos)
 c3.metric("Días Operativos", dias_operativos)
 c4.metric("Promedio Día", promedio_diario)
+c5.metric("Garantías", total_garantias)
+total_garantias = len(
+    df[df["garantia"].astype(str).str.strip().str.upper() == "SI"]
+)
 
 # ==========================================
 # GRÁFICO (COLORES DINÁMICOS)

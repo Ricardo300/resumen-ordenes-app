@@ -27,7 +27,7 @@ div.stButton > button {
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📊 Dashboard KPI ETA")
+st.title("📊 Dashboard KPI")
 
 # ==========================================
 # BOTÓN ACTUALIZAR

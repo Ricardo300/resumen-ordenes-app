@@ -114,7 +114,33 @@ ordenes_provincia = (
 )
 
 st.dataframe(ordenes_provincia, use_container_width=True)
+# ============================================
+# 📊 PRODUCCIÓN Y PRODUCTIVIDAD POR TÉCNICO
+# ============================================
 
+st.subheader("Producción y Productividad por Técnico")
+
+df_prod = (
+    df.groupby(["identificador_tecnico", "contrata"])
+      .agg(
+          produccion=("orden_trabajo", "count"),
+          dias_trabajados=("fecha", "nunique")
+      )
+      .reset_index()
+)
+
+# Calcular productividad
+df_prod["productividad"] = (
+    df_prod["produccion"] / df_prod["dias_trabajados"]
+).round(2)
+
+# Eliminar columna dias_trabajados (solo se usa para cálculo)
+df_prod = df_prod.drop(columns=["dias_trabajados"])
+
+# Ordenar por producción
+df_prod = df_prod.sort_values("produccion", ascending=False)
+
+st.dataframe(df_prod, use_container_width=True)
 # =============================
 # 📊 GRÁFICO BARRAS POR DÍA
 # =============================

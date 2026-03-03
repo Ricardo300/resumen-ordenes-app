@@ -54,7 +54,19 @@ if not data:
     st.stop()
 
 df = pd.DataFrame(data)
+# ============================================
+# 🔎 FILTRO POR TECNOLOGÍA
+# ============================================
 
+opciones_tecnologia = ["TODAS"] + sorted(df["tecnologia"].dropna().unique().tolist())
+
+tecnologia_seleccionada = st.selectbox(
+    "Filtrar por Tecnología",
+    opciones_tecnologia
+)
+
+if tecnologia_seleccionada != "TODAS":
+    df = df[df["tecnologia"] == tecnologia_seleccionada]
 # =============================
 # 🔢 MÉTRICAS
 # =============================

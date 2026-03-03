@@ -189,8 +189,6 @@ c2.metric("Técnicos", total_tecnicos)
 c3.metric("Días Operativos", dias_operativos)
 c4.metric("Promedio Día", promedio_diario)
 c5.metric("Garantías", total_garantias)
-total_garantias = len(
-    df[df["garantia"].astype(str).str.strip().str.upper() == "SI"]
 )
 
 # ==========================================

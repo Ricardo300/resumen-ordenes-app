@@ -4,43 +4,65 @@ import pandas as pd
 import plotly.express as px
 
 # ==========================================
-# CONFIGURACIÓN VISUAL
+# CONFIGURACIÓN GENERAL
 # ==========================================
 st.set_page_config(
-    page_title="Dashboard KPI ETA",
+    page_title="KPI ETA Febrero 2026",
     layout="wide"
 )
 
-# CSS para compactar y mejorar diseño
+# ==========================================
+# CSS COMPACTO PROFESIONAL
+# ==========================================
 st.markdown("""
 <style>
+
+/* Reduce márgenes generales */
 .block-container {
-    padding-top: 1rem;
+    padding-top: 0.8rem;
     padding-bottom: 0rem;
 }
 
+/* Reduce espacio entre elementos */
+div[data-testid="stVerticalBlock"] > div {
+    gap: 0.5rem;
+}
+
+/* Métricas compactas */
 div[data-testid="stMetric"] {
     background-color: #111827;
-    padding: 10px 15px;
-    border-radius: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
 }
 
 div[data-testid="stMetricValue"] {
-    font-size: 22px;
+    font-size: 18px;
 }
 
 div[data-testid="stMetricLabel"] {
-    font-size: 12px;
+    font-size: 11px;
     color: #9ca3af;
 }
 
-[data-testid="stDataFrame"] {
-    border-radius: 10px;
+/* Selectbox más pequeño */
+div[data-baseweb="select"] {
+    font-size: 13px;
 }
+
+/* Tablas más pequeñas */
+[data-testid="stDataFrame"] div {
+    font-size: 12px;
+}
+
+/* Quitar espacio extra debajo de títulos */
+h3 {
+    margin-bottom: 0.3rem;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📊 Dashboard KPI ETA - Febrero 2026")
+st.markdown("## 📊 Dashboard KPI ETA - Febrero 2026")
 
 # ==========================================
 # 🔐 CONEXIÓN SUPABASE
@@ -51,11 +73,11 @@ supabase = create_client(
 )
 
 # ==========================================
-# FUNCIÓN PARA TRAER DATOS
+# FUNCIÓN CARGA DATOS
 # ==========================================
 @st.cache_data
-def obtener_datos_febrero():
-    todos_los_datos = []
+def obtener_datos():
+    todos = []
     limite = 1000
     inicio = 0
 
@@ -75,17 +97,17 @@ def obtener_datos_febrero():
         if not data:
             break
 
-        todos_los_datos.extend(data)
+        todos.extend(data)
 
         if len(data) < limite:
             break
 
         inicio += limite
 
-    return todos_los_datos
+    return todos
 
 
-data = obtener_datos_febrero()
+data = obtener_datos()
 
 if not data:
     st.warning("No hay datos para febrero 2026.")
@@ -95,48 +117,41 @@ df = pd.DataFrame(data)
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# 🔎 FILTROS HORIZONTALES
+# FILTROS COMPACTOS
 # ==========================================
-st.markdown("### 🔎 Filtros")
+colf1, colf2, colf3 = st.columns([1,1,3])
 
-col_f1, col_f2 = st.columns(2)
-
-with col_f1:
+with colf1:
     opciones_tecnologia = ["TODAS"] + sorted(df["tecnologia"].dropna().unique().tolist())
-    tecnologia_seleccionada = st.selectbox("Tecnología", opciones_tecnologia)
+    tecnologia = st.selectbox("Tecnología", opciones_tecnologia)
 
-with col_f2:
+with colf2:
     opciones_contrata = ["TODAS"] + sorted(df["contrata"].dropna().unique().tolist())
-    contrata_seleccionada = st.selectbox("Contrata", opciones_contrata)
+    contrata = st.selectbox("Contrata", opciones_contrata)
 
-if tecnologia_seleccionada != "TODAS":
-    df = df[df["tecnologia"] == tecnologia_seleccionada]
+if tecnologia != "TODAS":
+    df = df[df["tecnologia"] == tecnologia]
 
-if contrata_seleccionada != "TODAS":
-    df = df[df["contrata"] == contrata_seleccionada]
+if contrata != "TODAS":
+    df = df[df["contrata"] == contrata]
 
 # ==========================================
-# 📊 RESUMEN GENERAL
+# MÉTRICAS
 # ==========================================
-st.markdown("### 📈 Resumen General")
-
 total_ordenes = len(df)
 total_tecnicos = df["identificador_tecnico"].nunique()
 dias_operativos = df["fecha"].nunique()
-
-ordenes_promedio_por_dia = round(total_ordenes / dias_operativos, 2) if dias_operativos > 0 else 0
+promedio_diario = round(total_ordenes / dias_operativos, 2) if dias_operativos > 0 else 0
 
 col1, col2, col3, col4 = st.columns(4)
 
-col1.metric("Total Órdenes", f"{total_ordenes:,}")
-col2.metric("Técnicos Activos", total_tecnicos)
-col3.metric("Días Operativos", dias_operativos)
-col4.metric("Promedio Diario", ordenes_promedio_por_dia)
-
-st.markdown("---")
+col1.metric("Órdenes", f"{total_ordenes:,}")
+col2.metric("Técnicos", total_tecnicos)
+col3.metric("Días", dias_operativos)
+col4.metric("Promedio Día", promedio_diario)
 
 # ==========================================
-# 📊 GRÁFICO ÓRDENES POR DÍA
+# GRÁFICO COMPACTO
 # ==========================================
 df["dia_mes"] = df["fecha"].dt.day
 
@@ -158,52 +173,63 @@ fig = px.bar(
 
 fig.update_layout(
     template="plotly_dark",
-    height=350,
-    margin=dict(l=20, r=20, t=30, b=20),
-    xaxis_title="Día del Mes",
-    yaxis_title="Órdenes",
-    coloraxis_showscale=False
+    height=280,
+    margin=dict(l=10, r=10, t=10, b=10),
+    coloraxis_showscale=False,
+    xaxis_title="",
+    yaxis_title=""
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.markdown("---")
-
 # ==========================================
-# 📋 ÓRDENES POR PROVINCIA
+# TABLAS LADO A LADO
 # ==========================================
-st.markdown("### 📍 Órdenes por Provincia")
+col_tab1, col_tab2 = st.columns([1,2])
 
-ordenes_provincia = (
-    df.groupby("provincia")["orden_trabajo"]
-    .nunique()
-    .reset_index(name="Total Órdenes")
-    .sort_values("Total Órdenes", ascending=False)
-)
+# -------------------------
+# Provincia
+# -------------------------
+with col_tab1:
+    st.markdown("### 📍 Provincia")
 
-st.dataframe(ordenes_provincia, use_container_width=True, height=300)
+    ordenes_provincia = (
+        df.groupby("provincia")["orden_trabajo"]
+        .nunique()
+        .reset_index(name="Órdenes")
+        .sort_values("Órdenes", ascending=False)
+    )
 
-st.markdown("---")
+    st.dataframe(
+        ordenes_provincia,
+        use_container_width=True,
+        height=260
+    )
 
-# ==========================================
-# 📊 PRODUCCIÓN Y PRODUCTIVIDAD POR TÉCNICO
-# ==========================================
-st.markdown("### 👷 Producción y Productividad por Técnico")
+# -------------------------
+# Producción Técnico
+# -------------------------
+with col_tab2:
+    st.markdown("### 👷 Producción Técnico")
 
-df_prod = (
-    df.groupby(["identificador_tecnico", "contrata"])
-      .agg(
-          Producción=("orden_trabajo", "count"),
-          Dias_Trabajados=("fecha", "nunique")
-      )
-      .reset_index()
-)
+    df_prod = (
+        df.groupby(["identificador_tecnico", "contrata"])
+        .agg(
+            Producción=("orden_trabajo", "count"),
+            Dias_Trabajados=("fecha", "nunique")
+        )
+        .reset_index()
+    )
 
-df_prod["Productividad"] = (
-    df_prod["Producción"] / df_prod["Dias_Trabajados"]
-).round(2)
+    df_prod["Productividad"] = (
+        df_prod["Producción"] / df_prod["Dias_Trabajados"]
+    ).round(2)
 
-df_prod = df_prod.drop(columns=["Dias_Trabajados"])
-df_prod = df_prod.sort_values("Producción", ascending=False)
+    df_prod = df_prod.drop(columns=["Dias_Trabajados"])
+    df_prod = df_prod.sort_values("Producción", ascending=False)
 
-st.dataframe(df_prod, use_container_width=True, height=400)
+    st.dataframe(
+        df_prod,
+        use_container_width=True,
+        height=260
+    )

@@ -81,42 +81,26 @@ contrata_seleccionada = st.selectbox(
 if contrata_seleccionada != "TODAS":
     df = df[df["contrata"] == contrata_seleccionada]
 # ============================================
-# 📊 PRODUCTIVIDAD GENERAL
+# 📊 RESUMEN GENERAL
 # ============================================
 
-total_ordenes = len(df)
-total_tecnicos = df["identificador_tecnico"].nunique()
-
-productividad_general = 0
-
-if total_tecnicos > 0:
-    productividad_general = round(total_ordenes / total_tecnicos, 2)
-
-st.subheader("Productividad General")
-
-col1, col2, col3 = st.columns(3)
-
-col1.metric("Total Órdenes", total_ordenes)
-col2.metric("Técnicos Activos", total_tecnicos)
-col3.metric("Órdenes Promedio por Técnico", productividad_general)
-# ============================================
-# 📊 PRODUCTIVIDAD GENERAL
-# ============================================
-
-st.subheader("Productividad General")
+st.subheader("Resumen General")
 
 total_ordenes = len(df)
 total_tecnicos = df["identificador_tecnico"].nunique()
 dias_operativos = df["fecha"].nunique()
 
-ordenes_promedio_por_tecnico = 0
 ordenes_promedio_por_dia = 0
-
-if total_tecnicos > 0:
-    ordenes_promedio_por_tecnico = round(total_ordenes / total_tecnicos, 2)
-
 if dias_operativos > 0:
     ordenes_promedio_por_dia = round(total_ordenes / dias_operativos, 2)
+
+porcentaje_garantias = round(
+    (df["garantia"].astype(str).str.upper() == "SI").mean() * 100, 2
+) if len(df) > 0 else 0
+
+hora_promedio_inicio = pd.to_datetime(
+    df["inicio"], errors="coerce"
+).dt.hour.mean()
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -124,6 +108,11 @@ col1.metric("Total Órdenes", total_ordenes)
 col2.metric("Técnicos Activos", total_tecnicos)
 col3.metric("Días Operativos", dias_operativos)
 col4.metric("Órdenes Promedio por Día", ordenes_promedio_por_dia)
+
+col5, col6 = st.columns(2)
+
+col5.metric("% Garantías", f"{porcentaje_garantias}%")
+col6.metric("Hora Promedio Inicio", f"{round(hora_promedio_inicio,2)} h")
 # =============================
 # 🔢 MÉTRICAS
 # =============================

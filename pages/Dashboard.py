@@ -50,11 +50,11 @@ div[data-baseweb="select"] {
 st.title("📊 Dashboard KPI ETA")
 
 # ==========================================
-# BOTÓN ACTUALIZAR DATOS
+# BOTÓN ACTUALIZAR CACHE
 # ==========================================
 if st.button("🔄 Actualizar Datos"):
     st.cache_data.clear()
-    st.success("Cache limpiado correctamente")
+    st.success("Datos actualizados correctamente")
     st.rerun()
 
 # ==========================================
@@ -80,10 +80,9 @@ with colp2:
 
     mes = meses_dict[mes_nombre]
 
-# Primer día del mes en ISO
+# Fechas en formato ISO para timestamp
 primer_dia = f"{año}-{mes:02d}-01T00:00:00"
 
-# Primer día del mes siguiente
 if mes == 12:
     siguiente_mes = 1
     siguiente_año = año + 1
@@ -148,30 +147,40 @@ df = pd.DataFrame(data)
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FILTROS
+# FILTROS MULTI SELECCIÓN
 # ==========================================
 colf1, colf2, colf3 = st.columns(3)
 
 with colf1:
-    opciones_tecnologia = ["TODAS"] + sorted(df["tecnologia"].dropna().unique().tolist())
-    tecnologia = st.selectbox("Tecnología", opciones_tecnologia)
+    opciones_tecnologia = sorted(df["tecnologia"].dropna().unique().tolist())
+    tecnologia = st.multiselect(
+        "Tecnología",
+        opciones_tecnologia,
+        default=opciones_tecnologia
+    )
 
 with colf2:
-    opciones_contrata = ["TODAS"] + sorted(df["contrata"].dropna().unique().tolist())
-    contrata = st.selectbox("Contrata", opciones_contrata)
+    opciones_contrata = sorted(df["contrata"].dropna().unique().tolist())
+    contrata = st.multiselect(
+        "Contrata",
+        opciones_contrata,
+        default=opciones_contrata
+    )
 
 with colf3:
-    opciones_tipo = ["TODAS"] + sorted(df["tipo_actividad"].dropna().unique().tolist())
-    tipo_actividad = st.selectbox("Tipo Actividad", opciones_tipo)
+    opciones_tipo = sorted(df["tipo_actividad"].dropna().unique().tolist())
+    tipo_actividad = st.multiselect(
+        "Tipo Actividad",
+        opciones_tipo,
+        default=opciones_tipo
+    )
 
-if tecnologia != "TODAS":
-    df = df[df["tecnologia"] == tecnologia]
-
-if contrata != "TODAS":
-    df = df[df["contrata"] == contrata]
-
-if tipo_actividad != "TODAS":
-    df = df[df["tipo_actividad"] == tipo_actividad]
+# Aplicar filtros combinados
+df = df[
+    df["tecnologia"].isin(tecnologia) &
+    df["contrata"].isin(contrata) &
+    df["tipo_actividad"].isin(tipo_actividad)
+]
 
 # ==========================================
 # MÉTRICAS
@@ -189,7 +198,7 @@ col3.metric("Días Operativos", dias_operativos)
 col4.metric("Promedio Día", promedio_diario)
 
 # ==========================================
-# GRÁFICO
+# GRÁFICO ÓRDENES POR DÍA
 # ==========================================
 df["dia_mes"] = df["fecha"].dt.day
 

@@ -80,6 +80,39 @@ contrata_seleccionada = st.selectbox(
 
 if contrata_seleccionada != "TODAS":
     df = df[df["contrata"] == contrata_seleccionada]
+# ============================================
+# 📊 PRODUCTIVIDAD GENERAL
+# ============================================
+
+total_ordenes = len(df)
+total_tecnicos = df["identificador_tecnico"].nunique()
+
+productividad_general = 0
+
+if total_tecnicos > 0:
+    productividad_general = round(total_ordenes / total_tecnicos, 2)
+
+st.subheader("Productividad General")
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Total Órdenes", total_ordenes)
+col2.metric("Técnicos Activos", total_tecnicos)
+col3.metric("Órdenes Promedio por Técnico", productividad_general)
+# ============================================
+# 📊 PRODUCTIVIDAD POR TÉCNICO
+# ============================================
+
+st.subheader("Productividad por Técnico")
+
+df_productividad = (
+    df.groupby(["identificador_tecnico", "contrata"])
+      .size()
+      .reset_index(name="total_ordenes")
+      .sort_values("total_ordenes", ascending=False)
+)
+
+st.dataframe(df_productividad, use_container_width=True)
 # =============================
 # 🔢 MÉTRICAS
 # =============================

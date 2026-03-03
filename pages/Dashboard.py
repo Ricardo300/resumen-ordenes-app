@@ -100,19 +100,51 @@ col1.metric("Total Órdenes", total_ordenes)
 col2.metric("Técnicos Activos", total_tecnicos)
 col3.metric("Órdenes Promedio por Técnico", productividad_general)
 # ============================================
-# 📊 PRODUCTIVIDAD POR TÉCNICO
+# 📊 PRODUCTIVIDAD GENERAL REAL
 # ============================================
 
-st.subheader("Productividad por Técnico")
+total_ordenes = len(df)
+total_dias_trabajados = df["fecha"].nunique()
 
-df_productividad = (
+productividad_general = 0
+
+if total_dias_trabajados > 0:
+    productividad_general = round(total_ordenes / total_dias_trabajados, 2)
+
+st.subheader("Productividad General")
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Total Órdenes", total_ordenes)
+col2.metric("Días Operativos", total_dias_trabajados)
+col3.metric("Órdenes Promedio por Día", productividad_general)
+# ============================================
+# 📊 PRODUCCIÓN Y PRODUCTIVIDAD POR TÉCNICO
+# ============================================
+
+st.subheader("Producción y Productividad por Técnico")
+
+df_prod = (
     df.groupby(["identificador_tecnico", "contrata"])
-      .size()
-      .reset_index(name="total_ordenes")
-      .sort_values("total_ordenes", ascending=False)
+      .agg(
+          produccion=("orden_trabajo", "count"),
+          dias_trabajados=("fecha", "nunique")
+      )
+      .reset_index()
 )
 
-st.dataframe(df_productividad, use_container_width=True)
+# Calcular productividad
+df_prod["productividad"] = (
+    df_prod["produccion"] / df_prod["dias_trabajados"]
+).round(2)
+
+# Eliminar columna dias_trabajados (solo se usa para cálculo)
+df_prod = df_prod.drop(columns=["dias_trabajados"])
+
+# Ordenar por producción
+df_prod = df_prod.sort_values("produccion", ascending=False)
+
+st.dataframe(df_prod, use_container_width=True)
 # =============================
 # 🔢 MÉTRICAS
 # =============================

@@ -117,6 +117,7 @@ if archivo is not None:
             "Instalación de Cajas Adicionales DTH": "DTH",
             "Instalación de servicio televisión DTH": "DTH",
             "Instalación de TV (DTH)": "DTH",
+            "Cambio de Equipo TV":"DTH",
             "Reparacion DTH": "DTH",
             "Reparacion Linea Fija LFI": "DTH",
             "Reparación servicio DTH": "DTH",
@@ -220,6 +221,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

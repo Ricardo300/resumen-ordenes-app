@@ -5,12 +5,9 @@ import plotly.express as px
 from datetime import datetime
 
 # ==========================================
-# CONFIGURACIÓN GENERAL
+# CONFIGURACIÓN
 # ==========================================
-st.set_page_config(
-    page_title="Dashboard KPI ETA",
-    layout="wide"
-)
+st.set_page_config(page_title="Dashboard KPI ETA", layout="wide")
 
 # ==========================================
 # ESTILO COMPACTO
@@ -27,7 +24,7 @@ div[data-testid="stMetricValue"] { font-size: 28px !important; }
 st.title("📊 Dashboard KPI ETA")
 
 # ==========================================
-# BOTÓN ACTUALIZAR CACHE
+# BOTÓN ACTUALIZAR
 # ==========================================
 if st.button("🔄 Actualizar Datos"):
     st.cache_data.clear()
@@ -37,7 +34,6 @@ if st.button("🔄 Actualizar Datos"):
 # SIDEBAR PERIODO
 # ==========================================
 with st.sidebar:
-
     st.markdown("## 🎛 Filtros")
 
     año = st.selectbox("Año", [2026, 2025, 2024], index=0)
@@ -81,7 +77,7 @@ supabase = create_client(
 )
 
 # ==========================================
-# FUNCIÓN CON CACHE
+# OBTENER DATOS
 # ==========================================
 @st.cache_data(ttl=300)
 def obtener_datos(inicio, fin):
@@ -129,7 +125,6 @@ df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 # ==========================================
 def filtro_checkbox(label, opciones, key_prefix):
     seleccionados = []
-
     with st.sidebar.expander(label, expanded=False):
         for opcion in opciones:
             estado = st.checkbox(
@@ -139,21 +134,18 @@ def filtro_checkbox(label, opciones, key_prefix):
             )
             if estado:
                 seleccionados.append(opcion)
-
     return seleccionados
 
 
-# Opciones dinámicas
 opciones_contrata = sorted(df["contrata"].dropna().unique())
 opciones_tecnologia = sorted(df["tecnologia"].dropna().unique())
 opciones_tipo = sorted(df["tipo_actividad"].dropna().unique())
 
-# Aplicar filtros
 contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
 tecnologia = filtro_checkbox("Tecnología", opciones_tecnologia, "tec")
 tipo_actividad = filtro_checkbox("Tipo Actividad", opciones_tipo, "tip")
 
-# Filtrar dataframe
+# Aplicar filtros
 df = df[
     df["tecnologia"].isin(tecnologia) &
     df["contrata"].isin(contrata) &
@@ -176,7 +168,7 @@ c3.metric("Días Operativos", dias_operativos)
 c4.metric("Promedio Día", promedio_diario)
 
 # ==========================================
-# GRÁFICO
+# GRÁFICO CON COLOR DINÁMICO
 # ==========================================
 df["dia_mes"] = df["fecha"].dt.day
 
@@ -184,6 +176,7 @@ ordenes_dia = (
     df.groupby("dia_mes")["orden_trabajo"]
     .nunique()
     .reset_index(name="ordenes")
+    .sort_values("dia_mes")
 )
 
 fig = px.bar(
@@ -196,9 +189,12 @@ fig = px.bar(
 )
 
 fig.update_layout(
-    height=300,
+    height=320,
     coloraxis_showscale=False
 )
+
+st.plotly_chart(fig, use_container_width=True)
+
 # ==========================================
 # TABLAS
 # ==========================================
@@ -219,7 +215,7 @@ with col_tab1:
     st.dataframe(
         ordenes_provincia,
         use_container_width=True,
-        height=250
+        height=300
     )
 
 with col_tab2:
@@ -244,5 +240,5 @@ with col_tab2:
     st.dataframe(
         df_prod,
         use_container_width=True,
-        height=250
+        height=300
     )

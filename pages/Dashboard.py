@@ -3,7 +3,6 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
-import calendar
 
 # ==========================================
 # CONFIGURACIÓN GENERAL
@@ -14,7 +13,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# CSS COMPACTO PROFESIONAL
+# CSS COMPACTO
 # ==========================================
 st.markdown("""
 <style>
@@ -73,10 +72,10 @@ with colp2:
 
     mes = meses_dict[mes_nombre]
 
-# Primer día del mes
-primer_dia = f"{año}-{mes:02d}-01"
+# Primer día del mes en formato ISO
+primer_dia = f"{año}-{mes:02d}-01T00:00:00"
 
-# Primer día del mes siguiente (FILTRO ROBUSTO)
+# Calcular primer día del mes siguiente
 if mes == 12:
     siguiente_mes = 1
     siguiente_año = año + 1
@@ -84,7 +83,7 @@ else:
     siguiente_mes = mes + 1
     siguiente_año = año
 
-primer_dia_siguiente = f"{siguiente_año}-{siguiente_mes:02d}-01"
+primer_dia_siguiente = f"{siguiente_año}-{siguiente_mes:02d}-01T00:00:00"
 
 st.markdown(f"**📅 Periodo Analizado:** {mes_nombre} {año}")
 
@@ -97,7 +96,7 @@ supabase = create_client(
 )
 
 # ==========================================
-# FUNCIÓN CARGA DATOS
+# FUNCIÓN PARA TRAER DATOS
 # ==========================================
 @st.cache_data
 def obtener_datos(primer_dia, primer_dia_siguiente):
@@ -111,7 +110,7 @@ def obtener_datos(primer_dia, primer_dia_siguiente):
             .table("kpi_ordenes_completadas")
             .select("*")
             .gte("fecha", primer_dia)
-            .lt("fecha", primer_dia_siguiente)  # 👈 CLAVE
+            .lt("fecha", primer_dia_siguiente)
             .range(inicio, inicio + limite - 1)
             .execute()
         )
@@ -132,6 +131,8 @@ def obtener_datos(primer_dia, primer_dia_siguiente):
 
 
 data = obtener_datos(primer_dia, primer_dia_siguiente)
+
+st.write("Registros recibidos desde Supabase:", len(data))  # Debug temporal
 
 if not data:
     st.warning("No hay datos para el período seleccionado.")

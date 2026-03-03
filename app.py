@@ -151,7 +151,25 @@ if archivo is not None:
 
         df["tecnologia"] = df["sub_tipo_orden"].map(map_tecnologia)
         df["tecnologia"] = df["tecnologia"].fillna("NO_CLASIFICADO")
+        # ============================================
+        # 🔥 AGREGAR CONTRATA DESDE TABLA AUXILIAR
+        # ============================================
 
+        respuesta = supabase.table("tabla_tecnicos_contrata").select("*").execute()
+        df_contrata = pd.DataFrame(respuesta.data)
+
+        # Limpiar posibles espacios
+        df_contrata["identificador_tecnico"] = df_contrata["identificador_tecnico"].str.strip()
+        df["identificador_tecnico"] = df["identificador_tecnico"].str.strip()
+
+        # Merge
+        df = df.merge(
+        df_contrata,
+        on="identificador_tecnico",
+        how="left"
+        )
+
+        df["contrata"] = df["contrata"].fillna("NO_ASIGNADO")
         # ============================================
         # 🔄 CONVERTIR FECHAS CORRECTAMENTE
         # ============================================
@@ -202,5 +220,6 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 

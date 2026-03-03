@@ -12,41 +12,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# ==========================================
-# CSS COMPACTO
-# ==========================================
-st.markdown("""
-<style>
-.block-container {
-    padding-top: 1rem;
-    padding-bottom: 0rem;
-}
-
-div[data-testid="stMetric"] {
-    background-color: #111827;
-    padding: 8px 12px;
-    border-radius: 8px;
-}
-
-div[data-testid="stMetricValue"] {
-    font-size: 18px;
-}
-
-div[data-testid="stMetricLabel"] {
-    font-size: 11px;
-    color: #9ca3af;
-}
-
-[data-testid="stDataFrame"] div {
-    font-size: 12px;
-}
-
-div[data-baseweb="select"] {
-    font-size: 13px;
-}
-</style>
-""", unsafe_allow_html=True)
-
 st.title("📊 Dashboard KPI ETA")
 
 # ==========================================
@@ -58,14 +23,17 @@ if st.button("🔄 Actualizar Datos"):
     st.rerun()
 
 # ==========================================
-# SELECTOR DE PERIODO
+# SIDEBAR FILTROS
 # ==========================================
-colp1, colp2 = st.columns(2)
+with st.sidebar:
 
-with colp1:
+    st.markdown("## 🎛 Filtros")
+
+    # --------------------------------------
+    # PERIODO
+    # --------------------------------------
     año = st.selectbox("Año", [2026, 2025, 2024], index=0)
 
-with colp2:
     meses_dict = {
         "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4,
         "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8,
@@ -80,7 +48,9 @@ with colp2:
 
     mes = meses_dict[mes_nombre]
 
-# Fechas en formato ISO para timestamp
+# ==========================================
+# FECHAS ROBUSTAS ISO
+# ==========================================
 primer_dia = f"{año}-{mes:02d}-01T00:00:00"
 
 if mes == 12:
@@ -103,7 +73,7 @@ supabase = create_client(
 )
 
 # ==========================================
-# FUNCIÓN CON CACHE CONTROLADO (5 MIN)
+# FUNCIÓN CON CACHE (5 MIN)
 # ==========================================
 @st.cache_data(ttl=300)
 def obtener_datos(primer_dia, primer_dia_siguiente):
@@ -147,35 +117,44 @@ df = pd.DataFrame(data)
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FILTROS MULTI SELECCIÓN
+# FILTROS CHECKBOX EN SIDEBAR
 # ==========================================
-colf1, colf2, colf3 = st.columns(3)
+with st.sidebar:
 
-with colf1:
+    # --------------------------------------
+    # TECNOLOGÍA
+    # --------------------------------------
+    st.markdown("### Tecnología")
     opciones_tecnologia = sorted(df["tecnologia"].dropna().unique().tolist())
-    tecnologia = st.multiselect(
-        "Tecnología",
-        opciones_tecnologia,
-        default=opciones_tecnologia
-    )
+    tecnologia = []
 
-with colf2:
+    for opcion in opciones_tecnologia:
+        if st.checkbox(opcion, value=True, key=f"tec_{opcion}"):
+            tecnologia.append(opcion)
+
+    # --------------------------------------
+    # CONTRATA
+    # --------------------------------------
+    st.markdown("### Contrata")
     opciones_contrata = sorted(df["contrata"].dropna().unique().tolist())
-    contrata = st.multiselect(
-        "Contrata",
-        opciones_contrata,
-        default=opciones_contrata
-    )
+    contrata = []
 
-with colf3:
+    for opcion in opciones_contrata:
+        if st.checkbox(opcion, value=True, key=f"con_{opcion}"):
+            contrata.append(opcion)
+
+    # --------------------------------------
+    # TIPO ACTIVIDAD
+    # --------------------------------------
+    st.markdown("### Tipo Actividad")
     opciones_tipo = sorted(df["tipo_actividad"].dropna().unique().tolist())
-    tipo_actividad = st.multiselect(
-        "Tipo Actividad",
-        opciones_tipo,
-        default=opciones_tipo
-    )
+    tipo_actividad = []
 
-# Aplicar filtros combinados
+    for opcion in opciones_tipo:
+        if st.checkbox(opcion, value=True, key=f"tip_{opcion}"):
+            tipo_actividad.append(opcion)
+
+# Aplicar filtros
 df = df[
     df["tecnologia"].isin(tecnologia) &
     df["contrata"].isin(contrata) &
@@ -198,7 +177,7 @@ col3.metric("Días Operativos", dias_operativos)
 col4.metric("Promedio Día", promedio_diario)
 
 # ==========================================
-# GRÁFICO ÓRDENES POR DÍA
+# GRÁFICO
 # ==========================================
 df["dia_mes"] = df["fecha"].dt.day
 

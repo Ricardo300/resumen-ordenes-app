@@ -59,6 +59,11 @@ st.title("📊 Dashboard KPI ETA")
 # ==========================================
 # SELECTOR DE PERIODO
 # ==========================================
+colp1, colp2 = st.columns(2)
+
+with colp1:
+    año = st.selectbox("Año", [2026, 2025, 2024], index=0)
+
 with colp2:
     meses_dict = {
         "Enero": 1,
@@ -82,6 +87,7 @@ with colp2:
     )
 
     mes = meses_dict[mes_nombre]
+
 # ==========================================
 # CONEXIÓN SUPABASE
 # ==========================================

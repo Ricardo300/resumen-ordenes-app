@@ -17,25 +17,10 @@ st.set_page_config(
 # ==========================================
 st.markdown("""
 <style>
-
-h2 {
-    font-size: 20px !important;
-    margin-top: 10px !important;
-}
-
-h3 {
-    font-size: 16px !important;
-    margin-top: 5px !important;
-}
-
-.block-container {
-    padding-top: 1rem;
-}
-
-div[data-testid="stMetricValue"] {
-    font-size: 28px !important;
-}
-
+h2 { font-size: 20px !important; margin-top: 10px !important; }
+h3 { font-size: 16px !important; margin-top: 5px !important; }
+.block-container { padding-top: 1rem; }
+div[data-testid="stMetricValue"] { font-size: 28px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -49,7 +34,7 @@ if st.button("🔄 Actualizar Datos"):
     st.rerun()
 
 # ==========================================
-# SIDEBAR FILTROS
+# SIDEBAR PERIODO
 # ==========================================
 with st.sidebar:
 
@@ -72,7 +57,7 @@ with st.sidebar:
     mes = meses_dict[mes_nombre]
 
 # ==========================================
-# FECHAS ISO (TIMESTAMP ROBUSTO)
+# FECHAS ISO
 # ==========================================
 primer_dia = f"{año}-{mes:02d}-01T00:00:00"
 
@@ -140,32 +125,35 @@ df = pd.DataFrame(data)
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FILTROS MULTISELECT (DEFAULT TODOS)
+# FUNCIÓN FILTRO CHECKBOX
 # ==========================================
-with st.sidebar:
+def filtro_checkbox(label, opciones, key_prefix):
+    seleccionados = []
 
-    opciones_contrata = sorted(df["contrata"].dropna().unique())
-    contrata = st.multiselect(
-        "Contrata",
-        opciones_contrata,
-        default=opciones_contrata
-    )
+    with st.sidebar.expander(label, expanded=False):
+        for opcion in opciones:
+            estado = st.checkbox(
+                opcion,
+                value=True,
+                key=f"{key_prefix}_{opcion}"
+            )
+            if estado:
+                seleccionados.append(opcion)
 
-    opciones_tecnologia = sorted(df["tecnologia"].dropna().unique())
-    tecnologia = st.multiselect(
-        "Tecnología",
-        opciones_tecnologia,
-        default=opciones_tecnologia
-    )
+    return seleccionados
 
-    opciones_tipo = sorted(df["tipo_actividad"].dropna().unique())
-    tipo_actividad = st.multiselect(
-        "Tipo Actividad",
-        opciones_tipo,
-        default=opciones_tipo
-    )
+
+# Opciones dinámicas
+opciones_contrata = sorted(df["contrata"].dropna().unique())
+opciones_tecnologia = sorted(df["tecnologia"].dropna().unique())
+opciones_tipo = sorted(df["tipo_actividad"].dropna().unique())
 
 # Aplicar filtros
+contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
+tecnologia = filtro_checkbox("Tecnología", opciones_tecnologia, "tec")
+tipo_actividad = filtro_checkbox("Tipo Actividad", opciones_tipo, "tip")
+
+# Filtrar dataframe
 df = df[
     df["tecnologia"].isin(tecnologia) &
     df["contrata"].isin(contrata) &
@@ -228,7 +216,7 @@ with col_tab1:
     st.dataframe(
         ordenes_provincia,
         use_container_width=True,
-        height=300
+        height=250
     )
 
 with col_tab2:
@@ -253,5 +241,5 @@ with col_tab2:
     st.dataframe(
         df_prod,
         use_container_width=True,
-        height=300
+        height=250
     )

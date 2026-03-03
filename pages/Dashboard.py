@@ -57,7 +57,7 @@ div[data-baseweb="select"] {
 st.title("📊 Dashboard KPI ETA")
 
 # ==========================================
-# SELECTOR DE PERIODO
+# SELECTOR DE PERIODO (MES EN TEXTO)
 # ==========================================
 colp1, colp2 = st.columns(2)
 
@@ -65,11 +65,34 @@ with colp1:
     año = st.selectbox("Año", [2026, 2025, 2024], index=0)
 
 with colp2:
-    mes = st.selectbox("Mes", list(range(1, 13)), index=datetime.now().month - 1)
+    meses_dict = {
+        "Enero": 1,
+        "Febrero": 2,
+        "Marzo": 3,
+        "Abril": 4,
+        "Mayo": 5,
+        "Junio": 6,
+        "Julio": 7,
+        "Agosto": 8,
+        "Septiembre": 9,
+        "Octubre": 10,
+        "Noviembre": 11,
+        "Diciembre": 12
+    }
+
+    mes_nombre = st.selectbox(
+        "Mes",
+        list(meses_dict.keys()),
+        index=datetime.now().month - 1
+    )
+
+    mes = meses_dict[mes_nombre]
 
 primer_dia = f"{año}-{mes:02d}-01"
 ultimo_dia_num = calendar.monthrange(año, mes)[1]
 ultimo_dia = f"{año}-{mes:02d}-{ultimo_dia_num}"
+
+st.markdown(f"**📅 Periodo Analizado:** {mes_nombre} {año}")
 
 # ==========================================
 # CONEXIÓN SUPABASE

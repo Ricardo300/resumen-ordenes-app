@@ -100,51 +100,30 @@ col1.metric("Total Órdenes", total_ordenes)
 col2.metric("Técnicos Activos", total_tecnicos)
 col3.metric("Órdenes Promedio por Técnico", productividad_general)
 # ============================================
-# 📊 PRODUCTIVIDAD GENERAL REAL
+# 📊 PRODUCTIVIDAD GENERAL
 # ============================================
-
-total_ordenes = len(df)
-total_dias_trabajados = df["fecha"].nunique()
-
-productividad_general = 0
-
-if total_dias_trabajados > 0:
-    productividad_general = round(total_ordenes / total_dias_trabajados, 2)
 
 st.subheader("Productividad General")
 
-col1, col2, col3 = st.columns(3)
+total_ordenes = len(df)
+total_tecnicos = df["identificador_tecnico"].nunique()
+dias_operativos = df["fecha"].nunique()
+
+ordenes_promedio_por_tecnico = 0
+ordenes_promedio_por_dia = 0
+
+if total_tecnicos > 0:
+    ordenes_promedio_por_tecnico = round(total_ordenes / total_tecnicos, 2)
+
+if dias_operativos > 0:
+    ordenes_promedio_por_dia = round(total_ordenes / dias_operativos, 2)
+
+col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("Total Órdenes", total_ordenes)
-col2.metric("Días Operativos", total_dias_trabajados)
-col3.metric("Órdenes Promedio por Día", productividad_general)
-# ============================================
-# 📊 PRODUCCIÓN Y PRODUCTIVIDAD POR TÉCNICO
-# ============================================
-
-st.subheader("Producción y Productividad por Técnico")
-
-df_prod = (
-    df.groupby(["identificador_tecnico", "contrata"])
-      .agg(
-          produccion=("orden_trabajo", "count"),
-          dias_trabajados=("fecha", "nunique")
-      )
-      .reset_index()
-)
-
-# Calcular productividad
-df_prod["productividad"] = (
-    df_prod["produccion"] / df_prod["dias_trabajados"]
-).round(2)
-
-# Eliminar columna dias_trabajados (solo se usa para cálculo)
-df_prod = df_prod.drop(columns=["dias_trabajados"])
-
-# Ordenar por producción
-df_prod = df_prod.sort_values("produccion", ascending=False)
-
-st.dataframe(df_prod, use_container_width=True)
+col2.metric("Técnicos Activos", total_tecnicos)
+col3.metric("Días Operativos", dias_operativos)
+col4.metric("Órdenes Promedio por Día", ordenes_promedio_por_dia)
 # =============================
 # 🔢 MÉTRICAS
 # =============================

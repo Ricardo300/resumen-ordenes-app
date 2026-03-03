@@ -29,9 +29,7 @@ with st.sidebar:
 
     st.markdown("## 🎛 Filtros")
 
-    # --------------------------------------
     # PERIODO
-    # --------------------------------------
     año = st.selectbox("Año", [2026, 2025, 2024], index=0)
 
     meses_dict = {
@@ -49,7 +47,7 @@ with st.sidebar:
     mes = meses_dict[mes_nombre]
 
 # ==========================================
-# FECHAS ROBUSTAS ISO
+# FECHAS ROBUSTAS (TIMESTAMP ISO)
 # ==========================================
 primer_dia = f"{año}-{mes:02d}-01T00:00:00"
 
@@ -117,42 +115,33 @@ df = pd.DataFrame(data)
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FILTROS CHECKBOX EN SIDEBAR
+# FILTROS MULTISELECT (POWER BI STYLE)
 # ==========================================
 with st.sidebar:
 
-    # --------------------------------------
-    # TECNOLOGÍA
-    # --------------------------------------
-    st.markdown("### Tecnología")
-    opciones_tecnologia = sorted(df["tecnologia"].dropna().unique().tolist())
-    tecnologia = []
-
-    for opcion in opciones_tecnologia:
-        if st.checkbox(opcion, value=True, key=f"tec_{opcion}"):
-            tecnologia.append(opcion)
-
-    # --------------------------------------
     # CONTRATA
-    # --------------------------------------
-    st.markdown("### Contrata")
     opciones_contrata = sorted(df["contrata"].dropna().unique().tolist())
-    contrata = []
+    contrata = st.multiselect(
+        "Contrata",
+        opciones_contrata,
+        default=opciones_contrata
+    )
 
-    for opcion in opciones_contrata:
-        if st.checkbox(opcion, value=True, key=f"con_{opcion}"):
-            contrata.append(opcion)
+    # TECNOLOGÍA
+    opciones_tecnologia = sorted(df["tecnologia"].dropna().unique().tolist())
+    tecnologia = st.multiselect(
+        "Tecnología",
+        opciones_tecnologia,
+        default=opciones_tecnologia
+    )
 
-    # --------------------------------------
     # TIPO ACTIVIDAD
-    # --------------------------------------
-    st.markdown("### Tipo Actividad")
     opciones_tipo = sorted(df["tipo_actividad"].dropna().unique().tolist())
-    tipo_actividad = []
-
-    for opcion in opciones_tipo:
-        if st.checkbox(opcion, value=True, key=f"tip_{opcion}"):
-            tipo_actividad.append(opcion)
+    tipo_actividad = st.multiselect(
+        "Tipo Actividad",
+        opciones_tipo,
+        default=opciones_tipo
+    )
 
 # Aplicar filtros
 df = df[

@@ -50,6 +50,14 @@ div[data-baseweb="select"] {
 st.title("📊 Dashboard KPI ETA")
 
 # ==========================================
+# BOTÓN ACTUALIZAR DATOS
+# ==========================================
+if st.button("🔄 Actualizar Datos"):
+    st.cache_data.clear()
+    st.success("Cache limpiado correctamente")
+    st.rerun()
+
+# ==========================================
 # SELECTOR DE PERIODO
 # ==========================================
 colp1, colp2 = st.columns(2)
@@ -72,10 +80,10 @@ with colp2:
 
     mes = meses_dict[mes_nombre]
 
-# Primer día del mes en formato ISO
+# Primer día del mes en ISO
 primer_dia = f"{año}-{mes:02d}-01T00:00:00"
 
-# Calcular primer día del mes siguiente
+# Primer día del mes siguiente
 if mes == 12:
     siguiente_mes = 1
     siguiente_año = año + 1
@@ -96,9 +104,9 @@ supabase = create_client(
 )
 
 # ==========================================
-# FUNCIÓN PARA TRAER DATOS
+# FUNCIÓN CON CACHE CONTROLADO (5 MIN)
 # ==========================================
-@st.cache_data
+@st.cache_data(ttl=300)
 def obtener_datos(primer_dia, primer_dia_siguiente):
     todos = []
     limite = 1000
@@ -131,8 +139,6 @@ def obtener_datos(primer_dia, primer_dia_siguiente):
 
 
 data = obtener_datos(primer_dia, primer_dia_siguiente)
-
-st.write("Registros recibidos desde Supabase:", len(data))  # Debug temporal
 
 if not data:
     st.warning("No hay datos para el período seleccionado.")

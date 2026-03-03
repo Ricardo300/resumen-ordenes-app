@@ -94,59 +94,12 @@ ordenes_promedio_por_dia = 0
 if dias_operativos > 0:
     ordenes_promedio_por_dia = round(total_ordenes / dias_operativos, 2)
 
-porcentaje_garantias = round(
-    (df["garantia"].astype(str).str.upper() == "SI").mean() * 100, 2
-) if len(df) > 0 else 0
-
-hora_promedio_inicio = pd.to_datetime(
-    df["inicio"], errors="coerce"
-).dt.hour.mean()
-
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("Total Órdenes", total_ordenes)
 col2.metric("Técnicos Activos", total_tecnicos)
 col3.metric("Días Operativos", dias_operativos)
 col4.metric("Órdenes Promedio por Día", ordenes_promedio_por_dia)
-
-col5, col6 = st.columns(2)
-
-col5.metric("% Garantías", f"{porcentaje_garantias}%")
-col6.metric("Hora Promedio Inicio", f"{round(hora_promedio_inicio,2)} h")
-# =============================
-# 🔢 MÉTRICAS
-# =============================
-
-# Total órdenes únicas
-total_ordenes = df["orden_trabajo"].nunique()
-
-# % Garantías
-df["garantia"] = df["garantia"].astype(str).str.upper()
-total_garantias = df[df["garantia"] == "SI"]["orden_trabajo"].nunique()
-
-porcentaje_garantia = (
-    (total_garantias / total_ordenes) * 100
-    if total_ordenes > 0 else 0
-)
-
-# Hora promedio inicio
-df["inicio"] = pd.to_datetime(df["inicio"], format="%H:%M:%S", errors="coerce")
-df["inicio_minutos"] = df["inicio"].dt.hour * 60 + df["inicio"].dt.minute
-
-hora_promedio_min = df["inicio_minutos"].mean()
-hora_promedio_horas = round(hora_promedio_min / 60, 2) if pd.notnull(hora_promedio_min) else 0
-
-# =============================
-# 📊 KPI CARDS
-# =============================
-
-c1, c2, c3 = st.columns(3)
-c1.metric("Total Órdenes (únicas)", total_ordenes)
-c2.metric("% Garantías", f"{porcentaje_garantia:.2f}%")
-c3.metric("Hora Promedio Inicio", f"{hora_promedio_horas} h")
-
-st.divider()
-
 # =============================
 # 📋 TABLA POR PROVINCIA
 # =============================

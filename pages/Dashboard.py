@@ -21,7 +21,7 @@ div[data-testid="stMetricValue"] { font-size: 28px !important; }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📊 Dashboard KPI ETA")
+st.title("📊 Dashboard KPI")
 
 # ==========================================
 # BOTÓN ACTUALIZAR

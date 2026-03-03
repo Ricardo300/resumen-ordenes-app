@@ -190,12 +190,15 @@ fig = px.bar(
     ordenes_dia,
     x="dia_mes",
     y="ordenes",
-    text="ordenes"
+    text="ordenes",
+    color="ordenes",
+    color_continuous_scale="Blues"
 )
 
-fig.update_layout(height=300)
-st.plotly_chart(fig, use_container_width=True)
-
+fig.update_layout(
+    height=300,
+    coloraxis_showscale=False
+)
 # ==========================================
 # TABLAS
 # ==========================================

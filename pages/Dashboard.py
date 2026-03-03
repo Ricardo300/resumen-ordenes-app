@@ -5,22 +5,54 @@ import plotly.express as px
 from datetime import datetime
 
 # ==========================================
-# CONFIGURACIÓN
+# CONFIGURACIÓN GENERAL
 # ==========================================
-st.set_page_config(layout="wide")
+st.set_page_config(
+    page_title="Dashboard KPI ETA",
+    layout="wide"
+)
+
+# ==========================================
+# ESTILO COMPACTO
+# ==========================================
+st.markdown("""
+<style>
+
+h2 {
+    font-size: 20px !important;
+    margin-top: 10px !important;
+}
+
+h3 {
+    font-size: 16px !important;
+    margin-top: 5px !important;
+}
+
+.block-container {
+    padding-top: 1rem;
+}
+
+div[data-testid="stMetricValue"] {
+    font-size: 28px !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 st.title("📊 Dashboard KPI ETA")
 
 # ==========================================
-# ACTUALIZAR CACHE
+# BOTÓN ACTUALIZAR CACHE
 # ==========================================
 if st.button("🔄 Actualizar Datos"):
     st.cache_data.clear()
     st.rerun()
 
 # ==========================================
-# SIDEBAR
+# SIDEBAR FILTROS
 # ==========================================
 with st.sidebar:
+
     st.markdown("## 🎛 Filtros")
 
     año = st.selectbox("Año", [2026, 2025, 2024], index=0)
@@ -31,11 +63,16 @@ with st.sidebar:
         "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12
     }
 
-    mes_nombre = st.selectbox("Mes", list(meses_dict.keys()))
+    mes_nombre = st.selectbox(
+        "Mes",
+        list(meses_dict.keys()),
+        index=datetime.now().month - 1
+    )
+
     mes = meses_dict[mes_nombre]
 
 # ==========================================
-# FECHAS ISO
+# FECHAS ISO (TIMESTAMP ROBUSTO)
 # ==========================================
 primer_dia = f"{año}-{mes:02d}-01T00:00:00"
 
@@ -48,6 +85,8 @@ else:
 
 primer_dia_siguiente = f"{siguiente_año}-{siguiente_mes:02d}-01T00:00:00"
 
+st.markdown(f"**📅 Periodo Analizado:** {mes_nombre} {año}")
+
 # ==========================================
 # CONEXIÓN SUPABASE
 # ==========================================
@@ -56,6 +95,9 @@ supabase = create_client(
     st.secrets["SUPABASE_KEY"]
 )
 
+# ==========================================
+# FUNCIÓN CON CACHE
+# ==========================================
 @st.cache_data(ttl=300)
 def obtener_datos(inicio, fin):
     todos = []
@@ -95,38 +137,33 @@ if not data:
     st.stop()
 
 df = pd.DataFrame(data)
-df["fecha"] = pd.to_datetime(df["fecha"])
+df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FUNCIÓN MULTISELECT CHECKBOX
+# FILTROS MULTISELECT (DEFAULT TODOS)
 # ==========================================
-def filtro_checkbox(label, opciones, key_prefix):
+with st.sidebar:
 
-    seleccionados = []
+    opciones_contrata = sorted(df["contrata"].dropna().unique())
+    contrata = st.multiselect(
+        "Contrata",
+        opciones_contrata,
+        default=opciones_contrata
+    )
 
-    with st.sidebar.expander(label, expanded=False):
-        for opcion in opciones:
-            estado = st.checkbox(
-                opcion,
-                value=True,
-                key=f"{key_prefix}_{opcion}"
-            )
-            if estado:
-                seleccionados.append(opcion)
+    opciones_tecnologia = sorted(df["tecnologia"].dropna().unique())
+    tecnologia = st.multiselect(
+        "Tecnología",
+        opciones_tecnologia,
+        default=opciones_tecnologia
+    )
 
-    return seleccionados
-
-
-# ==========================================
-# FILTROS
-# ==========================================
-opciones_tecnologia = sorted(df["tecnologia"].dropna().unique())
-opciones_contrata = sorted(df["contrata"].dropna().unique())
-opciones_tipo = sorted(df["tipo_actividad"].dropna().unique())
-
-tecnologia = filtro_checkbox("Tecnología", opciones_tecnologia, "tec")
-contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
-tipo_actividad = filtro_checkbox("Tipo Actividad", opciones_tipo, "tip")
+    opciones_tipo = sorted(df["tipo_actividad"].dropna().unique())
+    tipo_actividad = st.multiselect(
+        "Tipo Actividad",
+        opciones_tipo,
+        default=opciones_tipo
+    )
 
 # Aplicar filtros
 df = df[
@@ -145,7 +182,7 @@ promedio_diario = round(total_ordenes / dias_operativos, 2) if dias_operativos e
 
 c1, c2, c3, c4 = st.columns(4)
 
-c1.metric("Órdenes", total_ordenes)
+c1.metric("Órdenes", f"{total_ordenes:,}")
 c2.metric("Técnicos", total_tecnicos)
 c3.metric("Días Operativos", dias_operativos)
 c4.metric("Promedio Día", promedio_diario)
@@ -170,19 +207,16 @@ fig = px.bar(
 
 fig.update_layout(height=300)
 st.plotly_chart(fig, use_container_width=True)
+
 # ==========================================
 # TABLAS
 # ==========================================
-
-st.markdown("## 📋 Detalle Operativo")
+st.markdown("### 📋 Detalle Operativo")
 
 col_tab1, col_tab2 = st.columns([1, 2])
 
-# -----------------------------
-# TABLA POR PROVINCIA
-# -----------------------------
 with col_tab1:
-    st.markdown("### 📍 Órdenes por Provincia")
+    st.markdown("#### 📍 Órdenes por Provincia")
 
     ordenes_provincia = (
         df.groupby("provincia")["orden_trabajo"]
@@ -197,11 +231,8 @@ with col_tab1:
         height=300
     )
 
-# -----------------------------
-# TABLA PRODUCTIVIDAD
-# -----------------------------
 with col_tab2:
-    st.markdown("### 👷 Producción y Productividad por Técnico")
+    st.markdown("#### 👷 Producción y Productividad por Técnico")
 
     df_prod = (
         df.groupby(["identificador_tecnico", "contrata"])

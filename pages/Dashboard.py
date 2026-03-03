@@ -18,6 +18,12 @@ h2 { font-size: 20px !important; margin-top: 10px !important; }
 h3 { font-size: 16px !important; margin-top: 5px !important; }
 .block-container { padding-top: 1rem; }
 div[data-testid="stMetricValue"] { font-size: 28px !important; }
+
+/* botones un poco más compactos */
+div.stButton > button {
+    padding: 0.25rem 0.55rem !important;
+    font-size: 0.80rem !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -52,7 +58,7 @@ with st.sidebar:
     mes = meses_dict[mes_nombre]
 
 # ==========================================
-# FECHAS ISO
+# FECHAS ISO (TIMESTAMP)
 # ==========================================
 primer_dia = f"{año}-{mes:02d}-01T00:00:00"
 
@@ -118,35 +124,33 @@ df = pd.DataFrame(data)
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FILTRO CHECKBOX con Seleccionar Todo / Ninguno
+# FILTRO CHECKBOX + BOTONES TODO/NINGUNO (FUNCIONAL)
 # ==========================================
 def filtro_checkbox(label, opciones, key_prefix):
-
-    # Inicializar estado
-    if f"{key_prefix}_seleccionados" not in st.session_state:
-        st.session_state[f"{key_prefix}_seleccionados"] = list(opciones)
-
     with st.sidebar.expander(label, expanded=False):
 
-        c1, c2 = st.columns(2)
+        col1, col2 = st.columns(2)
 
-        if c1.button("Seleccionar Todo", key=f"{key_prefix}_all"):
-            st.session_state[f"{key_prefix}_seleccionados"] = list(opciones)
-            st.rerun()
+        # ✓ Todo
+        if col1.button("✓ Todo", key=f"{key_prefix}_all", type="secondary"):
+            for opcion in opciones:
+                st.session_state[f"{key_prefix}_{opcion}"] = True
 
-        if c2.button("Deseleccionar Todo", key=f"{key_prefix}_none"):
-            st.session_state[f"{key_prefix}_seleccionados"] = []
-            st.rerun()
+        # ✕ Ninguno
+        if col2.button("✕ Ninguno", key=f"{key_prefix}_none", type="secondary"):
+            for opcion in opciones:
+                st.session_state[f"{key_prefix}_{opcion}"] = False
 
         seleccionados = []
 
         for opcion in opciones:
-            checked = opcion in st.session_state[f"{key_prefix}_seleccionados"]
+            # Inicializar estado
+            if f"{key_prefix}_{opcion}" not in st.session_state:
+                st.session_state[f"{key_prefix}_{opcion}"] = True
 
-            if st.checkbox(opcion, value=checked, key=f"{key_prefix}_{opcion}"):
+            estado = st.checkbox(opcion, key=f"{key_prefix}_{opcion}")
+            if estado:
                 seleccionados.append(opcion)
-
-        st.session_state[f"{key_prefix}_seleccionados"] = seleccionados
 
     return seleccionados
 
@@ -159,13 +163,17 @@ contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
 tecnologia = filtro_checkbox("Tecnología", opciones_tecnologia, "tec")
 tipo_actividad = filtro_checkbox("Tipo Actividad", opciones_tipo, "tip")
 
-# Si algún filtro queda vacío → no filtrar (para evitar pantalla sin datos por error)
-if contrata:
-    df = df[df["contrata"].isin(contrata)]
-if tecnologia:
-    df = df[df["tecnologia"].isin(tecnologia)]
-if tipo_actividad:
-    df = df[df["tipo_actividad"].isin(tipo_actividad)]
+# Aplicar filtros
+df = df[
+    df["tecnologia"].isin(tecnologia) &
+    df["contrata"].isin(contrata) &
+    df["tipo_actividad"].isin(tipo_actividad)
+]
+
+# Si te quedas sin selección (todo en falso), evita error y muestra aviso
+if df.empty:
+    st.warning("No hay datos con los filtros seleccionados.")
+    st.stop()
 
 # ==========================================
 # MÉTRICAS
@@ -182,7 +190,7 @@ c3.metric("Días Operativos", dias_operativos)
 c4.metric("Promedio Día", promedio_diario)
 
 # ==========================================
-# GRÁFICO con color dinámico
+# GRÁFICO (COLORES DINÁMICOS)
 # ==========================================
 df["dia_mes"] = df["fecha"].dt.day
 

@@ -7,7 +7,7 @@ from datetime import datetime
 # ==========================================
 # CONFIGURACIÓN
 # ==========================================
-st.set_page_config(page_title="Dashboard KPI ", layout="wide")
+st.set_page_config(page_title="Dashboard KPI ETA", layout="wide")
 
 # ==========================================
 # ESTILO COMPACTO
@@ -21,7 +21,7 @@ div[data-testid="stMetricValue"] { font-size: 28px !important; }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📊 Dashboard KPI")
+st.title("📊 Dashboard KPI ETA")
 
 # ==========================================
 # BOTÓN ACTUALIZAR
@@ -49,7 +49,6 @@ with st.sidebar:
         list(meses_dict.keys()),
         index=datetime.now().month - 1
     )
-
     mes = meses_dict[mes_nombre]
 
 # ==========================================
@@ -97,7 +96,6 @@ def obtener_datos(inicio, fin):
         )
 
         data = response.data
-
         if not data:
             break
 
@@ -110,7 +108,6 @@ def obtener_datos(inicio, fin):
 
     return todos
 
-
 data = obtener_datos(primer_dia, primer_dia_siguiente)
 
 if not data:
@@ -121,22 +118,39 @@ df = pd.DataFrame(data)
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FUNCIÓN FILTRO CHECKBOX
+# FILTRO CHECKBOX con Seleccionar Todo / Ninguno
 # ==========================================
 def filtro_checkbox(label, opciones, key_prefix):
-    seleccionados = []
+
+    # Inicializar estado
+    if f"{key_prefix}_seleccionados" not in st.session_state:
+        st.session_state[f"{key_prefix}_seleccionados"] = list(opciones)
+
     with st.sidebar.expander(label, expanded=False):
+
+        c1, c2 = st.columns(2)
+
+        if c1.button("Seleccionar Todo", key=f"{key_prefix}_all"):
+            st.session_state[f"{key_prefix}_seleccionados"] = list(opciones)
+            st.rerun()
+
+        if c2.button("Deseleccionar Todo", key=f"{key_prefix}_none"):
+            st.session_state[f"{key_prefix}_seleccionados"] = []
+            st.rerun()
+
+        seleccionados = []
+
         for opcion in opciones:
-            estado = st.checkbox(
-                opcion,
-                value=True,
-                key=f"{key_prefix}_{opcion}"
-            )
-            if estado:
+            checked = opcion in st.session_state[f"{key_prefix}_seleccionados"]
+
+            if st.checkbox(opcion, value=checked, key=f"{key_prefix}_{opcion}"):
                 seleccionados.append(opcion)
+
+        st.session_state[f"{key_prefix}_seleccionados"] = seleccionados
+
     return seleccionados
 
-
+# Opciones dinámicas
 opciones_contrata = sorted(df["contrata"].dropna().unique())
 opciones_tecnologia = sorted(df["tecnologia"].dropna().unique())
 opciones_tipo = sorted(df["tipo_actividad"].dropna().unique())
@@ -145,12 +159,13 @@ contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
 tecnologia = filtro_checkbox("Tecnología", opciones_tecnologia, "tec")
 tipo_actividad = filtro_checkbox("Tipo Actividad", opciones_tipo, "tip")
 
-# Aplicar filtros
-df = df[
-    df["tecnologia"].isin(tecnologia) &
-    df["contrata"].isin(contrata) &
-    df["tipo_actividad"].isin(tipo_actividad)
-]
+# Si algún filtro queda vacío → no filtrar (para evitar pantalla sin datos por error)
+if contrata:
+    df = df[df["contrata"].isin(contrata)]
+if tecnologia:
+    df = df[df["tecnologia"].isin(tecnologia)]
+if tipo_actividad:
+    df = df[df["tipo_actividad"].isin(tipo_actividad)]
 
 # ==========================================
 # MÉTRICAS
@@ -161,14 +176,13 @@ dias_operativos = df["fecha"].nunique()
 promedio_diario = round(total_ordenes / dias_operativos, 2) if dias_operativos else 0
 
 c1, c2, c3, c4 = st.columns(4)
-
 c1.metric("Órdenes", f"{total_ordenes:,}")
 c2.metric("Técnicos", total_tecnicos)
 c3.metric("Días Operativos", dias_operativos)
 c4.metric("Promedio Día", promedio_diario)
 
 # ==========================================
-# GRÁFICO CON COLOR DINÁMICO
+# GRÁFICO con color dinámico
 # ==========================================
 df["dia_mes"] = df["fecha"].dt.day
 
@@ -188,11 +202,7 @@ fig = px.bar(
     color_continuous_scale="Blues"
 )
 
-fig.update_layout(
-    height=320,
-    coloraxis_showscale=False
-)
-
+fig.update_layout(height=320, coloraxis_showscale=False)
 st.plotly_chart(fig, use_container_width=True)
 
 # ==========================================
@@ -204,23 +214,16 @@ col_tab1, col_tab2 = st.columns([1, 2])
 
 with col_tab1:
     st.markdown("#### 📍 Órdenes por Provincia")
-
     ordenes_provincia = (
         df.groupby("provincia")["orden_trabajo"]
         .nunique()
         .reset_index(name="Órdenes")
         .sort_values("Órdenes", ascending=False)
     )
-
-    st.dataframe(
-        ordenes_provincia,
-        use_container_width=True,
-        height=300
-    )
+    st.dataframe(ordenes_provincia, use_container_width=True, height=300)
 
 with col_tab2:
     st.markdown("#### 👷 Producción y Productividad por Técnico")
-
     df_prod = (
         df.groupby(["identificador_tecnico", "contrata"])
         .agg(
@@ -229,16 +232,6 @@ with col_tab2:
         )
         .reset_index()
     )
-
-    df_prod["Productividad"] = (
-        df_prod["Producción"] / df_prod["Dias_Trabajados"]
-    ).round(2)
-
-    df_prod = df_prod.drop(columns=["Dias_Trabajados"])
-    df_prod = df_prod.sort_values("Producción", ascending=False)
-
-    st.dataframe(
-        df_prod,
-        use_container_width=True,
-        height=300
-    )
+    df_prod["Productividad"] = (df_prod["Producción"] / df_prod["Dias_Trabajados"]).round(2)
+    df_prod = df_prod.drop(columns=["Dias_Trabajados"]).sort_values("Producción", ascending=False)
+    st.dataframe(df_prod, use_container_width=True, height=300)

@@ -4,7 +4,7 @@ import pandas as pd
 
 st.title("Carga KPI ETA")
 
-# 🔐 Conexión
+# 🔐 Conexión Supabase
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
     st.secrets["SUPABASE_KEY"]
@@ -20,17 +20,23 @@ if archivo is not None:
 
     if st.button("Insertar en base de datos"):
 
-        # 🔍 Detectar columnas "Estado"
+        # ============================================
+        # 🔎 Detectar columnas Estado
+        # ============================================
+
         columnas_estado = [col for col in df.columns if col.startswith("Estado")]
 
         if len(columnas_estado) < 2:
             st.error("No se detectaron las dos columnas 'Estado'")
             st.stop()
 
-        estado_orden = columnas_estado[0]      # Estado de la orden
-        estado_provincia = columnas_estado[1]  # Provincia
+        estado_orden = columnas_estado[0]
+        estado_provincia = columnas_estado[1]
 
-        # 🔥 Filtrar solo completadas
+        # ============================================
+        # 🔥 Filtrar solo COMPLETADO
+        # ============================================
+
         df = df[
             df[estado_orden]
             .astype(str)
@@ -39,7 +45,10 @@ if archivo is not None:
             == "COMPLETADO"
         ]
 
+        # ============================================
         # 🔥 Eliminar tiempos de almuerzo
+        # ============================================
+
         df = df[
             ~df["Tipo Actividad"]
             .astype(str)
@@ -47,7 +56,10 @@ if archivo is not None:
             .isin(["Tiempo de almuerzo", "Tiempo Almuerzo LU"])
         ]
 
-        # 🔥 Seleccionar columnas necesarias
+        # ============================================
+        # 📌 Columnas necesarias
+        # ============================================
+
         columnas_necesarias = [
             "Orden de Trabajo",
             "Identificador Tecnico",
@@ -64,13 +76,42 @@ if archivo is not None:
             "Hora de reserva de actividad",
             "Fecha Programación"
         ]
+
+        for col in columnas_necesarias:
+            if col not in df.columns:
+                st.error(f"No existe la columna {col} en el Excel")
+                st.stop()
+
+        df = df[columnas_necesarias].copy()
+
         # ============================================
-        # 🔥 CLASIFICAR TECNOLOGÍA POR SUB TIPO
+        # 🔄 Renombrar columnas
+        # ============================================
+
+        df.columns = [
+            "orden_trabajo",
+            "identificador_tecnico",
+            "identidad",
+            "fecha",
+            "provincia",
+            "municipio_canton",
+            "colonia",
+            "sub_tipo_orden",
+            "tipo_actividad",
+            "garantia",
+            "inicio",
+            "finalizacion",
+            "hora_reserva_actividad",
+            "fecha_programacion"
+        ]
+
+        # ============================================
+        # 🔥 CLASIFICAR TECNOLOGÍA
         # ============================================
 
         map_tecnologia = {
 
-            # -------- DTH --------
+            # DTH
             "Cambio de Plan con Cambio de Equipo DTH": "DTH",
             "Equipo Adicional TV": "DTH",
             "Instalación de Cajas Adicionales DTH": "DTH",
@@ -83,8 +124,8 @@ if archivo is not None:
             "Traslado Interno de Servicio de DTH": "DTH",
             "Traslado Interno de TV (DTH)": "DTH",
             "Traslado TV (DTH)": "DTH",
-        
-            # -------- GPON --------
+
+            # GPON
             "Cambio de Plan con Cambio de Equipo Datos y TV": "GPON",
             "Cambio de Plan con Cambio de Equipo Triple Play": "GPON",
             "Equipo Adicional Datos": "GPON",
@@ -108,94 +149,50 @@ if archivo is not None:
         }
 
         df["tecnologia"] = df["sub_tipo_orden"].map(map_tecnologia)
-
-        # Si algún subtipo no está mapeado
         df["tecnologia"] = df["tecnologia"].fillna("NO_CLASIFICADO")
 
-        for col in columnas_necesarias:
-            if col not in df.columns:
-                st.error(f"No existe la columna {col} en el Excel")
-                st.stop()
-
-        df = df[columnas_necesarias].copy()
-
-        # 🔄 Renombrar columnas
-        df.columns = [
-            "orden_trabajo",
-            "identificador_tecnico",
-            "identidad",
-            "fecha",
-            "provincia",
-            "municipio_canton",
-            "colonia",
-            "sub_tipo_orden",
-            "tipo_actividad",
-            "garantia",
-            "inicio",
-            "finalizacion",
-            "hora_reserva_actividad",
-            "fecha_programacion"
-        ]
-
-        # =====================================================
-        # 🔒 NORMALIZAR FECHAS (FORZAR DÍA PRIMERO)
-        # =====================================================
+        # ============================================
+        # 🔄 CONVERTIR FECHAS CORRECTAMENTE
+        # ============================================
 
         df["fecha"] = pd.to_datetime(
             df["fecha"],
-            dayfirst=True,
-            errors="coerce"
-        )
+            errors="coerce",
+            dayfirst=True
+        ).dt.strftime("%Y-%m-%d")
 
         df["fecha_programacion"] = pd.to_datetime(
             df["fecha_programacion"],
-            dayfirst=True,
-            errors="coerce"
-        )
+            errors="coerce",
+            dayfirst=True
+        ).dt.strftime("%Y-%m-%d")
 
-        # 🚨 Validar fechas inválidas
-        if df["fecha"].isnull().any():
-            st.error("Hay fechas inválidas en la columna Fecha.")
-            st.stop()
-
-        # 🔄 Convertir a formato ISO seguro
-        df["fecha"] = df["fecha"].dt.strftime("%Y-%m-%d")
-        df["fecha_programacion"] = df["fecha_programacion"].dt.strftime("%Y-%m-%d")
-
-        # =====================================================
-        # 🔄 Convertir horas a formato 24h
-        # =====================================================
-
-        df["inicio"] = pd.to_datetime(
-            df["inicio"],
-            errors="coerce"
-        ).dt.strftime("%H:%M:%S")
-
-        df["finalizacion"] = pd.to_datetime(
-            df["finalizacion"],
-            errors="coerce"
-        ).dt.strftime("%H:%M:%S")
+        df["inicio"] = pd.to_datetime(df["inicio"], errors="coerce").dt.strftime("%H:%M:%S")
+        df["finalizacion"] = pd.to_datetime(df["finalizacion"], errors="coerce").dt.strftime("%H:%M:%S")
 
         df["hora_reserva_actividad"] = pd.to_datetime(
             df["hora_reserva_actividad"],
-            dayfirst=True,
-            errors="coerce"
+            errors="coerce",
+            dayfirst=True
         ).dt.strftime("%Y-%m-%d %H:%M:%S")
 
+        # ============================================
         # 🔄 Limpiar NaN
+        # ============================================
+
         df = df.where(pd.notnull(df), None)
 
         st.write("Cantidad de registros a insertar:", len(df))
-        st.write("Órdenes duplicadas en el archivo:", df["orden_trabajo"].duplicated().sum())
+        st.write("Órdenes duplicadas en archivo:", df["orden_trabajo"].duplicated().sum())
 
         if len(df) == 0:
-            st.warning("No hay registros para insertar después del filtrado.")
+            st.warning("No hay registros para insertar.")
             st.stop()
 
         datos = df.to_dict(orient="records")
 
         try:
-            respuesta = supabase.table(TABLE).upsert(
+            supabase.table(TABLE).upsert(
                 datos,
                 on_conflict="orden_trabajo"
             ).execute()
@@ -204,5 +201,3 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
-
-

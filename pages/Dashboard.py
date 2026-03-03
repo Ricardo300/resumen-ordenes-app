@@ -170,3 +170,57 @@ fig = px.bar(
 
 fig.update_layout(height=300)
 st.plotly_chart(fig, use_container_width=True)
+# ==========================================
+# TABLAS
+# ==========================================
+
+st.markdown("## 📋 Detalle Operativo")
+
+col_tab1, col_tab2 = st.columns([1, 2])
+
+# -----------------------------
+# TABLA POR PROVINCIA
+# -----------------------------
+with col_tab1:
+    st.markdown("### 📍 Órdenes por Provincia")
+
+    ordenes_provincia = (
+        df.groupby("provincia")["orden_trabajo"]
+        .nunique()
+        .reset_index(name="Órdenes")
+        .sort_values("Órdenes", ascending=False)
+    )
+
+    st.dataframe(
+        ordenes_provincia,
+        use_container_width=True,
+        height=300
+    )
+
+# -----------------------------
+# TABLA PRODUCTIVIDAD
+# -----------------------------
+with col_tab2:
+    st.markdown("### 👷 Producción y Productividad por Técnico")
+
+    df_prod = (
+        df.groupby(["identificador_tecnico", "contrata"])
+        .agg(
+            Producción=("orden_trabajo", "count"),
+            Dias_Trabajados=("fecha", "nunique")
+        )
+        .reset_index()
+    )
+
+    df_prod["Productividad"] = (
+        df_prod["Producción"] / df_prod["Dias_Trabajados"]
+    ).round(2)
+
+    df_prod = df_prod.drop(columns=["Dias_Trabajados"])
+    df_prod = df_prod.sort_values("Producción", ascending=False)
+
+    st.dataframe(
+        df_prod,
+        use_container_width=True,
+        height=300
+    )

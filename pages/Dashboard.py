@@ -320,7 +320,7 @@ st.plotly_chart(
 #================================================
 # contar órdenes por técnico
 ordenes_tecnico_dia = (
-    df_dia.groupby("identificador_tecnico")
+    df.groupby("identificador_tecnico")
     .size()
     .reset_index(name="ordenes")
 )
@@ -344,7 +344,7 @@ fig_tecnico.update_xaxes(
     tickvals=ordenes_tecnico_dia["indice"],
     ticktext=ordenes_tecnico_dia["identificador_tecnico"],
     tickangle=-90,
-    range=[0,19]  # primeros 20
+    range=[0,19]
 )
 
 # colores alternados
@@ -372,5 +372,3 @@ fig_tecnico.update_layout(
 )
 
 st.plotly_chart(fig_tecnico, use_container_width=True)
-
- 

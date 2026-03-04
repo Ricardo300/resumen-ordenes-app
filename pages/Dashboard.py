@@ -253,7 +253,7 @@ st.subheader("Promedio de Órdenes por Técnico por Contrata")
 # asegurar formato fecha
 df["fecha"] = pd.to_datetime(df["fecha"])
 
-# contar ordenes por tecnico por dia
+# contar órdenes por técnico por día
 ordenes_tecnico = (
     df.groupby(["fecha", "contrata", "identificador_tecnico"])
       .size()
@@ -270,7 +270,7 @@ promedio_contrata = (
 # ordenar de mayor a menor
 promedio_contrata = promedio_contrata.sort_values("ordenes", ascending=False)
 
-# crear grafico
+# crear gráfico
 fig = px.bar(
     promedio_contrata,
     x="contrata",
@@ -278,7 +278,7 @@ fig = px.bar(
     text_auto=".2f"
 )
 
-# colores alternados azul oscuro / azul claro
+# colores alternados
 colors = ["#1565C0" if i % 2 == 0 else "#90CAF9" for i in range(len(promedio_contrata))]
 
 fig.update_traces(
@@ -289,7 +289,7 @@ fig.update_traces(
 # reducir espacio entre barras
 fig.update_layout(bargap=0.15)
 
-# linea meta 4
+# línea meta
 fig.add_hline(
     y=4,
     line_dash="dash",
@@ -298,7 +298,7 @@ fig.add_hline(
     annotation_position="top right"
 )
 
-# apariencia general
+# apariencia
 fig.update_layout(
     showlegend=False,
     xaxis_title="Contrata",
@@ -308,7 +308,9 @@ fig.update_layout(
     margin=dict(b=120)
 )
 
-# mostrar grafico
-st.plotly_chart(fig, use_container_width=True)
-
-st.plotly_chart(fig, use_container_width=True)
+# mostrar gráfico (con key para evitar duplicados)
+st.plotly_chart(
+    fig,
+    use_container_width=True,
+    key="grafico_productividad_contrata"
+)

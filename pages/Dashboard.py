@@ -318,27 +318,6 @@ st.plotly_chart(
 #================================================
 #  GRAFICO CUMPLIMIENTO POR TECNICO
 #================================================
-st.subheader("Órdenes Atendidas por Técnico (por día)")
-
-# asegurar formato fecha
-df["fecha"] = pd.to_datetime(df["fecha"])
-
-# selector de fecha
-fecha_seleccionada = st.date_input(
-    "Seleccionar día",
-    df["fecha"].min()
-)
-
-# filtrar datos
-df_dia = df[df["fecha"].dt.date == fecha_seleccionada]
-
-# contar órdenes por técnico
-ordenes_tecnico_dia = (
-    df_dia.groupby("identificador_tecnico")
-    .size()
-    .reset_index(name="ordenes")
-)
-
 # ordenar
 ordenes_tecnico_dia = ordenes_tecnico_dia.sort_values("ordenes", ascending=False)
 
@@ -353,20 +332,22 @@ fig_tecnico = px.bar(
     text_auto=True
 )
 
-# mostrar nombres reales de técnicos
+# eje X con técnicos
 fig_tecnico.update_xaxes(
     tickmode="array",
     tickvals=ordenes_tecnico_dia["indice"],
     ticktext=ordenes_tecnico_dia["identificador_tecnico"],
     tickangle=-90,
     rangeslider=dict(visible=True),
-    
-    # mostrar solo los primeros 20 al inicio
-    range=[0, 19]
+    range=[0, 19]  # primeros 20 visibles
 )
 
-# colores alternados
-colors = ["#1565C0" if i % 2 == 0 else "#90CAF9" for i in range(len(ordenes_tecnico_dia))]
+# colores intercalados
+colors = [
+    "#0D47A1" if i % 2 == 0 else "#90CAF9"
+    for i in range(len(ordenes_tecnico_dia))
+]
+
 fig_tecnico.update_traces(marker_color=colors)
 
 # línea meta
@@ -378,16 +359,12 @@ fig_tecnico.add_hline(
     annotation_position="top right"
 )
 
-# apariencia
+# estilo
 fig_tecnico.update_layout(
     template="plotly_dark",
     height=600,
     xaxis_title="Técnico",
     yaxis_title="Órdenes atendidas",
-    bargap=0.15
-)
-
-st.plotly_chart(fig_tecnico, use_container_width=True)
     bargap=0.15
 )
 

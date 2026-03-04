@@ -197,44 +197,48 @@ c5.metric("Garantías", total_garantias)
 
 df["dia_mes"] = df["fecha"].dt.day
 
-# ordenes por día
+# órdenes por día
 ordenes_dia = (
     df.groupby("dia_mes")["orden_trabajo"]
     .nunique()
     .reset_index(name="ordenes")
 )
 
-# tecnicos por día
+# técnicos por día
 tecnicos_dia = (
     df.groupby("dia_mes")["identificador_tecnico"]
     .nunique()
     .reset_index(name="tecnicos")
 )
 
-# unir
+# unir datos
 ordenes_dia = ordenes_dia.merge(tecnicos_dia, on="dia_mes")
 
-# texto que aparecerá en el gráfico
-ordenes_dia["texto"] = (
-    ordenes_dia["ordenes"].astype(str) +
-    "<br>(" +
-    ordenes_dia["tecnicos"].astype(str) +
-    " téc)"
-)
-
+# gráfico base
 fig = px.bar(
     ordenes_dia,
     x="dia_mes",
     y="ordenes",
-    text="texto",
+    text="ordenes",
     color="ordenes",
     color_continuous_scale="Blues"
 )
 
+# órdenes arriba
 fig.update_traces(
     textposition="outside",
     textfont_size=12
 )
+
+# agregar técnicos en medio de la barra
+for i, row in ordenes_dia.iterrows():
+    fig.add_annotation(
+        x=row["dia_mes"],
+        y=row["ordenes"] / 2,
+        text=str(row["tecnicos"]),
+        showarrow=False,
+        font=dict(size=12, color="white")
+    )
 
 fig.update_layout(
     height=320,
@@ -245,6 +249,7 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
+
 # ==========================================
 # TABLAS
 # ==========================================

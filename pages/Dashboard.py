@@ -256,15 +256,15 @@ df["fecha"] = pd.to_datetime(df["fecha"])
 # contar ordenes por tecnico por dia
 ordenes_tecnico = (
     df.groupby(["fecha", "contrata", "identificador_tecnico"])
-    .size()
-    .reset_index(name="ordenes")
+      .size()
+      .reset_index(name="ordenes")
 )
 
 # promedio por contrata
 promedio_contrata = (
     ordenes_tecnico.groupby("contrata")["ordenes"]
-    .mean()
-    .reset_index()
+      .mean()
+      .reset_index()
 )
 
 # ordenar de mayor a menor
@@ -283,15 +283,15 @@ fig = px.bar(
     text_auto=".2f",
     color="color",
     color_discrete_map={
-        "Cumple meta": "#1565C0",   # azul fuerte
-        "Debajo de meta": "#90CAF9" # azul claro
+        "Cumple meta": "#1565C0",
+        "Debajo de meta": "#90CAF9"
     }
 )
 
 # reducir espacio entre barras
 fig.update_layout(bargap=0.15)
 
-# hacer barras un poco mas delgadas
+# ajustar ancho barras
 fig.update_traces(width=0.6)
 
 # linea de meta
@@ -303,7 +303,7 @@ fig.add_hline(
     annotation_position="top right"
 )
 
-# mejorar apariencia
+# apariencia
 fig.update_layout(
     showlegend=False,
     xaxis_title="Contrata",
@@ -311,9 +311,6 @@ fig.update_layout(
     xaxis_tickangle=-90,
     template="plotly_dark",
     margin=dict(b=120)
-)
-
-st.plotly_chart(fig, use_container_width=True)
 )
 
 st.plotly_chart(fig, use_container_width=True)

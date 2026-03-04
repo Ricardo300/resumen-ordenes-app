@@ -320,29 +320,23 @@ st.plotly_chart(
 #================================================
 st.subheader("Órdenes Atendidas por Técnico (por día)")
 
-# asegurar formato fecha
 df["fecha"] = pd.to_datetime(df["fecha"])
 
-# selector de fecha
 fecha_seleccionada = st.date_input(
     "Seleccionar día",
     df["fecha"].min()
 )
 
-# filtrar datos del día
 df_dia = df[df["fecha"].dt.date == fecha_seleccionada]
 
-# contar órdenes por técnico
 ordenes_tecnico_dia = (
     df_dia.groupby("identificador_tecnico")
     .size()
     .reset_index(name="ordenes")
 )
 
-# ordenar de mayor a menor
 ordenes_tecnico_dia = ordenes_tecnico_dia.sort_values("ordenes", ascending=False)
 
-# crear gráfico
 fig_tecnico = px.bar(
     ordenes_tecnico_dia,
     x="identificador_tecnico",
@@ -352,11 +346,7 @@ fig_tecnico = px.bar(
 
 # colores alternados
 colors = ["#1565C0" if i % 2 == 0 else "#90CAF9" for i in range(len(ordenes_tecnico_dia))]
-
-fig_tecnico.update_traces(
-    marker_color=colors,
-    width=0.6
-)
+fig_tecnico.update_traces(marker_color=colors)
 
 # línea meta
 fig_tecnico.add_hline(
@@ -367,22 +357,13 @@ fig_tecnico.add_hline(
     annotation_position="top right"
 )
 
-# hacer gráfico ancho para permitir scroll
-ancho_grafico = max(1200, len(ordenes_tecnico_dia) * 45)
-
 fig_tecnico.update_layout(
-    xaxis_title="Técnico",
-    yaxis_title="Órdenes atendidas",
     xaxis_tickangle=-90,
     template="plotly_dark",
-    height=600,
-    width=ancho_grafico,
-    bargap=0.15
+    height=600
 )
 
-# mostrar gráfico SIN ajustar al contenedor
-st.plotly_chart(
-    fig_tecnico,
-    use_container_width=False,
-    key="grafico_productividad_tecnico_dia"
-)
+# contenedor con scroll horizontal
+st.markdown('<div style="overflow-x: auto;">', unsafe_allow_html=True)
+st.plotly_chart(fig_tecnico, use_container_width=False)
+st.markdown('</div>', unsafe_allow_html=True)

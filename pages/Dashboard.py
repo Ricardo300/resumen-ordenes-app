@@ -245,41 +245,45 @@ with col_tab2:
     df_prod["Productividad"] = (df_prod["Producción"] / df_prod["Dias_Trabajados"]).round(2)
     df_prod = df_prod.drop(columns=["Dias_Trabajados"]).sort_values("Producción", ascending=False)
     st.dataframe(df_prod, use_container_width=True, height=300)
-# ==========================================
-# META DE 4 ORDENES POR TECNICO
-# ==========================================
+#================================================
+#  GRAFICO CUMPLIMIENTO META 4 ORDENES
+#================================================
 
-st.subheader("Cumplimiento de Meta Diaria (4 órdenes por técnico)")
+st.subheader("Promedio de Órdenes por Técnico por Contrata")
 
-# convertir fecha
+# asegurar formato fecha
 df["fecha"] = pd.to_datetime(df["fecha"])
 
 # contar ordenes por tecnico por dia
 ordenes_tecnico = (
-    df.groupby(["fecha", "tecnico"])
+    df.groupby(["fecha", "contrata", "identificador_tecnico"])
     .size()
     .reset_index(name="ordenes")
 )
 
-# marcar cumplimiento
-ordenes_tecnico["cumple_meta"] = ordenes_tecnico["ordenes"] >= 4
-
-# calcular porcentaje diario
-cumplimiento_diario = (
-    ordenes_tecnico.groupby("fecha")["cumple_meta"]
+# promedio por contrata
+promedio_contrata = (
+    ordenes_tecnico.groupby("contrata")["ordenes"]
     .mean()
     .reset_index()
 )
 
-cumplimiento_diario["cumple_meta"] = cumplimiento_diario["cumple_meta"] * 100
-
 # grafico
-fig = px.line(
-    cumplimiento_diario,
-    x="fecha",
-    y="cumple_meta",
-    markers=True,
-    title="% de Técnicos que Cumplen Meta (4 órdenes)"
+fig = px.bar(
+    promedio_contrata,
+    x="contrata",
+    y="ordenes",
+    title="Promedio de Órdenes por Técnico - por Contrata",
+    text_auto=".2f"
+)
+
+# linea de meta
+fig.add_hline(
+    y=4,
+    line_dash="dash",
+    line_color="red",
+    annotation_text="Meta 4 órdenes",
+    annotation_position="top right"
 )
 
 st.plotly_chart(fig, use_container_width=True)

@@ -318,64 +318,71 @@ st.plotly_chart(
 #================================================
 #  GRAFICO CUMPLIMIENTO POR TECNICO
 #================================================
-# filtrar datos del día
+# 1) asegurar fecha en datetime
+df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+
+# 2) crear selector de fecha (define fecha_seleccionada)
+fecha_seleccionada = st.date_input(
+    "Seleccionar día",
+    value=df["fecha"].dropna().min().date()
+)
+
+# 3) filtrar el dataframe por el día seleccionado
 df_dia = df[df["fecha"].dt.date == fecha_seleccionada]
 
-# contar órdenes por técnico
+# 4) contar órdenes por técnico
 ordenes_tecnico_dia = (
     df_dia.groupby("identificador_tecnico")
     .size()
     .reset_index(name="ordenes")
 )
 
-# ordenar
-ordenes_tecnico_dia = ordenes_tecnico_dia.sort_values("ordenes", ascending=False)
+# si ese día no hay datos, evita que falle
+if ordenes_tecnico_dia.empty:
+    st.info("No hay órdenes completadas para el día seleccionado.")
+else:
+    # 5) ordenar
+    ordenes_tecnico_dia = ordenes_tecnico_dia.sort_values("ordenes", ascending=False)
 
-# índice para scroll
-ordenes_tecnico_dia["indice"] = range(len(ordenes_tecnico_dia))
+    # 6) índice para scroll y labels
+    ordenes_tecnico_dia["indice"] = range(len(ordenes_tecnico_dia))
 
-# gráfico
-fig_tecnico = px.bar(
-    ordenes_tecnico_dia,
-    x="indice",
-    y="ordenes",
-    text_auto=True
-)
+    # 7) gráfico
+    fig_tecnico = px.bar(
+        ordenes_tecnico_dia,
+        x="indice",
+        y="ordenes",
+        text_auto=True
+    )
 
-# eje x
-fig_tecnico.update_xaxes(
-    tickmode="array",
-    tickvals=ordenes_tecnico_dia["indice"],
-    ticktext=ordenes_tecnico_dia["identificador_tecnico"],
-    tickangle=-90,
-    rangeslider=dict(visible=True),
-    range=[0, 19]
-)
+    fig_tecnico.update_xaxes(
+        tickmode="array",
+        tickvals=ordenes_tecnico_dia["indice"],
+        ticktext=ordenes_tecnico_dia["identificador_tecnico"],
+        tickangle=-90,
+        rangeslider=dict(visible=True),
+        range=[0, 19]  # primeros 20
+    )
 
-# colores alternados
-colors = [
-    "#0D47A1" if i % 2 == 0 else "#90CAF9"
-    for i in range(len(ordenes_tecnico_dia))
-]
+    # colores alternados
+    colors = ["#0D47A1" if i % 2 == 0 else "#90CAF9" for i in range(len(ordenes_tecnico_dia))]
+    fig_tecnico.update_traces(marker_color=colors, width=0.6)
 
-fig_tecnico.update_traces(marker_color=colors)
+    # línea meta
+    fig_tecnico.add_hline(
+        y=4,
+        line_dash="dash",
+        line_color="red",
+        annotation_text="Meta 4 órdenes",
+        annotation_position="top right"
+    )
 
-# línea meta
-fig_tecnico.add_hline(
-    y=4,
-    line_dash="dash",
-    line_color="red",
-    annotation_text="Meta 4 órdenes",
-    annotation_position="top right"
-)
+    fig_tecnico.update_layout(
+        template="plotly_dark",
+        height=600,
+        xaxis_title="Técnico",
+        yaxis_title="Órdenes atendidas",
+        bargap=0.15
+    )
 
-# diseño
-fig_tecnico.update_layout(
-    template="plotly_dark",
-    height=600,
-    xaxis_title="Técnico",
-    yaxis_title="Órdenes atendidas",
-    bargap=0.15
-)
-
-st.plotly_chart(fig_tecnico, use_container_width=True)
+    st.plotly_chart(fig_tecnico, use_container_width=True, key="grafico_tecnicos_por_dia")

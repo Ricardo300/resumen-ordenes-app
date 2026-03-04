@@ -320,23 +320,29 @@ st.plotly_chart(
 #================================================
 st.subheader("Órdenes Atendidas por Técnico (por día)")
 
+# asegurar formato fecha
 df["fecha"] = pd.to_datetime(df["fecha"])
 
+# selector de fecha
 fecha_seleccionada = st.date_input(
     "Seleccionar día",
     df["fecha"].min()
 )
 
+# filtrar datos del día
 df_dia = df[df["fecha"].dt.date == fecha_seleccionada]
 
+# contar órdenes por técnico
 ordenes_tecnico_dia = (
     df_dia.groupby("identificador_tecnico")
     .size()
     .reset_index(name="ordenes")
 )
 
+# ordenar
 ordenes_tecnico_dia = ordenes_tecnico_dia.sort_values("ordenes", ascending=False)
 
+# gráfico
 fig_tecnico = px.bar(
     ordenes_tecnico_dia,
     x="identificador_tecnico",
@@ -346,7 +352,7 @@ fig_tecnico = px.bar(
 
 # colores alternados
 colors = ["#1565C0" if i % 2 == 0 else "#90CAF9" for i in range(len(ordenes_tecnico_dia))]
-fig_tecnico.update_traces(marker_color=colors)
+fig_tecnico.update_traces(marker_color=colors, width=0.6)
 
 # línea meta
 fig_tecnico.add_hline(
@@ -357,13 +363,22 @@ fig_tecnico.add_hline(
     annotation_position="top right"
 )
 
+# activar scroll horizontal en eje X
 fig_tecnico.update_layout(
-    xaxis_tickangle=-90,
+    xaxis=dict(
+        tickangle=-90,
+        rangeslider=dict(visible=True)  # barra de desplazamiento
+    ),
+    yaxis_title="Órdenes atendidas",
+    xaxis_title="Técnico",
     template="plotly_dark",
-    height=600
+    height=600,
+    bargap=0.15
 )
 
-# contenedor con scroll horizontal
-st.markdown('<div style="overflow-x: auto;">', unsafe_allow_html=True)
-st.plotly_chart(fig_tecnico, use_container_width=False)
-st.markdown('</div>', unsafe_allow_html=True)
+# mostrar gráfico
+st.plotly_chart(
+    fig_tecnico,
+    use_container_width=True,
+    key="grafico_productividad_tecnico_dia"
+)

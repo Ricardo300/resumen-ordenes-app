@@ -248,7 +248,6 @@ with col_tab2:
 #================================================
 #  GRAFICO CUMPLIMIENTO META 4 ORDENES
 #================================================
-
 st.subheader("Promedio de Órdenes por Técnico por Contrata")
 
 # asegurar formato fecha
@@ -268,22 +267,34 @@ promedio_contrata = (
     .reset_index()
 )
 
-# ordenar para que se vea mejor
+# ordenar de mayor a menor
 promedio_contrata = promedio_contrata.sort_values("ordenes", ascending=False)
 
-# grafico
+# crear categoria de color
+promedio_contrata["color"] = promedio_contrata["ordenes"].apply(
+    lambda x: "Cumple meta" if x >= 4 else "Debajo de meta"
+)
+
+# crear grafico
 fig = px.bar(
     promedio_contrata,
     x="contrata",
     y="ordenes",
     text_auto=".2f",
-    color="contrata",  # colores diferentes
+    color="color",
+    color_discrete_map={
+        "Cumple meta": "#1565C0",   # azul fuerte
+        "Debajo de meta": "#90CAF9" # azul claro
+    }
 )
 
-# hacer barras mas delgadas
-fig.update_traces(width=0.45)
+# reducir espacio entre barras
+fig.update_layout(bargap=0.15)
 
-# linea meta
+# hacer barras un poco mas delgadas
+fig.update_traces(width=0.6)
+
+# linea de meta
 fig.add_hline(
     y=4,
     line_dash="dash",
@@ -297,8 +308,12 @@ fig.update_layout(
     showlegend=False,
     xaxis_title="Contrata",
     yaxis_title="Órdenes promedio",
-    xaxis_tickangle=90,  # horizontal
-    template="plotly_dark"
+    xaxis_tickangle=-90,
+    template="plotly_dark",
+    margin=dict(b=120)
+)
+
+st.plotly_chart(fig, use_container_width=True)
 )
 
 st.plotly_chart(fig, use_container_width=True)

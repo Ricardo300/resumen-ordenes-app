@@ -273,7 +273,6 @@ fig = px.bar(
     promedio_contrata,
     x="contrata",
     y="ordenes",
-    title="Promedio de Órdenes por Técnico - por Contrata",
     text_auto=".2f"
 )
 

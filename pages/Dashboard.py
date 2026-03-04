@@ -192,64 +192,56 @@ c4.metric("Promedio Día", promedio_diario)
 c5.metric("Garantías", total_garantias)
 
 # ==========================================
-# GRÁFICO (COLORES DINÁMICOS)
-# ==========================================
-# ==========================================
 # GRÁFICO ORDENES POR DÍA + TECNICOS
 # ==========================================
 
 df["dia_mes"] = df["fecha"].dt.day
 
-# calcular órdenes por día
+# ordenes por día
 ordenes_dia = (
     df.groupby("dia_mes")["orden_trabajo"]
     .nunique()
     .reset_index(name="ordenes")
 )
 
-# calcular técnicos por día
+# tecnicos por día
 tecnicos_dia = (
     df.groupby("dia_mes")["identificador_tecnico"]
     .nunique()
     .reset_index(name="tecnicos")
 )
 
-# unir información
+# unir
 ordenes_dia = ordenes_dia.merge(tecnicos_dia, on="dia_mes")
 
-# crear texto combinado
-ordenes_dia["texto_tecnico"] = ordenes_dia["tecnicos"].astype(str) + " técnicos"
+# texto que aparecerá en el gráfico
+ordenes_dia["texto"] = (
+    ordenes_dia["ordenes"].astype(str) +
+    "<br>(" +
+    ordenes_dia["tecnicos"].astype(str) +
+    " téc)"
+)
 
-# gráfico
 fig = px.bar(
     ordenes_dia,
     x="dia_mes",
     y="ordenes",
-    text="ordenes",
+    text="texto",
     color="ordenes",
     color_continuous_scale="Blues"
 )
 
-# texto de técnicos dentro de la barra
 fig.update_traces(
-    textposition="outside"
+    textposition="outside",
+    textfont_size=12
 )
-
-# agregar anotaciones en medio de la barra
-for i, row in ordenes_dia.iterrows():
-    fig.add_annotation(
-        x=row["dia_mes"],
-        y=row["ordenes"] / 2,
-        text=row["texto_tecnico"],
-        showarrow=False,
-        font=dict(size=11, color="white")
-    )
 
 fig.update_layout(
     height=320,
     coloraxis_showscale=False,
     xaxis_title="Día del mes",
-    yaxis_title="Órdenes"
+    yaxis_title="Órdenes",
+    template="plotly_dark"
 )
 
 st.plotly_chart(fig, use_container_width=True)

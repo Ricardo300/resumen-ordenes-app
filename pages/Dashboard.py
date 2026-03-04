@@ -329,7 +329,7 @@ fecha_seleccionada = st.date_input(
     df["fecha"].min()
 )
 
-# filtrar datos del día
+# filtrar datos
 df_dia = df[df["fecha"].dt.date == fecha_seleccionada]
 
 # contar órdenes por técnico
@@ -342,17 +342,29 @@ ordenes_tecnico_dia = (
 # ordenar
 ordenes_tecnico_dia = ordenes_tecnico_dia.sort_values("ordenes", ascending=False)
 
+# crear índice para desplazamiento
+ordenes_tecnico_dia["indice"] = range(len(ordenes_tecnico_dia))
+
 # gráfico
 fig_tecnico = px.bar(
     ordenes_tecnico_dia,
-    x="identificador_tecnico",
+    x="indice",
     y="ordenes",
     text_auto=True
 )
 
+# mostrar nombres reales de técnicos
+fig_tecnico.update_xaxes(
+    tickmode='array',
+    tickvals=ordenes_tecnico_dia["indice"],
+    ticktext=ordenes_tecnico_dia["identificador_tecnico"],
+    tickangle=-90,
+    rangeslider=dict(visible=True)
+)
+
 # colores alternados
 colors = ["#1565C0" if i % 2 == 0 else "#90CAF9" for i in range(len(ordenes_tecnico_dia))]
-fig_tecnico.update_traces(marker_color=colors, width=0.6)
+fig_tecnico.update_traces(marker_color=colors)
 
 # línea meta
 fig_tecnico.add_hline(
@@ -363,22 +375,13 @@ fig_tecnico.add_hline(
     annotation_position="top right"
 )
 
-# activar scroll horizontal en eje X
+# apariencia
 fig_tecnico.update_layout(
-    xaxis=dict(
-        tickangle=-90,
-        rangeslider=dict(visible=True)  # barra de desplazamiento
-    ),
-    yaxis_title="Órdenes atendidas",
-    xaxis_title="Técnico",
     template="plotly_dark",
     height=600,
+    xaxis_title="Técnico",
+    yaxis_title="Órdenes atendidas",
     bargap=0.15
 )
 
-# mostrar gráfico
-st.plotly_chart(
-    fig_tecnico,
-    use_container_width=True,
-    key="grafico_productividad_tecnico_dia"
-)
+st.plotly_chart(fig_tecnico, use_container_width=True)

@@ -329,7 +329,7 @@ fecha_seleccionada = st.date_input(
     df["fecha"].min()
 )
 
-# filtrar por fecha
+# filtrar datos del día
 df_dia = df[df["fecha"].dt.date == fecha_seleccionada]
 
 # contar órdenes por técnico
@@ -339,7 +339,7 @@ ordenes_tecnico_dia = (
     .reset_index(name="ordenes")
 )
 
-# ordenar
+# ordenar de mayor a menor
 ordenes_tecnico_dia = ordenes_tecnico_dia.sort_values("ordenes", ascending=False)
 
 # crear gráfico
@@ -350,7 +350,15 @@ fig_tecnico = px.bar(
     text_auto=True
 )
 
-# línea meta
+# colores alternados
+colors = ["#1565C0" if i % 2 == 0 else "#90CAF9" for i in range(len(ordenes_tecnico_dia))]
+
+fig_tecnico.update_traces(
+    marker_color=colors,
+    width=0.6
+)
+
+# línea de meta
 fig_tecnico.add_hline(
     y=4,
     line_dash="dash",
@@ -359,17 +367,24 @@ fig_tecnico.add_hline(
     annotation_position="top right"
 )
 
-# apariencia
+# ajustes visuales
+fig_tecnico.update_xaxes(
+    tickangle=-90,
+    tickmode="linear"
+)
+
 fig_tecnico.update_layout(
     xaxis_title="Técnico",
     yaxis_title="Órdenes atendidas",
-    xaxis_tickangle=-90,
-    template="plotly_dark"
+    template="plotly_dark",
+    height=600,
+    bargap=0.15
 )
 
+# mostrar gráfico
 st.plotly_chart(
     fig_tecnico,
     use_container_width=True,
-    key="grafico_productividad_tecnico"
+    key="grafico_productividad_tecnico_dia"
 )
 

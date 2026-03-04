@@ -297,7 +297,7 @@ fig.update_layout(
     showlegend=False,
     xaxis_title="Contrata",
     yaxis_title="Órdenes promedio",
-    xaxis_tickangle=0,  # horizontal
+    xaxis_tickangle=90,  # horizontal
     template="plotly_dark"
 )
 

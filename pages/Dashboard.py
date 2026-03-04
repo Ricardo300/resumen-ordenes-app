@@ -268,21 +268,37 @@ promedio_contrata = (
     .reset_index()
 )
 
+# ordenar para que se vea mejor
+promedio_contrata = promedio_contrata.sort_values("ordenes", ascending=False)
+
 # grafico
 fig = px.bar(
     promedio_contrata,
     x="contrata",
     y="ordenes",
-    text_auto=".2f"
+    text_auto=".2f",
+    color="contrata",  # colores diferentes
 )
 
-# linea de meta
+# hacer barras mas delgadas
+fig.update_traces(width=0.45)
+
+# linea meta
 fig.add_hline(
     y=4,
     line_dash="dash",
     line_color="red",
     annotation_text="Meta 4 órdenes",
     annotation_position="top right"
+)
+
+# mejorar apariencia
+fig.update_layout(
+    showlegend=False,
+    xaxis_title="Contrata",
+    yaxis_title="Órdenes promedio",
+    xaxis_tickangle=0,  # horizontal
+    template="plotly_dark"
 )
 
 st.plotly_chart(fig, use_container_width=True)

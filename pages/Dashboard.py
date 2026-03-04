@@ -314,3 +314,62 @@ st.plotly_chart(
     use_container_width=True,
     key="grafico_productividad_contrata"
 )
+
+#================================================
+#  GRAFICO CUMPLIMIENTO POR TECNICO
+#================================================
+
+st.subheader("Órdenes Atendidas por Técnico (por día)")
+
+# asegurar formato fecha
+df["fecha"] = pd.to_datetime(df["fecha"])
+
+# selector de fecha
+fecha_seleccionada = st.date_input(
+    "Seleccionar día",
+    df["fecha"].min()
+)
+
+# filtrar por fecha
+df_dia = df[df["fecha"].dt.date == fecha_seleccionada]
+
+# contar órdenes por técnico
+ordenes_tecnico_dia = (
+    df_dia.groupby("identificador_tecnico")
+    .size()
+    .reset_index(name="ordenes")
+)
+
+# ordenar
+ordenes_tecnico_dia = ordenes_tecnico_dia.sort_values("ordenes", ascending=False)
+
+# crear gráfico
+fig_tecnico = px.bar(
+    ordenes_tecnico_dia,
+    x="identificador_tecnico",
+    y="ordenes",
+    text_auto=True
+)
+
+# línea meta
+fig_tecnico.add_hline(
+    y=4,
+    line_dash="dash",
+    line_color="red",
+    annotation_text="Meta 4 órdenes",
+    annotation_position="top right"
+)
+
+# apariencia
+fig_tecnico.update_layout(
+    xaxis_title="Técnico",
+    yaxis_title="Órdenes atendidas",
+    xaxis_tickangle=-90,
+    template="plotly_dark"
+)
+
+st.plotly_chart(
+    fig_tecnico,
+    use_container_width=True,
+    key="grafico_productividad_tecnico"
+)

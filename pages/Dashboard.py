@@ -358,7 +358,7 @@ fig_tecnico.update_traces(
     width=0.6
 )
 
-# línea de meta
+# línea meta
 fig_tecnico.add_hline(
     y=4,
     line_dash="dash",
@@ -367,24 +367,22 @@ fig_tecnico.add_hline(
     annotation_position="top right"
 )
 
-# ajustes visuales
-fig_tecnico.update_xaxes(
-    tickangle=-90,
-    tickmode="linear"
-)
+# hacer gráfico ancho para permitir scroll
+ancho_grafico = max(1200, len(ordenes_tecnico_dia) * 45)
 
 fig_tecnico.update_layout(
     xaxis_title="Técnico",
     yaxis_title="Órdenes atendidas",
+    xaxis_tickangle=-90,
     template="plotly_dark",
     height=600,
+    width=ancho_grafico,
     bargap=0.15
 )
 
-# mostrar gráfico
+# mostrar gráfico SIN ajustar al contenedor
 st.plotly_chart(
     fig_tecnico,
-    use_container_width=True,
+    use_container_width=False,
     key="grafico_productividad_tecnico_dia"
 )
-

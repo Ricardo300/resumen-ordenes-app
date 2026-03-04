@@ -318,7 +318,6 @@ st.plotly_chart(
 #================================================
 #  GRAFICO CUMPLIMIENTO POR TECNICO
 #================================================
-
 st.subheader("Órdenes Atendidas por Técnico (por día)")
 
 # asegurar formato fecha
@@ -373,3 +372,4 @@ st.plotly_chart(
     use_container_width=True,
     key="grafico_productividad_tecnico"
 )
+

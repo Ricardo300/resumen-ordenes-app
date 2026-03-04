@@ -260,7 +260,7 @@ ordenes_tecnico = (
       .reset_index(name="ordenes")
 )
 
-# promedio por contrata
+# calcular promedio por contrata
 promedio_contrata = (
     ordenes_tecnico.groupby("contrata")["ordenes"]
       .mean()
@@ -270,31 +270,26 @@ promedio_contrata = (
 # ordenar de mayor a menor
 promedio_contrata = promedio_contrata.sort_values("ordenes", ascending=False)
 
-# crear categoria de color
-promedio_contrata["color"] = promedio_contrata["ordenes"].apply(
-    lambda x: "Cumple meta" if x >= 4 else "Debajo de meta"
-)
-
 # crear grafico
 fig = px.bar(
     promedio_contrata,
     x="contrata",
     y="ordenes",
-    text_auto=".2f",
-    color="color",
-    color_discrete_map={
-        "Cumple meta": "#1565C0",
-        "Debajo de meta": "#90CAF9"
-    }
+    text_auto=".2f"
+)
+
+# colores alternados azul oscuro / azul claro
+colors = ["#1565C0" if i % 2 == 0 else "#90CAF9" for i in range(len(promedio_contrata))]
+
+fig.update_traces(
+    marker_color=colors,
+    width=0.6
 )
 
 # reducir espacio entre barras
 fig.update_layout(bargap=0.15)
 
-# ajustar ancho barras
-fig.update_traces(width=0.6)
-
-# linea de meta
+# linea meta 4
 fig.add_hline(
     y=4,
     line_dash="dash",
@@ -303,7 +298,7 @@ fig.add_hline(
     annotation_position="top right"
 )
 
-# apariencia
+# apariencia general
 fig.update_layout(
     showlegend=False,
     xaxis_title="Contrata",
@@ -312,5 +307,8 @@ fig.update_layout(
     template="plotly_dark",
     margin=dict(b=120)
 )
+
+# mostrar grafico
+st.plotly_chart(fig, use_container_width=True)
 
 st.plotly_chart(fig, use_container_width=True)

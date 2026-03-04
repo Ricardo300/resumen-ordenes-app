@@ -318,13 +318,20 @@ st.plotly_chart(
 #================================================
 #  GRAFICO CUMPLIMIENTO POR TECNICO
 #================================================
-# ordenar
+# contar órdenes por técnico
+ordenes_tecnico_dia = (
+    df_dia.groupby("identificador_tecnico")
+    .size()
+    .reset_index(name="ordenes")
+)
+
+# ordenar de mayor a menor
 ordenes_tecnico_dia = ordenes_tecnico_dia.sort_values("ordenes", ascending=False)
 
-# crear índice para desplazamiento
+# crear índice para el desplazamiento
 ordenes_tecnico_dia["indice"] = range(len(ordenes_tecnico_dia))
 
-# gráfico
+# crear gráfico
 fig_tecnico = px.bar(
     ordenes_tecnico_dia,
     x="indice",
@@ -332,17 +339,17 @@ fig_tecnico = px.bar(
     text_auto=True
 )
 
-# eje X con técnicos
+# configurar eje X
 fig_tecnico.update_xaxes(
     tickmode="array",
     tickvals=ordenes_tecnico_dia["indice"],
     ticktext=ordenes_tecnico_dia["identificador_tecnico"],
     tickangle=-90,
     rangeslider=dict(visible=True),
-    range=[0, 19]  # primeros 20 visibles
+    range=[0, 19]   # muestra solo los primeros 20 inicialmente
 )
 
-# colores intercalados
+# colores alternados
 colors = [
     "#0D47A1" if i % 2 == 0 else "#90CAF9"
     for i in range(len(ordenes_tecnico_dia))
@@ -359,7 +366,7 @@ fig_tecnico.add_hline(
     annotation_position="top right"
 )
 
-# estilo
+# diseño
 fig_tecnico.update_layout(
     template="plotly_dark",
     height=600,
@@ -368,4 +375,5 @@ fig_tecnico.update_layout(
     bargap=0.15
 )
 
+# mostrar gráfico
 st.plotly_chart(fig_tecnico, use_container_width=True)

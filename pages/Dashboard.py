@@ -355,11 +355,14 @@ fig_tecnico = px.bar(
 
 # mostrar nombres reales de técnicos
 fig_tecnico.update_xaxes(
-    tickmode='array',
+    tickmode="array",
     tickvals=ordenes_tecnico_dia["indice"],
     ticktext=ordenes_tecnico_dia["identificador_tecnico"],
     tickangle=-90,
-    rangeslider=dict(visible=True)
+    rangeslider=dict(visible=True),
+    
+    # mostrar solo los primeros 20 al inicio
+    range=[0, 19]
 )
 
 # colores alternados
@@ -381,6 +384,10 @@ fig_tecnico.update_layout(
     height=600,
     xaxis_title="Técnico",
     yaxis_title="Órdenes atendidas",
+    bargap=0.15
+)
+
+st.plotly_chart(fig_tecnico, use_container_width=True)
     bargap=0.15
 )
 

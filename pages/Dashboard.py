@@ -302,15 +302,22 @@ if st.session_state["dia_click"]:
 
     dia = st.session_state["dia_click"]
 
-    st.subheader(f"Técnicos que trabajaron el día {dia}")
-
     lista_tecnicos = (
         df[df["dia_mes"] == dia]["identificador_tecnico"]
         .drop_duplicates()
         .sort_values()
     )
 
-    st.dataframe(lista_tecnicos, use_container_width=True)
+    with st.expander(f"Ver técnicos del día {dia}", expanded=True):
+
+        st.dataframe(lista_tecnicos, use_container_width=True)
+
+        st.download_button(
+            "Descargar lista",
+            lista_tecnicos.to_csv(index=False),
+            file_name=f"tecnicos_dia_{dia}.csv",
+            mime="text/csv"
+        )
 # ==========================================
 # TABLAS
 # ==========================================

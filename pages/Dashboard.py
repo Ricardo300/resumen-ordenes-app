@@ -227,6 +227,29 @@ c4.metric("Promedio Día", promedio_diario)
 c5.metric("Garantías", total_garantias)
 
 # ==========================================
+# POPUP TECNICOS
+# ==========================================
+
+@st.dialog("Técnicos del día")
+def mostrar_tecnicos(dia):
+
+    lista_tecnicos = (
+        df[df["dia_mes"] == dia]["identificador_tecnico"]
+        .drop_duplicates()
+        .sort_values()
+    )
+
+    st.write(f"Técnicos que trabajaron el día {dia}")
+
+    st.dataframe(lista_tecnicos, use_container_width=True)
+
+    st.download_button(
+        "Descargar lista",
+        lista_tecnicos.to_csv(index=False),
+        file_name=f"tecnicos_dia_{dia}.csv",
+        mime="text/csv"
+    )
+# ==========================================
 # GRÁFICO ORDENES POR DÍA + TECNICOS
 # ==========================================
 
@@ -300,18 +323,8 @@ if event and "selection" in event and event["selection"]["points"]:
 
 if st.session_state["dia_click"]:
 
-    dia = st.session_state["dia_click"]
-
-    lista_tecnicos = (
-        df[df["dia_mes"] == dia]["identificador_tecnico"]
-        .drop_duplicates()
-        .sort_values()
-    )
-
-    with st.expander(f"Ver técnicos del día {dia}", expanded=True):
-
-        st.dataframe(lista_tecnicos, use_container_width=True)
-
+    mostrar_tecnicos(st.session_state["dia_click"])
+    
         st.download_button(
             "Descargar lista",
             lista_tecnicos.to_csv(index=False),

@@ -295,8 +295,8 @@ fig.add_scatter(
     mode="lines+markers+text",
     text=ordenes_dia["tecnicos"],
     textposition="top center",
-    line=dict(color="#FFA500", width=1.5),
-    marker=dict(size=8),
+    line=dict(color="FF3B30", width=1.5),
+    marker=dict(size=5),
     name="Técnicos"
 )
 

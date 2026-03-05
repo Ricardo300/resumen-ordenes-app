@@ -239,7 +239,7 @@ def mostrar_tecnicos(dia):
     .nunique()
     .reset_index(name="ordenes_atendidas")
     .sort_values("ordenes_atendidas", ascending=False)
-)
+  )
 
     st.write(f"Técnicos que trabajaron el día {dia}")
 

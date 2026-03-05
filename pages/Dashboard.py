@@ -283,10 +283,21 @@ fig = px.bar(
 )
 
 fig.update_traces(textposition="outside")
-
+#TRANSPARECIA DE BARRAS
 fig.update_traces(
     textposition="outside",
     opacity=0.65
+)
+#LINEA DE TECINCOS
+fig.add_scatter(
+    x=ordenes_dia["dia_mes"],
+    y=ordenes_dia["tecnicos"],
+    mode="lines+markers+text",
+    text=ordenes_dia["tecnicos"],
+    textposition="top center",
+    line=dict(color="#00E5FF", width=3),
+    marker=dict(size=8),
+    name="Técnicos"
 )
 
 # técnicos dentro de la barra

@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 import streamlit as st
+from streamlit_plotly_events import plotly_events
 
 # ==========================================
 # LOGIN SIMPLE
@@ -228,6 +229,9 @@ c5.metric("Garantías", total_garantias)
 # ==========================================
 # GRÁFICO ORDENES POR DÍA + TECNICOS
 # ==========================================
+# ==========================================
+# GRAFICO ORDENES POR DIA + TECNICOS + CLICK
+# ==========================================
 
 df["dia_mes"] = df["fecha"].dt.day
 
@@ -245,10 +249,10 @@ tecnicos_dia = (
     .reset_index(name="tecnicos")
 )
 
-# unir datos
+# unir información
 ordenes_dia = ordenes_dia.merge(tecnicos_dia, on="dia_mes")
 
-# gráfico base
+# gráfico
 fig = px.bar(
     ordenes_dia,
     x="dia_mes",
@@ -264,7 +268,7 @@ fig.update_traces(
     textfont_size=12
 )
 
-# agregar técnicos en medio de la barra
+# técnicos dentro de la barra
 for i, row in ordenes_dia.iterrows():
     fig.add_annotation(
         x=row["dia_mes"],
@@ -275,14 +279,49 @@ for i, row in ordenes_dia.iterrows():
     )
 
 fig.update_layout(
-    height=320,
+    height=350,
     coloraxis_showscale=False,
     xaxis_title="Día del mes",
     yaxis_title="Órdenes",
     template="plotly_dark"
 )
 
+# detectar click en barra
+selected_points = plotly_events(fig)
+
+# mostrar gráfico
 st.plotly_chart(fig, use_container_width=True)
+
+# ==========================================
+# MOSTRAR TECNICOS DEL DIA SELECCIONADO
+# ==========================================
+
+if selected_points:
+
+    dia_seleccionado = selected_points[0]["x"]
+
+    st.subheader(f"👷 Técnicos que trabajaron el día {dia_seleccionado}")
+
+    df_tecnicos = df[df["fecha"].dt.day == dia_seleccionado]
+
+    lista_tecnicos = (
+        df_tecnicos["identificador_tecnico"]
+        .drop_duplicates()
+        .sort_values()
+        .reset_index(drop=True)
+    )
+
+    st.dataframe(lista_tecnicos, use_container_width=True)
+
+    # exportar lista
+    csv = lista_tecnicos.to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        "⬇️ Exportar lista de técnicos",
+        csv,
+        f"tecnicos_dia_{dia_seleccionado}.csv",
+        "text/csv"
+    )
 
 # ==========================================
 # TABLAS

@@ -205,6 +205,9 @@ df = df[
     df["tipo_actividad"].isin(tipo_actividad)
 ]
 
+# resetear popup cuando cambian filtros
+st.session_state["dia_click"] = None
+
 # Si te quedas sin selección (todo en falso), evita error y muestra aviso
 if df.empty:
     st.warning("No hay datos con los filtros seleccionados.")

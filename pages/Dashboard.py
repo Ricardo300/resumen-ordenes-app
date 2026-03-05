@@ -233,11 +233,13 @@ c5.metric("Garantías", total_garantias)
 @st.dialog("Técnicos del día")
 def mostrar_tecnicos(dia):
 
-    lista_tecnicos = (
-        df[df["dia_mes"] == dia]["identificador_tecnico"]
-        .drop_duplicates()
-        .sort_values()
-    )
+  lista_tecnicos = (
+    df[df["dia_mes"] == dia]
+    .groupby("identificador_tecnico")["orden_trabajo"]
+    .nunique()
+    .reset_index(name="ordenes_atendidas")
+    .sort_values("ordenes_atendidas", ascending=False)
+)
 
     st.write(f"Técnicos que trabajaron el día {dia}")
 

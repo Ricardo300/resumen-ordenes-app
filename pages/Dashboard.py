@@ -284,6 +284,11 @@ fig = px.bar(
 
 fig.update_traces(textposition="outside")
 
+fig.update_traces(
+    textposition="outside",
+    opacity=0.65
+)
+
 # técnicos dentro de la barra
 for _, row in ordenes_dia.iterrows():
     fig.add_annotation(

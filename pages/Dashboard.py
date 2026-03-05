@@ -275,10 +275,11 @@ fig.update_layout(
     coloraxis_showscale=False
 )
 
-evento = st.plotly_chart(
+selected_points = plotly_events(
     fig,
-    use_container_width=True,
-    on_select="rerun"
+    click_event=True,
+    hover_event=False,
+    select_event=False
 )
 
 # ==========================================

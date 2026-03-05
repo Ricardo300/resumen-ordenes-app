@@ -11,6 +11,8 @@ import streamlit as st
 
 usuarios = {
     "ricardo": "1234",
+    "jeffy": "12345",
+    "hector" "123456",
     "supervisor": "abcd",
     "backoffice": "eta2026"
 }

@@ -275,10 +275,11 @@ fig.update_layout(
     coloraxis_showscale=False
 )
 
-evento = st.plotly_chart(
+st.plotly_chart(
     fig,
     use_container_width=True,
-    on_select="rerun"
+    on_select="rerun",
+    key="grafico_ordenes_dia"
 )
 
 # ==========================================
@@ -288,8 +289,10 @@ evento = st.plotly_chart(
 if "dia_click" not in st.session_state:
     st.session_state["dia_click"] = None
 
-if evento and "points" in evento:
-    st.session_state["dia_click"] = evento["points"][0]["x"]
+event = st.session_state.get("grafico_ordenes_dia")
+
+if event and "selection" in event and event["selection"]["points"]:
+    st.session_state["dia_click"] = event["selection"]["points"][0]["x"]
 
 # ==========================================
 # MOSTRAR TECNICOS

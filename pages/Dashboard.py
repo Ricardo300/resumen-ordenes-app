@@ -301,14 +301,14 @@ fig.add_scatter(
 )
 
 # técnicos dentro de la barra
-for _, row in ordenes_dia.iterrows():
-    fig.add_annotation(
-        x=row["dia_mes"],
-        y=row["ordenes"] / 2,
-        text=str(row["tecnicos"]),
-        showarrow=False,
-        font=dict(size=12, color="white")
-    )
+#for _, row in ordenes_dia.iterrows():
+   # fig.add_annotation(
+   #     x=row["dia_mes"],
+   #     y=row["ordenes"] / 2,
+   #     text=str(row["tecnicos"]),
+   #     showarrow=False,
+    #    font=dict(size=12, color="white")
+  #  )
 
 fig.update_layout(
     height=350,

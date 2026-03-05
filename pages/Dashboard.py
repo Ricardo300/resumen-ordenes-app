@@ -3,7 +3,39 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
+import streamlit as st
 
+# ==========================================
+# LOGIN SIMPLE
+# ==========================================
+
+usuarios = {
+    "ricardo": "1234",
+    "supervisor": "abcd",
+    "backoffice": "eta2026"
+}
+
+if "logueado" not in st.session_state:
+    st.session_state["logueado"] = False
+
+
+def login():
+    st.title("🔐 Acceso al Dashboard")
+
+    usuario = st.text_input("Usuario")
+    contraseña = st.text_input("Contraseña", type="password")
+
+    if st.button("Ingresar"):
+        if usuario in usuarios and usuarios[usuario] == contraseña:
+            st.session_state["logueado"] = True
+            st.rerun()
+        else:
+            st.error("Usuario o contraseña incorrectos")
+
+
+if not st.session_state["logueado"]:
+    login()
+    st.stop()
 # ==========================================
 # CONFIGURACIÓN
 # ==========================================

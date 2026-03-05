@@ -275,7 +275,12 @@ fig.update_layout(
     coloraxis_showscale=False
 )
 
-st.plotly_chart(fig, use_container_width=True)
+evento = st.plotly_chart(
+    fig,
+    use_container_width=True,
+    on_select="rerun"
+)
+
 # ==========================================
 # GUARDAR DIA SELECCIONADO
 # ==========================================
@@ -303,24 +308,6 @@ if st.session_state["dia_click"]:
     )
 
     st.dataframe(lista_tecnicos, use_container_width=True)
-# ==========================================
-# VER TECNICOS POR DIA
-# ==========================================
-
-dia_seleccionado = st.selectbox(
-    "Seleccionar día para ver técnicos",
-    sorted(df["dia_mes"].unique())
-)
-
-lista_tecnicos = (
-    df[df["dia_mes"] == dia_seleccionado]["identificador_tecnico"]
-    .drop_duplicates()
-    .sort_values()
-)
-
-st.subheader(f"Técnicos que trabajaron el día {dia_seleccionado}")
-
-st.dataframe(lista_tecnicos, use_container_width=True)
 # ==========================================
 # TABLAS
 # ==========================================

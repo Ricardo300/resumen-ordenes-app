@@ -227,97 +227,63 @@ c4.metric("Promedio Día", promedio_diario)
 c5.metric("Garantías", total_garantias)
 
 # ==========================================
-# GRAFICO ORDENES POR DIA + TECNICOS (CLICK)
+# GRÁFICO ORDENES POR DÍA + TECNICOS
 # ==========================================
-st.subheader("Órdenes por día (clic para ver técnicos)")
 
-# 1) Preparar día del mes como CATEGORÍA (texto)
 df["dia_mes"] = df["fecha"].dt.day
-df["dia_mes_str"] = df["dia_mes"].astype(str)
 
-# 2) Órdenes por día
+# órdenes por día
 ordenes_dia = (
-    df.groupby("dia_mes_str")["orden_trabajo"]
-      .nunique()
-      .reset_index(name="ordenes")
+    df.groupby("dia_mes")["orden_trabajo"]
+    .nunique()
+    .reset_index(name="ordenes")
 )
 
-# 3) Técnicos por día
+# técnicos por día
 tecnicos_dia = (
-    df.groupby("dia_mes_str")["identificador_tecnico"]
-      .nunique()
-      .reset_index(name="tecnicos")
+    df.groupby("dia_mes")["identificador_tecnico"]
+    .nunique()
+    .reset_index(name="tecnicos")
 )
 
-# 4) Unir y ordenar por día
-ordenes_dia = ordenes_dia.merge(tecnicos_dia, on="dia_mes_str", how="left")
-ordenes_dia["dia_mes_int"] = ordenes_dia["dia_mes_str"].astype(int)
-ordenes_dia = ordenes_dia.sort_values("dia_mes_int")
+ordenes_dia = ordenes_dia.merge(tecnicos_dia, on="dia_mes")
 
-# 5) Crear gráfico de barras
+# gráfico
 fig = px.bar(
     ordenes_dia,
-    x="dia_mes_str",
+    x="dia_mes",
     y="ordenes",
+    text="ordenes",
     color="ordenes",
-    color_continuous_scale="Blues",
-    text="ordenes"
+    color_continuous_scale="Blues"
 )
 
-# Órdenes arriba de la barra
-fig.update_traces(textposition="outside", textfont_size=12)
+fig.update_traces(textposition="outside")
 
-# Técnicos en medio (solo número, sin letras)
-for _, row in ordenes_dia.iterrows():
+# técnicos dentro de la barra
+for i, row in ordenes_dia.iterrows():
     fig.add_annotation(
-        x=row["dia_mes_str"],
+        x=row["dia_mes"],
         y=row["ordenes"] / 2,
-        text=str(int(row["tecnicos"])),
+        text=str(row["tecnicos"]),
         showarrow=False,
         font=dict(size=12, color="white")
     )
 
 fig.update_layout(
-    template="plotly_dark",
     height=350,
-    coloraxis_showscale=False,
+    template="plotly_dark",
     xaxis_title="Día del mes",
     yaxis_title="Órdenes",
-    bargap=0.2
+    coloraxis_showscale=False
 )
 
-# IMPORTANTE: Renderizar SOLO con plotly_events (NO st.plotly_chart)
-selected_points = plotly_events(
+# mostrar gráfico
+evento = st.plotly_chart(
     fig,
-    click_event=True,
-    hover_event=False,
-    select_event=False,
-    key="click_ordenes_dia"
+    use_container_width=True,
+    on_select="rerun"
 )
-
-# 6) Si hace clic, mostrar técnicos y exportar
-if selected_points:
-    dia_click = str(selected_points[0]["x"])  # día como texto
-
-    st.markdown(f"### 👷 Técnicos que trabajaron el día {dia_click}")
-
-    lista_tecnicos = (
-        df[df["dia_mes_str"] == dia_click]["identificador_tecnico"]
-          .drop_duplicates()
-          .sort_values()
-          .reset_index(drop=True)
-    )
-
-    st.dataframe(lista_tecnicos, use_container_width=True, height=300)
-
-    csv = lista_tecnicos.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        "⬇️ Exportar lista de técnicos",
-        data=csv,
-        file_name=f"tecnicos_dia_{dia_click}.csv",
-        mime="text/csv"
-    )
-
 # ==========================================
 # MOSTRAR TECNICOS DEL DIA SELECCIONADO
 # ==========================================

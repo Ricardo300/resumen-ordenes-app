@@ -287,10 +287,12 @@ fig.update_layout(
 )
 
 # detectar click en barra
-selected_points = plotly_events(fig)
-
-# mostrar gráfico
-st.plotly_chart(fig, use_container_width=True)
+selected_points = plotly_events(
+    fig,
+    click_event=True,
+    hover_event=False,
+    select_event=False
+)
 
 # ==========================================
 # MOSTRAR TECNICOS DEL DIA SELECCIONADO

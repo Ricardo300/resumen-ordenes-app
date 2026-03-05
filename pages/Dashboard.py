@@ -322,15 +322,7 @@ if event and "selection" in event and event["selection"]["points"]:
 # ==========================================
 
 if st.session_state["dia_click"]:
-
     mostrar_tecnicos(st.session_state["dia_click"])
-    
-        st.download_button(
-            "Descargar lista",
-            lista_tecnicos.to_csv(index=False),
-            file_name=f"tecnicos_dia_{dia}.csv",
-            mime="text/csv"
-        )
 # ==========================================
 # TABLAS
 # ==========================================

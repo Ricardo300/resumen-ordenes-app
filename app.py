@@ -76,7 +76,8 @@ if archivo is not None:
             "Inicio",
             "Finalización",
             "Hora de reserva de actividad",
-            "Fecha Programación"
+            "Fecha Programación",
+            "Numero Cliente"
         ]
 
         for col in columnas_necesarias:
@@ -105,7 +106,7 @@ if archivo is not None:
             "finalizacion",
             "hora_reserva_actividad",
             "fecha_programacion",
-            "Numero Cliente"
+            "numero_cliente"
         ]
 
         # ============================================
@@ -224,6 +225,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

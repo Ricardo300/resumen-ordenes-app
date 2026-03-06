@@ -204,7 +204,7 @@ if archivo is not None:
         # 🔄 Limpiar NaN
         # ============================================
 
-        df = df.where(pd.notnull(df), None)
+        df = df.astype(object).where(pd.notnull(df), None)
 
         st.write("Cantidad de registros a insertar:", len(df))
         st.write("Órdenes duplicadas en archivo:", df["orden_trabajo"].duplicated().sum())
@@ -225,6 +225,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

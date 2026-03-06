@@ -108,6 +108,12 @@ if archivo is not None:
             "fecha_programacion",
             "numero_cliente"
         ]
+        df["numero_cliente"] = (
+            pd.to_numeric(df["numero_cliente"], errors="coerce")
+            .fillna(0)
+            .astype(int)
+            .astype(str)
+        )
 
         # ============================================
         # 🔥 CLASIFICAR TECNOLOGÍA
@@ -225,6 +231,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

@@ -104,7 +104,8 @@ if archivo is not None:
             "inicio",
             "finalizacion",
             "hora_reserva_actividad",
-            "fecha_programacion"
+            "fecha_programacion",
+            "Numero Cliente"
         ]
 
         # ============================================
@@ -223,6 +224,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

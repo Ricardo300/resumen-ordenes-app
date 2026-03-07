@@ -92,6 +92,45 @@ st.markdown("""
         border-radius: 12px;
         overflow: hidden;
     }
+
+    /* TABLA COMPACTA PROFESIONAL */
+    .compact-table-container {
+        max-height: 420px;
+        overflow-y: auto;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+    }
+
+    .compact-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .compact-table thead th {
+        position: sticky;
+        top: 0;
+        background: #161b26;
+        padding: 6px 10px;
+        text-align: left;
+        border-bottom: 1px solid rgba(255,255,255,0.10);
+        z-index: 1;
+    }
+
+    .compact-table tbody td {
+        padding: 5px 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .compact-table tbody tr:hover {
+        background-color: rgba(255,255,255,0.03);
+    }
+
+    .compact-table .num {
+        text-align: right;
+        font-weight: 600;
+        color: #8ab4ff;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -344,7 +383,7 @@ with k5:
 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
 # =====================================
-# HELPERS GRÁFICOS
+# HELPERS
 # =====================================
 
 def estilo_fig(fig, titulo_x="", titulo_y="", altura=380):
@@ -362,6 +401,35 @@ def estilo_fig(fig, titulo_x="", titulo_y="", altura=380):
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(gridcolor="rgba(255,255,255,0.10)")
     return fig
+
+def tabla_compacta(df_tabla):
+    headers = "".join([f"<th>{col}</th>" for col in df_tabla.columns])
+
+    filas = []
+    for _, row in df_tabla.iterrows():
+        celdas = []
+        for col in df_tabla.columns:
+            valor = row[col]
+            if col == "Garantías":
+                celdas.append(f'<td class="num">{valor}</td>')
+            else:
+                celdas.append(f"<td>{valor}</td>")
+        filas.append(f"<tr>{''.join(celdas)}</tr>")
+
+    html = f"""
+    <div class="compact-table-container">
+        <table class="compact-table">
+            <thead>
+                <tr>{headers}</tr>
+            </thead>
+            <tbody>
+                {''.join(filas)}
+            </tbody>
+        </table>
+    </div>
+    """
+
+    st.markdown(html, unsafe_allow_html=True)
 
 # =====================================
 # PRIMERA FILA DE GRÁFICOS
@@ -507,12 +575,7 @@ with t1:
         "garantias": "Garantías"
     })
 
-    st.dataframe(
-        garantias_tecnico,
-        use_container_width=True,
-        hide_index=True,
-        height=420
-    )
+    tabla_compacta(garantias_tecnico)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with t2:
@@ -536,7 +599,8 @@ with t2:
         codigos_cierre_tabla,
         use_container_width=True,
         hide_index=True,
-        height=420
+        height=420,
+        row_height=26
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -567,5 +631,6 @@ with st.expander("Ver detalle de garantías filtradas", expanded=False):
         df_filtrado[columnas_detalle],
         use_container_width=True,
         hide_index=True,
-        height=420
+        height=420,
+        row_height=26
     )

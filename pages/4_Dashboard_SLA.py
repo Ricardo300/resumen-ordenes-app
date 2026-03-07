@@ -23,7 +23,7 @@ supabase = create_client(
 )
 
 # =====================================
-# CARGAR DATOS (PAGINACIÓN)
+# CARGAR DATOS
 # =====================================
 
 datos = []
@@ -35,7 +35,7 @@ while True:
     response = (
         supabase
         .table("view_sla_operacion")
-        .select("dilacion_dias,fecha,tipo_sla")
+        .select("dilacion_dias,fecha,tipo_sla,tecnologia")
         .range(inicio, inicio + limite - 1)
         .execute()
     )
@@ -51,7 +51,7 @@ while True:
 df = pd.DataFrame(datos)
 
 # =====================================
-# FILTRO FEBRERO 2026
+# FILTRO FECHA (FEBRERO)
 # =====================================
 
 df["fecha"] = pd.to_datetime(df["fecha"])
@@ -62,23 +62,56 @@ df = df[
 ]
 
 # =====================================
+# FILTROS DASHBOARD
+# =====================================
+
+st.sidebar.title("Filtros")
+
+tec = st.sidebar.selectbox(
+    "Tecnología",
+    ["Todas","GPON","DTH"]
+)
+
+sla = st.sidebar.selectbox(
+    "Tipo SLA",
+    ["Todos","INSTALACION","REPARACION"]
+)
+
+# =====================================
+# APLICAR FILTROS
+# =====================================
+
+df_filtrado = df.copy()
+
+if tec != "Todas":
+    df_filtrado = df_filtrado[df_filtrado["tecnologia"] == tec]
+
+if sla != "Todos":
+    df_filtrado = df_filtrado[df_filtrado["tipo_sla"] == sla]
+
+# =====================================
 # KPI
 # =====================================
 
-total_ordenes = len(df)
+total_ordenes = len(df_filtrado)
 
-inst = df[df["tipo_sla"] == "INSTALACION"]
-rep = df[df["tipo_sla"] == "REPARACION"]
+inst = df_filtrado[df_filtrado["tipo_sla"] == "INSTALACION"]
+rep = df_filtrado[df_filtrado["tipo_sla"] == "REPARACION"]
 
-sla_inst = round(
-    (len(inst[inst["dilacion_dias"] <= 3]) / len(inst)) * 100,
-    2
-)
+sla_inst = 0
+sla_rep = 0
 
-sla_rep = round(
-    (len(rep[rep["dilacion_dias"] <= 2]) / len(rep)) * 100,
-    2
-)
+if len(inst) > 0:
+    sla_inst = round(
+        (len(inst[inst["dilacion_dias"] <= 3]) / len(inst)) * 100,
+        2
+    )
+
+if len(rep) > 0:
+    sla_rep = round(
+        (len(rep[rep["dilacion_dias"] <= 2]) / len(rep)) * 100,
+        2
+    )
 
 # =====================================
 # MOSTRAR KPI
@@ -95,11 +128,11 @@ col3.metric("SLA Reparaciones %", sla_rep)
 st.divider()
 
 # =====================================
-# TABLA DE DILACIÓN
+# TABLA DILACIÓN
 # =====================================
 
 conteo = (
-    df.groupby("dilacion_dias")
+    df_filtrado.groupby("dilacion_dias")
     .size()
     .reset_index(name="Cantidad")
     .sort_values("dilacion_dias")

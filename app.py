@@ -23,7 +23,7 @@ if archivo is not None:
     # 🔎 Detectar columnas Estado
     # ============================================
 
-        columnas_estado = [col for col in df.columns if col.startswith("Estado")]
+    columnas_estado = [col for col in df.columns if col.startswith("Estado")]
 
         if len(columnas_estado) < 2:
             st.error("No se detectaron las dos columnas 'Estado'")
@@ -230,6 +230,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

@@ -1,6 +1,7 @@
 import streamlit as st
 from supabase import create_client
 import pandas as pd
+import plotly.express as px
 
 # =====================================
 # CONFIGURACIÓN
@@ -84,6 +85,33 @@ col2.metric("Garantías Internas", internas)
 col3.metric("Garantías Externas", externas)
 
 col4.metric("Promedio días garantía", promedio_dias)
+
+# =====================================
+# GARANTÍAS POR CONTRATA
+# =====================================
+
+st.subheader("Garantías por Contrata")
+
+garantias_contrata = (
+    df.groupby("contrata_causa_garantia")
+    .size()
+    .reset_index(name="cantidad")
+    .sort_values("cantidad", ascending=False)
+)
+
+fig = px.bar(
+    garantias_contrata,
+    x="contrata_causa_garantia",
+    y="cantidad",
+    text="cantidad"
+)
+
+fig.update_layout(
+    xaxis_title="Contrata",
+    yaxis_title="Cantidad de Garantías"
+)
+
+st.plotly_chart(fig, use_container_width=True)
 
 # =====================================
 # TABLA

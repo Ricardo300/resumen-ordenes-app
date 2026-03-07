@@ -281,10 +281,4 @@ fig_cla = px.bar(
 
 st.plotly_chart(fig_cla, use_container_width=True)
 
-# =====================================
-# TABLA
-# =====================================
 
-st.subheader("Detalle de Garantías")
-
-st.dataframe(df_filtrado, use_container_width=True)

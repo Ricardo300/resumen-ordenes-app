@@ -250,27 +250,32 @@ col4.metric("% Garantía Interna", f"{pct_garantia_interna}%")
 col5.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
 
 # =====================================
-# GARANTÍAS POR CONTRATA
+# CLASIFICACIÓN DE GARANTÍA
 # =====================================
 
-st.subheader("Garantías por Contrata")
+st.subheader("Clasificación de Garantías")
 
-garantias_contrata = (
+clasificacion_df = (
     df_filtrado
-    .groupby("contrata_causa_garantia")
+    .groupby("clasificacion_garantia")
     .size()
     .reset_index(name="cantidad")
     .sort_values("cantidad", ascending=False)
 )
 
-fig = px.bar(
-    garantias_contrata,
-    x="contrata_causa_garantia",
+fig_clasificacion = px.bar(
+    clasificacion_df,
+    x="clasificacion_garantia",
     y="cantidad",
     text="cantidad"
 )
 
-st.plotly_chart(fig, use_container_width=True)
+fig_clasificacion.update_layout(
+    xaxis_title="Clasificación",
+    yaxis_title="Cantidad"
+)
+
+st.plotly_chart(fig_clasificacion, use_container_width=True)
 
 # =====================================
 # TABLA GARANTÍAS POR TÉCNICO
@@ -353,33 +358,27 @@ st.dataframe(
     use_container_width=True,
     hide_index=True
 )
-
 # =====================================
-# CLASIFICACIÓN DE GARANTÍA
+# GARANTÍAS POR CONTRATA
 # =====================================
 
-st.subheader("Clasificación de Garantías")
+st.subheader("Garantías por Contrata")
 
-clasificacion_df = (
+garantias_contrata = (
     df_filtrado
-    .groupby("clasificacion_garantia")
+    .groupby("contrata_causa_garantia")
     .size()
     .reset_index(name="cantidad")
     .sort_values("cantidad", ascending=False)
 )
 
-fig_clasificacion = px.bar(
-    clasificacion_df,
-    x="clasificacion_garantia",
+fig = px.bar(
+    garantias_contrata,
+    x="contrata_causa_garantia",
     y="cantidad",
     text="cantidad"
 )
 
-fig_clasificacion.update_layout(
-    xaxis_title="Clasificación",
-    yaxis_title="Cantidad"
-)
-
-st.plotly_chart(fig_clasificacion, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)
 
 

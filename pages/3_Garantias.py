@@ -282,14 +282,15 @@ st.subheader("Garantías por Técnico")
 
 garantias_tecnico = (
     df_filtrado
-    .groupby("tecnico_causa_garantia")
+    .groupby(["tecnico_causa_garantia","contrata_causa_garantia"])
     .size()
     .reset_index(name="garantias")
     .sort_values("garantias", ascending=False)
 )
 
 garantias_tecnico = garantias_tecnico.rename(columns={
-    "tecnico_causa_garantia":"Tecnico"
+    "tecnico_causa_garantia":"Tecnico",
+    "contrata_causa_garantia":"Contrata"
 })
 
 st.dataframe(
@@ -297,7 +298,6 @@ st.dataframe(
     use_container_width=True,
     hide_index=True
 )
-
 # =====================================
 # GARANTÍAS POR RANGO
 # =====================================

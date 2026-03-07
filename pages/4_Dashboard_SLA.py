@@ -23,40 +23,41 @@ supabase = create_client(
 )
 
 # =====================================
-# CONSULTA SQL (solo febrero)
+# CARGAR DATOS
 # =====================================
 
-query = """
-WITH base AS (
-
-SELECT
-dilacion_dias
-FROM view_sla_operacion
-WHERE DATE_TRUNC('month', fecha) = '2026-02-01'
-
-)
-
-SELECT
-dilacion_dias,
-ROUND(
-SUM(COUNT(*)) OVER (ORDER BY dilacion_dias)::numeric
-/
-SUM(COUNT(*)) OVER () * 100
-,2) AS febrero
-FROM base
-GROUP BY dilacion_dias
-ORDER BY dilacion_dias
-"""
-
-response = supabase.rpc("run_sql", {"query": query}).execute()
+response = supabase.table("view_sla_operacion").select("dilacion_dias,fecha").execute()
 
 df = pd.DataFrame(response.data)
+
+df["fecha"] = pd.to_datetime(df["fecha"])
+
+# solo febrero
+df = df[df["fecha"].dt.month == 2]
+
+# =====================================
+# CALCULO ACUMULADO
+# =====================================
+
+total = len(df)
+
+tabla = []
+
+for d in sorted(df["dilacion_dias"].unique()):
+
+    dentro = len(df[df["dilacion_dias"] <= d])
+
+    porcentaje = round((dentro / total) * 100,2)
+
+    tabla.append({
+        "Dilación": d,
+        "Febrero %": porcentaje
+    })
+
+tabla_df = pd.DataFrame(tabla)
 
 # =====================================
 # MOSTRAR TABLA
 # =====================================
 
-st.dataframe(
-    df,
-    use_container_width=True
-)
+st.dataframe(tabla_df, use_container_width=True)

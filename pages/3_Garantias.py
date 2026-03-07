@@ -97,21 +97,21 @@ with st.sidebar.expander("Contrata", expanded=True):
 
     contratas = sorted(df["contrata_causa_garantia"].dropna().unique())
 
+    # inicializar session_state
+    if "contrata_filtro" not in st.session_state:
+        st.session_state.contrata_filtro = contratas
+
     col1, col2 = st.columns(2)
 
     if col1.button("✓ Todo"):
-        st.session_state["contrata_filtro"] = contratas
+        st.session_state.contrata_filtro = contratas
 
     if col2.button("✕ Ninguno"):
-        st.session_state["contrata_filtro"] = []
-
-    if "contrata_filtro" not in st.session_state:
-        st.session_state["contrata_filtro"] = contratas
+        st.session_state.contrata_filtro = []
 
     contrata_filtro = st.multiselect(
         "Seleccionar",
         contratas,
-        default=st.session_state["contrata_filtro"],
         key="contrata_filtro"
     )
 # ===============================

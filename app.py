@@ -19,9 +19,9 @@ archivo = st.file_uploader("Subir archivo Excel", type=["xlsx"])
 if archivo is not None:
 
     df = pd.read_excel(archivo, engine="openpyxl")
-        # ============================================
-        # 🔎 Detectar columnas Estado
-        # ============================================
+    # ============================================
+    # 🔎 Detectar columnas Estado
+    # ============================================
 
         columnas_estado = [col for col in df.columns if col.startswith("Estado")]
 
@@ -230,6 +230,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

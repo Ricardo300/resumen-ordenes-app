@@ -21,10 +21,10 @@ supabase = create_client(
 )
 
 # =====================================
-# FUNCIÓN PARA CARGAR DATOS
+# CARGAR DATOS
 # =====================================
 
-@st.cache_data
+@st.cache_data(ttl=600)
 def cargar_garantias():
 
     todos = []
@@ -58,18 +58,23 @@ def cargar_garantias():
     return df
 
 
-# =====================================
-# CARGAR DATOS
-# =====================================
-
 df = cargar_garantias()
+
+# =====================================
+# LIMPIEZA DE DATOS
+# =====================================
 
 df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"])
 
 df["contrata_causa_garantia"] = df["contrata_causa_garantia"].fillna("SIN CONTRATA")
 df["tipo_garantia"] = df["tipo_garantia"].fillna("SIN CLASIFICAR")
 df["clasificacion_garantia"] = df["clasificacion_garantia"].fillna("SIN CLASIFICAR")
-df["tecnologia"] = df["tecnologia"].fillna("SIN TECNOLOGIA")
+
+# evitar error si tecnologia no existe
+if "tecnologia" not in df.columns:
+    df["tecnologia"] = "DESCONOCIDA"
+else:
+    df["tecnologia"] = df["tecnologia"].fillna("SIN TECNOLOGIA")
 
 df["anio"] = df["fecha_garantia"].dt.year
 df["mes_num"] = df["fecha_garantia"].dt.month
@@ -80,10 +85,7 @@ df["mes_num"] = df["fecha_garantia"].dt.month
 
 st.sidebar.header("Filtros")
 
-# =====================================
-# FILTRO AÑO
-# =====================================
-
+# Año
 anios = sorted(df["anio"].unique())
 
 anio_filtro = st.sidebar.selectbox(
@@ -92,10 +94,7 @@ anio_filtro = st.sidebar.selectbox(
     index=len(anios)-1
 )
 
-# =====================================
-# FILTRO MES
-# =====================================
-
+# Mes
 meses = {
 1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo",6:"Junio",
 7:"Julio",8:"Agosto",9:"Septiembre",10:"Octubre",11:"Noviembre",12:"Diciembre"
@@ -107,9 +106,9 @@ mes_num = st.sidebar.selectbox(
     format_func=lambda x: meses[x]
 )
 
-# ==========================================
-# FILTRO CHECKBOX + BOTONES TODO/NINGUNO
-# ==========================================
+# =====================================
+# FILTRO CHECKBOX
+# =====================================
 
 def filtro_checkbox(label, opciones, key_prefix):
 
@@ -117,11 +116,11 @@ def filtro_checkbox(label, opciones, key_prefix):
 
         col1, col2 = st.columns(2)
 
-        if col1.button("✓ Todo", key=f"{key_prefix}_all", type="secondary"):
+        if col1.button("✓ Todo", key=f"{key_prefix}_all"):
             for opcion in opciones:
                 st.session_state[f"{key_prefix}_{opcion}"] = True
 
-        if col2.button("✕ Ninguno", key=f"{key_prefix}_none", type="secondary"):
+        if col2.button("✕ Ninguno", key=f"{key_prefix}_none"):
             for opcion in opciones:
                 st.session_state[f"{key_prefix}_{opcion}"] = False
 
@@ -141,7 +140,7 @@ def filtro_checkbox(label, opciones, key_prefix):
 
 
 # =====================================
-# OPCIONES DINÁMICAS
+# OPCIONES FILTRO
 # =====================================
 
 opciones_contrata = sorted(df["contrata_causa_garantia"].unique())
@@ -150,7 +149,7 @@ opciones_clasificacion = sorted(df["clasificacion_garantia"].unique())
 opciones_tecnologia = sorted(df["tecnologia"].unique())
 
 # =====================================
-# FILTROS CHECKBOX
+# FILTROS
 # =====================================
 
 contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
@@ -178,9 +177,7 @@ df_filtrado = df[
 col1, col2, col3, col4 = st.columns(4)
 
 total = len(df_filtrado)
-
 internas = len(df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"])
-
 externas = len(df_filtrado[df_filtrado["tipo_garantia"] == "EXTERNA"])
 
 promedio_dias = round(df_filtrado["dias_desde_visita"].mean(),1)
@@ -268,7 +265,7 @@ fig_rango = px.bar(
 st.plotly_chart(fig_rango, use_container_width=True)
 
 # =====================================
-# CLASIFICACIÓN SUPERVISOR
+# CLASIFICACIÓN
 # =====================================
 
 st.subheader("Clasificación de Garantías")

@@ -11,7 +11,49 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("Dilación desde creación hasta cierre")
+# =====================================
+# ESTILO VISUAL
+# =====================================
+
+st.markdown("""
+<style>
+
+[data-testid="stMetricValue"]{
+font-size:40px;
+font-weight:700;
+}
+
+[data-testid="stMetricLabel"]{
+font-size:14px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# =====================================
+# TITULO
+# =====================================
+
+st.markdown("""
+<div style="
+display:flex;
+align-items:center;
+gap:10px;
+margin-bottom:10px;
+">
+
+<span style="font-size:28px;">📊</span>
+
+<h2 style="
+margin:0;
+font-weight:600;
+letter-spacing:0.5px;
+">
+DILACIÓN DE ASIGNACIÓN
+</h2>
+
+</div>
+""", unsafe_allow_html=True)
 
 # =====================================
 # CONEXIÓN SUPABASE
@@ -23,7 +65,7 @@ supabase = create_client(
 )
 
 # =====================================
-# CARGAR DATOS
+# CARGAR DATOS (PAGINACIÓN)
 # =====================================
 
 datos = []
@@ -51,7 +93,7 @@ while True:
 df = pd.DataFrame(datos)
 
 # =====================================
-# FILTRO FECHA (FEBRERO)
+# FILTRO FEBRERO
 # =====================================
 
 df["fecha"] = pd.to_datetime(df["fecha"])

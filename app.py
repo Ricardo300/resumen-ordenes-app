@@ -3,14 +3,12 @@ from supabase import create_client
 import pandas as pd
 
 # =============================== FIN LOGIN ======================
-
 st.title("Carga KPI ETA")
 
 # 🔐 Conexión Supabase
-
 supabase = create_client(
-st.secrets["SUPABASE_URL"],
-st.secrets["SUPABASE_KEY"]
+    st.secrets["SUPABASE_URL"],
+    st.secrets["SUPABASE_KEY"]
 )
 
 TABLE = "kpi_ordenes_completadas"
@@ -18,219 +16,224 @@ TABLE = "kpi_ordenes_completadas"
 archivo = st.file_uploader("Subir archivo Excel", type=["xlsx"])
 
 if archivo is not None:
+    df = pd.read_excel(archivo, engine="openpyxl")
 
-df = pd.read_excel(archivo, engine="openpyxl")
+    # ============================================
+    # 🔎 Detectar columnas Estado
+    # ============================================
+    columnas_estado = [col for col in df.columns if str(col).startswith("Estado")]
 
-# ============================================
-# 🔎 Detectar columnas Estado
-# ============================================
-
-columnas_estado = [col for col in df.columns if col.startswith("Estado")]
-
-if len(columnas_estado) < 2:
-    st.error("No se detectaron las dos columnas 'Estado'")
-    st.stop()
-
-estado_orden = columnas_estado[0]
-estado_provincia = columnas_estado[1]
-
-# ============================================
-# 🔥 Filtrar solo COMPLETADO
-# ============================================
-
-df = df[
-    df[estado_orden]
-    .astype(str)
-    .str.strip()
-    .str.upper()
-    == "COMPLETADO"
-]
-
-# ============================================
-# 🔥 Eliminar tiempos de almuerzo
-# ============================================
-
-df = df[
-    ~df["Tipo Actividad"]
-    .astype(str)
-    .str.strip()
-    .isin(["Tiempo de almuerzo", "Tiempo Almuerzo LU"])
-]
-
-# ============================================
-# 📌 Columnas necesarias
-# ============================================
-
-columnas_necesarias = [
-    "Orden de Trabajo",
-    "Identificador Tecnico",
-    "Identidad",
-    "Fecha",
-    estado_provincia,
-    "Municipio/Canton",
-    "Colonia",
-    "Sub Tipo de Orden",
-    "Tipo Actividad",
-    "Garantia",
-    "Inicio",
-    "Finalización",
-    "Hora de reserva de actividad",
-    "Fecha Programación",
-    "Numero Cliente",
-    "Codigo de Completado"
-]
-
-for col in columnas_necesarias:
-    if col not in df.columns:
-        st.error(f"No existe la columna {col} en el Excel")
+    if len(columnas_estado) < 2:
+        st.error("No se detectaron las dos columnas 'Estado'")
         st.stop()
 
-df = df[columnas_necesarias].copy()
+    estado_orden = columnas_estado[0]
+    estado_provincia = columnas_estado[1]
 
-# ============================================
-# 🔄 Renombrar columnas
-# ============================================
+    # ============================================
+    # 🔥 Filtrar solo COMPLETADO
+    # ============================================
+    df = df[
+        df[estado_orden]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .eq("COMPLETADO")
+    ]
 
-df.columns = [
-    "orden_trabajo",
-    "identificador_tecnico",
-    "identidad",
-    "fecha",
-    "provincia",
-    "municipio_canton",
-    "colonia",
-    "sub_tipo_orden",
-    "tipo_actividad",
-    "garantia",
-    "inicio",
-    "finalizacion",
-    "hora_reserva_actividad",
-    "fecha_programacion",
-    "numero_cliente",
-    "codigo_completado"
-]
+    # ============================================
+    # 🔥 Eliminar tiempos de almuerzo
+    # ============================================
+    df = df[
+        ~df["Tipo Actividad"]
+        .astype(str)
+        .str.strip()
+        .isin(["Tiempo de almuerzo", "Tiempo Almuerzo LU"])
+    ]
 
-df["numero_cliente"] = (
-    pd.to_numeric(df["numero_cliente"], errors="coerce")
-    .fillna(0)
-    .astype(int)
-    .astype(str)
-)
+    # ============================================
+    # 📌 Columnas necesarias
+    # ============================================
+    columnas_necesarias = [
+        "Orden de Trabajo",
+        "Identificador Tecnico",
+        "Identidad",
+        "Fecha",
+        estado_provincia,
+        "Municipio/Canton",
+        "Colonia",
+        "Sub Tipo de Orden",
+        "Tipo Actividad",
+        "Garantia",
+        "Inicio",
+        "Finalización",
+        "Hora de reserva de actividad",
+        "Fecha Programación",
+        "Numero Cliente",
+        "Codigo de Completado"
+    ]
 
-# ============================================
-# 🔥 CLASIFICAR TECNOLOGÍA
-# ============================================
+    for col in columnas_necesarias:
+        if col not in df.columns:
+            st.error(f"No existe la columna {col} en el Excel")
+            st.stop()
 
-map_tecnologia = {
+    df = df[columnas_necesarias].copy()
 
-    # DTH
-    "Cambio de Plan con Cambio de Equipo DTH": "DTH",
-    "Equipo Adicional TV": "DTH",
-    "Instalación de Cajas Adicionales DTH": "DTH",
-    "Instalación de servicio televisión DTH": "DTH",
-    "Instalación de TV (DTH)": "DTH",
-    "Cambio de Equipo TV": "DTH",
-    "Reparacion DTH": "DTH",
-    "Reparacion Linea Fija LFI": "DTH",
-    "Reparación servicio DTH": "DTH",
-    "Traslado Externo de TV (DTH)": "DTH",
-    "Traslado Interno de Servicio de DTH": "DTH",
-    "Traslado Interno de TV (DTH)": "DTH",
-    "Traslado TV (DTH)": "DTH",
+    # ============================================
+    # 🔄 Renombrar columnas
+    # ============================================
+    df.columns = [
+        "orden_trabajo",
+        "identificador_tecnico",
+        "identidad",
+        "fecha",
+        "provincia",
+        "municipio_canton",
+        "colonia",
+        "sub_tipo_orden",
+        "tipo_actividad",
+        "garantia",
+        "inicio",
+        "finalizacion",
+        "hora_reserva_actividad",
+        "fecha_programacion",
+        "numero_cliente",
+        "codigo_completado"
+    ]
 
-    # GPON
-    "Cambio de Plan con Cambio de Equipo Datos y TV": "GPON",
-    "Cambio de Plan con Cambio de Equipo Triple Play": "GPON",
-    "Equipo Adicional Datos": "GPON",
-    "Equipo Adicional Datos y TV": "GPON",
-    "Equipo Adicional Triple Play": "GPON",
-    "Instalacion Internet (DGPON)+TV (GPON)": "GPON",
-    "Instalacion Internet (GPON)": "GPON",
-    "Instalacion Línea fija (VGPON) + Internet (DGPON)": "GPON",
-    "Instalacion Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
-    "Reparación Internet (DGPON) + TV (GPON)": "GPON",
-    "Reparación Internet (GPON)": "GPON",
-    "Reparación Línea fija (VGPON) + Internet (DGPON)": "GPON",
-    "Reparación Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
-    "Traslado Externo Internet (DGPON) + TV (GPON)": "GPON",
-    "Traslado Externo Internet (GPON)": "GPON",
-    "Traslado Externo Línea fija (VGPON) + Internet (DGPON)": "GPON",
-    "Traslado Externo Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
-    "Traslado Interno de Internet (GPON) + TV (GPON)": "GPON",
-    "Traslado Interno Internet (GPON)": "GPON",
-    "Traslado Interno Linea fIja (GPON) + Internet (GPON)": "GPON",
-    "Traslado Interno Linea fIja (GPON) + Internet (GPON) + TV (GPON)": "GPON",
-}
+    df["numero_cliente"] = (
+        pd.to_numeric(df["numero_cliente"], errors="coerce")
+        .fillna(0)
+        .astype(int)
+        .astype(str)
+    )
 
-df["tecnologia"] = df["sub_tipo_orden"].map(map_tecnologia)
-df["tecnologia"] = df["tecnologia"].fillna("NO_CLASIFICADO")
+    # ============================================
+    # 🔥 CLASIFICAR TECNOLOGÍA
+    # ============================================
+    map_tecnologia = {
+        # DTH
+        "Cambio de Plan con Cambio de Equipo DTH": "DTH",
+        "Equipo Adicional TV": "DTH",
+        "Instalación de Cajas Adicionales DTH": "DTH",
+        "Instalación de servicio televisión DTH": "DTH",
+        "Instalación de TV (DTH)": "DTH",
+        "Cambio de Equipo TV": "DTH",
+        "Reparacion DTH": "DTH",
+        "Reparacion Linea Fija LFI": "DTH",
+        "Reparación servicio DTH": "DTH",
+        "Traslado Externo de TV (DTH)": "DTH",
+        "Traslado Interno de Servicio de DTH": "DTH",
+        "Traslado Interno de TV (DTH)": "DTH",
+        "Traslado TV (DTH)": "DTH",
 
-# ============================================
-# 🔥 AGREGAR CONTRATA DESDE TABLA AUXILIAR
-# ============================================
+        # GPON
+        "Cambio de Plan con Cambio de Equipo Datos y TV": "GPON",
+        "Cambio de Plan con Cambio de Equipo Triple Play": "GPON",
+        "Equipo Adicional Datos": "GPON",
+        "Equipo Adicional Datos y TV": "GPON",
+        "Equipo Adicional Triple Play": "GPON",
+        "Instalacion Internet (DGPON)+TV (GPON)": "GPON",
+        "Instalacion Internet (GPON)": "GPON",
+        "Instalacion Línea fija (VGPON) + Internet (DGPON)": "GPON",
+        "Instalacion Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
+        "Reparación Internet (DGPON) + TV (GPON)": "GPON",
+        "Reparación Internet (GPON)": "GPON",
+        "Reparación Línea fija (VGPON) + Internet (DGPON)": "GPON",
+        "Reparación Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
+        "Traslado Externo Internet (DGPON) + TV (GPON)": "GPON",
+        "Traslado Externo Internet (GPON)": "GPON",
+        "Traslado Externo Línea fija (VGPON) + Internet (DGPON)": "GPON",
+        "Traslado Externo Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
+        "Traslado Interno de Internet (GPON) + TV (GPON)": "GPON",
+        "Traslado Interno Internet (GPON)": "GPON",
+        "Traslado Interno Linea fIja (GPON) + Internet (GPON)": "GPON",
+        "Traslado Interno Linea fIja (GPON) + Internet (GPON) + TV (GPON)": "GPON",
+    }
 
-respuesta = supabase.table("tabla_tecnicos_contrata").select("*").execute()
-df_contrata = pd.DataFrame(respuesta.data)
+    df["tecnologia"] = df["sub_tipo_orden"].map(map_tecnologia)
+    df["tecnologia"] = df["tecnologia"].fillna("NO_CLASIFICADO")
 
-df_contrata["identificador_tecnico"] = df_contrata["identificador_tecnico"].str.strip()
-df["identificador_tecnico"] = df["identificador_tecnico"].str.strip()
+    # ============================================
+    # 🔥 AGREGAR CONTRATA DESDE TABLA AUXILIAR
+    # ============================================
+    respuesta = supabase.table("tabla_tecnicos_contrata").select("*").execute()
+    df_contrata = pd.DataFrame(respuesta.data)
 
-df = df.merge(
-    df_contrata,
-    on="identificador_tecnico",
-    how="left"
-)
+    if not df_contrata.empty and "identificador_tecnico" in df_contrata.columns:
+        df_contrata["identificador_tecnico"] = df_contrata["identificador_tecnico"].astype(str).str.strip()
+        df["identificador_tecnico"] = df["identificador_tecnico"].astype(str).str.strip()
 
-df["contrata"] = df["contrata"].fillna("NO_ASIGNADO")
+        df = df.merge(
+            df_contrata,
+            on="identificador_tecnico",
+            how="left"
+        )
 
-# ============================================
-# 🔄 CONVERTIR FECHAS
-# ============================================
+        if "contrata" not in df.columns:
+            df["contrata"] = "NO_ASIGNADO"
+        else:
+            df["contrata"] = df["contrata"].fillna("NO_ASIGNADO")
+    else:
+        df["contrata"] = "NO_ASIGNADO"
 
-df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce", dayfirst=True).dt.strftime("%Y-%m-%d")
+    # ============================================
+    # 🔄 CONVERTIR FECHAS
+    # ============================================
+    df["fecha"] = pd.to_datetime(
+        df["fecha"],
+        errors="coerce",
+        dayfirst=True
+    ).dt.strftime("%Y-%m-%d")
 
-df["fecha_programacion"] = pd.to_datetime(
-    df["fecha_programacion"],
-    errors="coerce",
-    dayfirst=True
-).dt.strftime("%Y-%m-%d")
+    df["fecha_programacion"] = pd.to_datetime(
+        df["fecha_programacion"],
+        errors="coerce",
+        dayfirst=True
+    ).dt.strftime("%Y-%m-%d")
 
-df["inicio"] = pd.to_datetime(df["inicio"], errors="coerce").dt.strftime("%H:%M:%S")
-df["finalizacion"] = pd.to_datetime(df["finalizacion"], errors="coerce").dt.strftime("%H:%M:%S")
+    df["inicio"] = pd.to_datetime(
+        df["inicio"],
+        errors="coerce"
+    ).dt.strftime("%H:%M:%S")
 
-df["hora_reserva_actividad"] = pd.to_datetime(
-    df["hora_reserva_actividad"],
-    errors="coerce",
-    dayfirst=True
-).dt.strftime("%Y-%m-%d %H:%M:%S")
+    df["finalizacion"] = pd.to_datetime(
+        df["finalizacion"],
+        errors="coerce"
+    ).dt.strftime("%H:%M:%S")
 
-# ============================================
-# 🔄 Limpiar NaN
-# ============================================
+    df["hora_reserva_actividad"] = pd.to_datetime(
+        df["hora_reserva_actividad"],
+        errors="coerce",
+        dayfirst=True
+    ).dt.strftime("%Y-%m-%d %H:%M:%S")
 
-df = df.astype(object).where(pd.notnull(df), None)
+    # ============================================
+    # 🔄 Limpiar NaN
+    # ============================================
+    df = df.astype(object).where(pd.notnull(df), None)
 
-st.write("Cantidad de registros a insertar:", len(df))
-st.write("Órdenes duplicadas en archivo:", df["orden_trabajo"].duplicated().sum())
+    st.write("Cantidad de registros a insertar:", len(df))
+    st.write("Órdenes duplicadas en archivo:", df["orden_trabajo"].duplicated().sum())
 
-if len(df) == 0:
-    st.warning("No hay registros para insertar.")
-    st.stop()
+    if len(df) == 0:
+        st.warning("No hay registros para insertar.")
+        st.stop()
 
-datos = df.to_dict(orient="records")
+    if st.button("Insertar en base de datos"):
+        datos = df.to_dict(orient="records")
 
-try:
-    supabase.table(TABLE).upsert(
-        datos,
-        on_conflict="orden_trabajo"
-    ).execute()
+        try:
+            supabase.table(TABLE).upsert(
+                datos,
+                on_conflict="orden_trabajo"
+            ).execute()
 
-    st.success("Datos insertados / actualizados correctamente")
+            st.success("Datos insertados / actualizados correctamente")
 
-except Exception as e:
-    st.error(f"Error al insertar: {e}")
-```
-
+        except Exception as e:
+            st.error(f"Error al insertar: {e}")
 
 
 

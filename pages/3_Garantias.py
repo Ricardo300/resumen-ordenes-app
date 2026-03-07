@@ -64,15 +64,15 @@ def cargar_garantias():
 
 df = cargar_garantias()
 
-# convertir fecha
 df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"])
 
-# CORREGIR NULOS (esto evita perder registros en filtros)
 df["contrata_causa_garantia"] = df["contrata_causa_garantia"].fillna("SIN CONTRATA")
 df["tipo_garantia"] = df["tipo_garantia"].fillna("SIN CLASIFICAR")
+df["clasificacion_garantia"] = df["clasificacion_garantia"].fillna("SIN CLASIFICAR")
+df["tecnologia"] = df["tecnologia"].fillna("SIN TECNOLOGIA")
 
-# crear columna mes
-df["mes"] = df["fecha_garantia"].dt.to_period("M").astype(str)
+df["anio"] = df["fecha_garantia"].dt.year
+df["mes_num"] = df["fecha_garantia"].dt.month
 
 # =====================================
 # FILTROS
@@ -80,67 +80,95 @@ df["mes"] = df["fecha_garantia"].dt.to_period("M").astype(str)
 
 st.sidebar.header("Filtros")
 
-# ===============================
+# =====================================
+# FILTRO AÑO
+# =====================================
+
+anios = sorted(df["anio"].unique())
+
+anio_filtro = st.sidebar.selectbox(
+    "Año",
+    anios,
+    index=len(anios)-1
+)
+
+# =====================================
 # FILTRO MES
-# ===============================
+# =====================================
 
-with st.sidebar.expander("Mes", expanded=True):
+meses = {
+1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo",6:"Junio",
+7:"Julio",8:"Agosto",9:"Septiembre",10:"Octubre",11:"Noviembre",12:"Diciembre"
+}
 
-    meses = sorted(df["mes"].unique())
+mes_num = st.sidebar.selectbox(
+    "Mes",
+    list(meses.keys()),
+    format_func=lambda x: meses[x]
+)
 
-    mes_filtro = st.selectbox(
-        "Seleccionar mes",
-        meses,
-        index=len(meses)-1
-    )
+# ==========================================
+# FILTRO CHECKBOX + BOTONES TODO/NINGUNO
+# ==========================================
 
-# ===============================
-# FILTRO CONTRATA
-# ===============================
+def filtro_checkbox(label, opciones, key_prefix):
 
-with st.sidebar.expander("Contrata", expanded=True):
+    with st.sidebar.expander(label, expanded=False):
 
-    contratas = sorted(df["contrata_causa_garantia"].unique())
+        col1, col2 = st.columns(2)
 
-    if "contrata_filtro" not in st.session_state:
-        st.session_state.contrata_filtro = contratas
+        if col1.button("✓ Todo", key=f"{key_prefix}_all", type="secondary"):
+            for opcion in opciones:
+                st.session_state[f"{key_prefix}_{opcion}"] = True
 
-    col1, col2 = st.columns(2)
+        if col2.button("✕ Ninguno", key=f"{key_prefix}_none", type="secondary"):
+            for opcion in opciones:
+                st.session_state[f"{key_prefix}_{opcion}"] = False
 
-    if col1.button("✓ Todo"):
-        st.session_state.contrata_filtro = contratas
+        seleccionados = []
 
-    if col2.button("✕ Ninguno"):
-        st.session_state.contrata_filtro = []
+        for opcion in opciones:
 
-    contrata_filtro = st.multiselect(
-        "Seleccionar",
-        contratas,
-        key="contrata_filtro"
-    )
+            if f"{key_prefix}_{opcion}" not in st.session_state:
+                st.session_state[f"{key_prefix}_{opcion}"] = True
 
-# ===============================
-# FILTRO TIPO GARANTÍA
-# ===============================
+            estado = st.checkbox(opcion, key=f"{key_prefix}_{opcion}")
 
-with st.sidebar.expander("Tipo Garantía", expanded=False):
+            if estado:
+                seleccionados.append(opcion)
 
-    tipos = df["tipo_garantia"].unique()
+    return seleccionados
 
-    tipo_filtro = st.multiselect(
-        "Seleccionar",
-        tipos,
-        default=tipos
-    )
 
-# ===============================
+# =====================================
+# OPCIONES DINÁMICAS
+# =====================================
+
+opciones_contrata = sorted(df["contrata_causa_garantia"].unique())
+opciones_tipo = sorted(df["tipo_garantia"].unique())
+opciones_clasificacion = sorted(df["clasificacion_garantia"].unique())
+opciones_tecnologia = sorted(df["tecnologia"].unique())
+
+# =====================================
+# FILTROS CHECKBOX
+# =====================================
+
+contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
+tecnologia = filtro_checkbox("Tecnología", opciones_tecnologia, "tec")
+tipo_garantia = filtro_checkbox("Tipo Garantía", opciones_tipo, "tip")
+clasificacion = filtro_checkbox("Clasificación", opciones_clasificacion, "cla")
+
+# =====================================
 # APLICAR FILTROS
-# ===============================
+# =====================================
 
 df_filtrado = df[
-    (df["mes"] == mes_filtro) &
-    (df["contrata_causa_garantia"].isin(contrata_filtro)) &
-    (df["tipo_garantia"].isin(tipo_filtro))
+    (df["anio"] == anio_filtro) &
+    (df["mes_num"] == mes_num) &
+    (df["contrata_causa_garantia"].isin(contrata)) &
+    (df["tecnologia"].isin(tecnologia)) &
+    (df["tipo_garantia"].isin(tipo_garantia)) &
+    (df["clasificacion_garantia"].isin(clasificacion))
 ]
 
 # =====================================
@@ -155,14 +183,11 @@ internas = len(df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"])
 
 externas = len(df_filtrado[df_filtrado["tipo_garantia"] == "EXTERNA"])
 
-promedio_dias = round(df_filtrado["dias_desde_visita"].mean(), 1)
+promedio_dias = round(df_filtrado["dias_desde_visita"].mean(),1)
 
 col1.metric("Total Garantías", total)
-
 col2.metric("Garantías Internas", internas)
-
 col3.metric("Garantías Externas", externas)
-
 col4.metric("Promedio días garantía", promedio_dias)
 
 # =====================================
@@ -183,11 +208,6 @@ fig = px.bar(
     x="contrata_causa_garantia",
     y="cantidad",
     text="cantidad"
-)
-
-fig.update_layout(
-    xaxis_title="Contrata",
-    yaxis_title="Cantidad de Garantías"
 )
 
 st.plotly_chart(fig, use_container_width=True)
@@ -214,15 +234,10 @@ fig_tecnico = px.bar(
     text="cantidad"
 )
 
-fig_tecnico.update_layout(
-    xaxis_title="Técnico",
-    yaxis_title="Cantidad de Garantías"
-)
-
 st.plotly_chart(fig_tecnico, use_container_width=True)
 
 # =====================================
-# GARANTÍAS POR RANGO DE DÍAS
+# GARANTÍAS POR RANGO
 # =====================================
 
 st.subheader("Garantías por Rango de Días")
@@ -233,11 +248,11 @@ garantias_rango = (
     .reset_index(name="cantidad")
 )
 
-orden_rangos = ["0-7","8-15","16-30","31-60","61-90",">90"]
+orden = ["0-7","8-15","16-30","31-60","61-90",">90"]
 
 garantias_rango["rango_garantia"] = pd.Categorical(
     garantias_rango["rango_garantia"],
-    categories=orden_rangos,
+    categories=orden,
     ordered=True
 )
 
@@ -250,39 +265,28 @@ fig_rango = px.bar(
     text="cantidad"
 )
 
-fig_rango.update_layout(
-    xaxis_title="Rango de días",
-    yaxis_title="Cantidad de Garantías"
-)
-
 st.plotly_chart(fig_rango, use_container_width=True)
 
 # =====================================
-# CLASIFICACIÓN DEL SUPERVISOR
+# CLASIFICACIÓN SUPERVISOR
 # =====================================
 
-st.subheader("Clasificación de Garantías (Supervisor)")
+st.subheader("Clasificación de Garantías")
 
-clasificacion = (
+clasificacion_df = (
     df_filtrado.groupby("clasificacion_garantia")
     .size()
     .reset_index(name="cantidad")
-    .sort_values("cantidad", ascending=False)
 )
 
-fig_clasificacion = px.bar(
-    clasificacion,
+fig_cla = px.bar(
+    clasificacion_df,
     x="clasificacion_garantia",
     y="cantidad",
     text="cantidad"
 )
 
-fig_clasificacion.update_layout(
-    xaxis_title="Clasificación",
-    yaxis_title="Cantidad de Garantías"
-)
-
-st.plotly_chart(fig_clasificacion, use_container_width=True)
+st.plotly_chart(fig_cla, use_container_width=True)
 
 # =====================================
 # TABLA

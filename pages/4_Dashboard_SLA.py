@@ -36,7 +36,7 @@ df["fecha"] = pd.to_datetime(df["fecha"])
 df = df[df["fecha"].dt.month == 2]
 
 # =====================================
-# CALCULO ACUMULADO
+# CALCULO TABLA
 # =====================================
 
 total = len(df)
@@ -45,12 +45,15 @@ tabla = []
 
 for d in sorted(df["dilacion_dias"].unique()):
 
+    cantidad = len(df[df["dilacion_dias"] == d])
+
     dentro = len(df[df["dilacion_dias"] <= d])
 
     porcentaje = round((dentro / total) * 100,2)
 
     tabla.append({
         "Dilación": d,
+        "Cantidad": cantidad,
         "Febrero %": porcentaje
     })
 
@@ -60,4 +63,8 @@ tabla_df = pd.DataFrame(tabla)
 # MOSTRAR TABLA
 # =====================================
 
-st.dataframe(tabla_df, use_container_width=True)
+st.dataframe(
+    tabla_df,
+    use_container_width=True,
+    hide_index=True
+)

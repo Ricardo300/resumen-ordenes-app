@@ -65,6 +65,39 @@ def cargar_garantias():
 df = cargar_garantias()
 
 # =====================================
+# FILTROS
+# =====================================
+
+st.sidebar.header("Filtros")
+
+# convertir fecha
+df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"])
+
+# selector rango de fechas
+rango_fechas = st.sidebar.date_input(
+    "Rango de fechas",
+    [df["fecha_garantia"].min(), df["fecha_garantia"].max()]
+)
+
+fecha_inicio = pd.to_datetime(rango_fechas[0])
+fecha_fin = pd.to_datetime(rango_fechas[1])
+
+# filtro contrata
+contratas = df["contrata_causa_garantia"].dropna().unique()
+
+contrata_filtro = st.sidebar.multiselect(
+    "Contrata",
+    contratas,
+    default=contratas
+)
+
+# aplicar filtros
+df = df[
+    (df["fecha_garantia"] >= fecha_inicio) &
+    (df["fecha_garantia"] <= fecha_fin) &
+    (df["contrata_causa_garantia"].isin(contrata_filtro))
+]
+# =====================================
 # KPIs
 # =====================================
 

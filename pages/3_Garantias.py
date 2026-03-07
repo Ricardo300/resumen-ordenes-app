@@ -73,29 +73,61 @@ st.sidebar.header("Filtros")
 # convertir fecha
 df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"])
 
-# selector rango de fechas
-rango_fechas = st.sidebar.date_input(
-    "Rango de fechas",
-    [df["fecha_garantia"].min(), df["fecha_garantia"].max()]
-)
 
-fecha_inicio = pd.to_datetime(rango_fechas[0])
-fecha_fin = pd.to_datetime(rango_fechas[1])
+# ===============================
+# FILTRO FECHA
+# ===============================
 
-# filtro contrata
-contratas = df["contrata_causa_garantia"].dropna().unique()
+with st.sidebar.expander("Fecha", expanded=True):
 
-contrata_filtro = st.sidebar.multiselect(
-    "Contrata",
-    contratas,
-    default=contratas
-)
+    rango_fechas = st.date_input(
+        "Rango de fechas",
+        [df["fecha_garantia"].min(), df["fecha_garantia"].max()]
+    )
 
-# aplicar filtros
+    fecha_inicio = pd.to_datetime(rango_fechas[0])
+    fecha_fin = pd.to_datetime(rango_fechas[1])
+
+
+# ===============================
+# FILTRO CONTRATA
+# ===============================
+
+with st.sidebar.expander("Contrata", expanded=True):
+
+    contratas = sorted(df["contrata_causa_garantia"].dropna().unique())
+
+    contrata_filtro = st.multiselect(
+        "Seleccionar",
+        contratas,
+        default=contratas
+    )
+
+
+# ===============================
+# FILTRO TIPO GARANTÍA
+# ===============================
+
+with st.sidebar.expander("Tipo Garantía", expanded=False):
+
+    tipos = df["tipo_garantia"].dropna().unique()
+
+    tipo_filtro = st.multiselect(
+        "Seleccionar",
+        tipos,
+        default=tipos
+    )
+
+
+# ===============================
+# APLICAR FILTROS
+# ===============================
+
 df = df[
     (df["fecha_garantia"] >= fecha_inicio) &
     (df["fecha_garantia"] <= fecha_fin) &
-    (df["contrata_causa_garantia"].isin(contrata_filtro))
+    (df["contrata_causa_garantia"].isin(contrata_filtro)) &
+    (df["tipo_garantia"].isin(tipo_filtro))
 ]
 # =====================================
 # KPIs

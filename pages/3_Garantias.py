@@ -92,6 +92,18 @@ st.markdown("""
         border-radius: 12px;
         overflow: hidden;
     }
+      /* tabla compacta */
+div[data-testid="stDataFrame"] table {
+    font-size: 13px;
+}
+
+div[data-testid="stDataFrame"] th {
+    padding: 4px 8px;
+}
+
+div[data-testid="stDataFrame"] td {
+    padding: 4px 8px;
+}
 </style>
 """, unsafe_allow_html=True)
 

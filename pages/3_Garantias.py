@@ -145,7 +145,6 @@ def filtro_checkbox(label, opciones, key_prefix):
 
 opciones_contrata = sorted(df["contrata_causa_garantia"].unique())
 opciones_tipo = sorted(df["tipo_garantia"].unique())
-opciones_clasificacion = sorted(df["clasificacion_garantia"].unique())
 opciones_tecnologia = sorted(df["tecnologia"].unique())
 
 # =====================================
@@ -155,7 +154,6 @@ opciones_tecnologia = sorted(df["tecnologia"].unique())
 contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
 tecnologia = filtro_checkbox("Tecnología", opciones_tecnologia, "tec")
 tipo_garantia = filtro_checkbox("Tipo Garantía", opciones_tipo, "tip")
-clasificacion = filtro_checkbox("Clasificación", opciones_clasificacion, "cla")
 
 # =====================================
 # APLICAR FILTROS
@@ -166,10 +164,8 @@ df_filtrado = df[
     (df["mes_num"] == mes_num) &
     (df["contrata_causa_garantia"].isin(contrata)) &
     (df["tecnologia"].isin(tecnologia)) &
-    (df["tipo_garantia"].isin(tipo_garantia)) &
-    (df["clasificacion_garantia"].isin(clasificacion))
+    (df["tipo_garantia"].isin(tipo_garantia))
 ]
-
 # =====================================
 # KPIs
 # =====================================

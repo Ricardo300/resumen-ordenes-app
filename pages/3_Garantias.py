@@ -21,7 +21,7 @@ supabase = create_client(
 )
 
 # =====================================
-# CARGAR DATOS
+# CARGAR GARANTÍAS
 # =====================================
 
 @st.cache_data(ttl=600)
@@ -58,10 +58,54 @@ def cargar_garantias():
     return df
 
 
+# =====================================
+# CARGAR SERVICIOS
+# =====================================
+
+@st.cache_data(ttl=600)
+def cargar_servicios():
+
+    todos = []
+    limite = 1000
+    inicio = 0
+
+    while True:
+
+        response = (
+            supabase
+            .table("kpi_ordenes_completadas")
+            .select("fecha")
+            .range(inicio, inicio + limite - 1)
+            .execute()
+        )
+
+        data = response.data
+
+        if not data:
+            break
+
+        todos.extend(data)
+
+        if len(data) < limite:
+            break
+
+        inicio += limite
+
+    df = pd.DataFrame(todos)
+
+    df["fecha"] = pd.to_datetime(df["fecha"])
+
+    df["anio"] = df["fecha"].dt.year
+    df["mes_num"] = df["fecha"].dt.month
+
+    return df
+
+
 df = cargar_garantias()
+df_servicios = cargar_servicios()
 
 # =====================================
-# LIMPIEZA DE DATOS
+# LIMPIEZA DATOS
 # =====================================
 
 df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"])
@@ -70,7 +114,6 @@ df["contrata_causa_garantia"] = df["contrata_causa_garantia"].fillna("SIN CONTRA
 df["tipo_garantia"] = df["tipo_garantia"].fillna("SIN CLASIFICAR")
 df["clasificacion_garantia"] = df["clasificacion_garantia"].fillna("SIN CLASIFICAR")
 
-# evitar error si tecnologia no existe
 if "tecnologia" not in df.columns:
     df["tecnologia"] = "DESCONOCIDA"
 else:
@@ -86,6 +129,7 @@ df["mes_num"] = df["fecha_garantia"].dt.month
 st.sidebar.header("Filtros")
 
 # Año
+
 anios = sorted(df["anio"].unique())
 
 anio_filtro = st.sidebar.selectbox(
@@ -95,6 +139,7 @@ anio_filtro = st.sidebar.selectbox(
 )
 
 # Mes
+
 meses = {
 1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo",6:"Junio",
 7:"Julio",8:"Agosto",9:"Septiembre",10:"Octubre",11:"Noviembre",12:"Diciembre"
@@ -139,17 +184,9 @@ def filtro_checkbox(label, opciones, key_prefix):
     return seleccionados
 
 
-# =====================================
-# OPCIONES FILTRO
-# =====================================
-
 opciones_contrata = sorted(df["contrata_causa_garantia"].unique())
-opciones_tipo = sorted(df["tipo_garantia"].unique())
 opciones_tecnologia = sorted(df["tecnologia"].unique())
-
-# =====================================
-# FILTROS
-# =====================================
+opciones_tipo = sorted(df["tipo_garantia"].unique())
 
 contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
 tecnologia = filtro_checkbox("Tecnología", opciones_tecnologia, "tec")
@@ -166,22 +203,53 @@ df_filtrado = df[
     (df["tecnologia"].isin(tecnologia)) &
     (df["tipo_garantia"].isin(tipo_garantia))
 ]
+
+servicios_mes = df_servicios[
+    (df_servicios["anio"] == anio_filtro) &
+    (df_servicios["mes_num"] == mes_num)
+]
+
+total_servicios = len(servicios_mes)
+
 # =====================================
 # KPIs
 # =====================================
 
-col1, col2, col3, col4 = st.columns(4)
+total_garantias = len(df_filtrado)
 
-total = len(df_filtrado)
-internas = len(df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"])
-externas = len(df_filtrado[df_filtrado["tipo_garantia"] == "EXTERNA"])
+garantias_internas = len(
+    df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"]
+)
+
+garantias_externas = len(
+    df_filtrado[df_filtrado["tipo_garantia"] == "EXTERNA"]
+)
+
+garantias_tecnico = len(
+    df_filtrado[df_filtrado["clasificacion_garantia"] == "TECNICO"]
+)
 
 promedio_dias = round(df_filtrado["dias_desde_visita"].mean(),1)
 
-col1.metric("Total Garantías", total)
-col2.metric("Garantías Internas", internas)
-col3.metric("Garantías Externas", externas)
-col4.metric("Promedio días garantía", promedio_dias)
+if total_servicios > 0:
+
+    pct_garantia_interna = round((garantias_internas / total_servicios)*100,2)
+    pct_garantia_tecnico = round((garantias_tecnico / total_servicios)*100,2)
+
+else:
+
+    pct_garantia_interna = 0
+    pct_garantia_tecnico = 0
+
+
+col1,col2,col3,col4,col5,col6 = st.columns(6)
+
+col1.metric("Total Garantías", total_garantias)
+col2.metric("Garantías Internas", garantias_internas)
+col3.metric("Garantías Externas", garantias_externas)
+col4.metric("Promedio días", promedio_dias)
+col5.metric("% Garantía Interna", f"{pct_garantia_interna}%")
+col6.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
 
 # =====================================
 # GARANTÍAS POR CONTRATA
@@ -190,7 +258,8 @@ col4.metric("Promedio días garantía", promedio_dias)
 st.subheader("Garantías por Contrata")
 
 garantias_contrata = (
-    df_filtrado.groupby("contrata_causa_garantia")
+    df_filtrado
+    .groupby("contrata_causa_garantia")
     .size()
     .reset_index(name="cantidad")
     .sort_values("cantidad", ascending=False)
@@ -206,7 +275,7 @@ fig = px.bar(
 st.plotly_chart(fig, use_container_width=True)
 
 # =====================================
-# GARANTÍAS POR TÉCNICO
+# TABLA GARANTÍAS POR TÉCNICO
 # =====================================
 
 st.subheader("Garantías por Técnico")
@@ -220,7 +289,7 @@ garantias_tecnico = (
 )
 
 garantias_tecnico = garantias_tecnico.rename(columns={
-    "tecnico_causa_garantia": "Tecnico"
+    "tecnico_causa_garantia":"Tecnico"
 })
 
 st.dataframe(
@@ -236,7 +305,8 @@ st.dataframe(
 st.subheader("Garantías por Rango de Días")
 
 garantias_rango = (
-    df_filtrado.groupby("rango_garantia")
+    df_filtrado
+    .groupby("rango_garantia")
     .size()
     .reset_index(name="cantidad")
 )
@@ -261,28 +331,9 @@ fig_rango = px.bar(
 st.plotly_chart(fig_rango, use_container_width=True)
 
 # =====================================
-# CLASIFICACIÓN
+# TOP 15 CODIGOS DE CIERRE
 # =====================================
 
-st.subheader("Clasificación de Garantías")
-
-clasificacion_df = (
-    df_filtrado.groupby("clasificacion_garantia")
-    .size()
-    .reset_index(name="cantidad")
-)
-
-fig_cla = px.bar(
-    clasificacion_df,
-    x="clasificacion_garantia",
-    y="cantidad",
-    text="cantidad"
-)
-
-st.plotly_chart(fig_cla, use_container_width=True)
-# =====================================
-# TOP 15 CODIGOS MAS UTILIZADOS
-# =====================================
 st.subheader("Top 15 Códigos de Cierre")
 
 codigos_cierre = (
@@ -295,8 +346,8 @@ codigos_cierre = (
 )
 
 codigos_cierre = codigos_cierre.rename(columns={
-    "codigo_completado": "Código de Cierre",
-    "cantidad": "Garantías"
+    "codigo_completado":"Código de Cierre",
+    "cantidad":"Garantías"
 })
 
 st.dataframe(
@@ -304,3 +355,11 @@ st.dataframe(
     use_container_width=True,
     hide_index=True
 )
+
+# =====================================
+# TABLA DETALLE
+# =====================================
+
+st.subheader("Detalle de Garantías")
+
+st.dataframe(df_filtrado, use_container_width=True)

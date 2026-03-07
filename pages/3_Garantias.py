@@ -356,4 +356,32 @@ st.dataframe(
     hide_index=True
 )
 
+# =====================================
+# CLASIFICACIÓN DE GARANTÍA
+# =====================================
+
+st.subheader("Clasificación de Garantías")
+
+clasificacion_df = (
+    df_filtrado
+    .groupby("clasificacion_garantia")
+    .size()
+    .reset_index(name="cantidad")
+    .sort_values("cantidad", ascending=False)
+)
+
+fig_clasificacion = px.bar(
+    clasificacion_df,
+    x="clasificacion_garantia",
+    y="cantidad",
+    text="cantidad"
+)
+
+fig_clasificacion.update_layout(
+    xaxis_title="Clasificación",
+    yaxis_title="Cantidad"
+)
+
+st.plotly_chart(fig_clasificacion, use_container_width=True)
+
 

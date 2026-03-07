@@ -356,10 +356,4 @@ st.dataframe(
     hide_index=True
 )
 
-# =====================================
-# TABLA DETALLE
-# =====================================
 
-st.subheader("Detalle de Garantías")
-
-st.dataframe(df_filtrado, use_container_width=True)

@@ -381,8 +381,3 @@ df_filtrado
 )
 
 st.dataframe(tabla_tecnicos,use_container_width=True)
-
-    use_container_width=True,
-    hide_index=True,
-    height=350
-)

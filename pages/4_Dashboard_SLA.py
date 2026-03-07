@@ -23,41 +23,64 @@ supabase = create_client(
 )
 
 # =====================================
-# CARGAR DATOS
+# CARGAR DATOS (PAGINACIÓN)
 # =====================================
 
-response = supabase.table("view_sla_operacion").select("dilacion_dias,fecha").execute()
+datos = []
+limite = 1000
+inicio = 0
 
-df = pd.DataFrame(response.data)
+while True:
+
+    response = (
+        supabase
+        .table("view_sla_operacion")
+        .select("dilacion_dias,fecha")
+        .range(inicio, inicio + limite - 1)
+        .execute()
+    )
+
+    data = response.data
+
+    if not data:
+        break
+
+    datos.extend(data)
+    inicio += limite
+
+df = pd.DataFrame(datos)
+
+# =====================================
+# FILTRO FEBRERO 2026
+# =====================================
 
 df["fecha"] = pd.to_datetime(df["fecha"])
 
-# solo febrero
-df = df[df["fecha"].dt.month == 2]
+df = df[
+    (df["fecha"].dt.year == 2026) &
+    (df["fecha"].dt.month == 2)
+]
 
 # =====================================
-# CALCULO TABLA
+# CALCULAR TABLA
 # =====================================
 
-total = len(df)
+conteo = (
+    df.groupby("dilacion_dias")
+    .size()
+    .reset_index(name="Cantidad")
+    .sort_values("dilacion_dias")
+)
 
-tabla = []
+total = conteo["Cantidad"].sum()
 
-for d in sorted(df["dilacion_dias"].unique()):
+conteo["Acumulado"] = conteo["Cantidad"].cumsum()
 
-    cantidad = len(df[df["dilacion_dias"] == d])
+conteo["Febrero %"] = round((conteo["Acumulado"] / total) * 100, 2)
 
-    dentro = len(df[df["dilacion_dias"] <= d])
-
-    porcentaje = round((dentro / total) * 100,2)
-
-    tabla.append({
-        "Dilación": d,
-        "Cantidad": cantidad,
-        "Febrero %": porcentaje
-    })
-
-tabla_df = pd.DataFrame(tabla)
+tabla_df = conteo.rename(columns={"dilacion_dias": "Dilación"})[
+    ["Dilación", "Cantidad", "Febrero %"]
+]
 
 # =====================================
 # MOSTRAR TABLA

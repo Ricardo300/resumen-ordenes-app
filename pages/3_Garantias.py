@@ -141,7 +141,42 @@ fig_tecnico.update_layout(
 )
 
 st.plotly_chart(fig_tecnico, use_container_width=True)
+# =====================================
+# GARANTÍAS POR RANGO DE DÍAS
+# =====================================
 
+st.subheader("Garantías por Rango de Días")
+
+garantias_rango = (
+    df.groupby("rango_garantia")
+    .size()
+    .reset_index(name="cantidad")
+)
+
+# ordenar rangos correctamente
+orden_rangos = ["0-7","8-15","16-30","31-60","61-90",">90"]
+
+garantias_rango["rango_garantia"] = pd.Categorical(
+    garantias_rango["rango_garantia"],
+    categories=orden_rangos,
+    ordered=True
+)
+
+garantias_rango = garantias_rango.sort_values("rango_garantia")
+
+fig_rango = px.bar(
+    garantias_rango,
+    x="rango_garantia",
+    y="cantidad",
+    text="cantidad"
+)
+
+fig_rango.update_layout(
+    xaxis_title="Rango de días",
+    yaxis_title="Cantidad de Garantías"
+)
+
+st.plotly_chart(fig_rango, use_container_width=True)
 # =====================================
 # TABLA
 # =====================================

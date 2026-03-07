@@ -64,29 +64,31 @@ def cargar_garantias():
 
 df = cargar_garantias()
 
+# convertir fecha
+df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"])
+
+# crear columna mes
+df["mes"] = df["fecha_garantia"].dt.to_period("M").astype(str)
+
 # =====================================
 # FILTROS
 # =====================================
 
 st.sidebar.header("Filtros")
 
-# convertir fecha
-df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"])
-
-
 # ===============================
-# FILTRO FECHA
+# FILTRO MES
 # ===============================
 
-with st.sidebar.expander("Fecha", expanded=True):
+with st.sidebar.expander("Mes", expanded=True):
 
-    rango_fechas = st.date_input(
-        "Rango de fechas",
-        [df["fecha_garantia"].min(), df["fecha_garantia"].max()]
+    meses = sorted(df["mes"].unique())
+
+    mes_filtro = st.selectbox(
+        "Seleccionar mes",
+        meses,
+        index=len(meses)-1
     )
-
-    fecha_inicio = pd.to_datetime(rango_fechas[0])
-    fecha_fin = pd.to_datetime(rango_fechas[1])
 
 
 # ===============================
@@ -97,7 +99,6 @@ with st.sidebar.expander("Contrata", expanded=True):
 
     contratas = sorted(df["contrata_causa_garantia"].dropna().unique())
 
-    # inicializar session_state
     if "contrata_filtro" not in st.session_state:
         st.session_state.contrata_filtro = contratas
 
@@ -114,6 +115,8 @@ with st.sidebar.expander("Contrata", expanded=True):
         contratas,
         key="contrata_filtro"
     )
+
+
 # ===============================
 # FILTRO TIPO GARANTÍA
 # ===============================
@@ -134,11 +137,12 @@ with st.sidebar.expander("Tipo Garantía", expanded=False):
 # ===============================
 
 df = df[
-    (df["fecha_garantia"] >= fecha_inicio) &
-    (df["fecha_garantia"] <= fecha_fin) &
+    (df["mes"] == mes_filtro) &
     (df["contrata_causa_garantia"].isin(contrata_filtro)) &
     (df["tipo_garantia"].isin(tipo_filtro))
 ]
+
+
 # =====================================
 # KPIs
 # =====================================
@@ -160,6 +164,7 @@ col2.metric("Garantías Internas", internas)
 col3.metric("Garantías Externas", externas)
 
 col4.metric("Promedio días garantía", promedio_dias)
+
 
 # =====================================
 # GARANTÍAS POR CONTRATA
@@ -187,6 +192,8 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
+
+
 # =====================================
 # GARANTÍAS POR TÉCNICO
 # =====================================
@@ -200,7 +207,6 @@ garantias_tecnico = (
     .sort_values("cantidad", ascending=False)
 )
 
-# opcional: mostrar solo los 20 técnicos con más garantías
 garantias_tecnico = garantias_tecnico.head(20)
 
 fig_tecnico = px.bar(
@@ -216,6 +222,8 @@ fig_tecnico.update_layout(
 )
 
 st.plotly_chart(fig_tecnico, use_container_width=True)
+
+
 # =====================================
 # GARANTÍAS POR RANGO DE DÍAS
 # =====================================
@@ -228,7 +236,6 @@ garantias_rango = (
     .reset_index(name="cantidad")
 )
 
-# ordenar rangos correctamente
 orden_rangos = ["0-7","8-15","16-30","31-60","61-90",">90"]
 
 garantias_rango["rango_garantia"] = pd.Categorical(
@@ -252,6 +259,8 @@ fig_rango.update_layout(
 )
 
 st.plotly_chart(fig_rango, use_container_width=True)
+
+
 # =====================================
 # CLASIFICACIÓN DEL SUPERVISOR
 # =====================================
@@ -278,6 +287,8 @@ fig_clasificacion.update_layout(
 )
 
 st.plotly_chart(fig_clasificacion, use_container_width=True)
+
+
 # =====================================
 # TABLA
 # =====================================

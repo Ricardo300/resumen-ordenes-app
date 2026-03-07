@@ -19,13 +19,6 @@ archivo = st.file_uploader("Subir archivo Excel", type=["xlsx"])
 if archivo is not None:
 
     df = pd.read_excel(archivo, engine="openpyxl")
-
-    # convertir fecha de asignacion a formato compatible
-    if "FECHA DE ASIGNACION" in df.columns:
-        df["fecha_asignacion"] = pd.to_datetime(df["FECHA DE ASIGNACION"], errors="coerce").dt.date
-
-    if st.button("Insertar en base de datos"):
-
         # ============================================
         # 🔎 Detectar columnas Estado
         # ============================================
@@ -82,9 +75,7 @@ if archivo is not None:
             "Hora de reserva de actividad",
             "Fecha Programación",
             "Numero Cliente",
-            "Codigo de Completado",
-            "FECHA DE ASIGNACION",
-            "COMENTARIO BO"
+            "Codigo de Completado"
         ]
 
         for col in columnas_necesarias:
@@ -114,9 +105,7 @@ if archivo is not None:
             "hora_reserva_actividad",
             "fecha_programacion",
             "numero_cliente",
-            "codigo_completado",
-            "fechaa_asignacion",
-            "mentario_bo"
+            "codigo_completado"
         ]
         df["numero_cliente"] = (
             pd.to_numeric(df["numero_cliente"], errors="coerce")
@@ -241,6 +230,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

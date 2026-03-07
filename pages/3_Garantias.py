@@ -67,6 +67,10 @@ df = cargar_garantias()
 # convertir fecha
 df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"])
 
+# CORREGIR NULOS (esto evita perder registros en filtros)
+df["contrata_causa_garantia"] = df["contrata_causa_garantia"].fillna("SIN CONTRATA")
+df["tipo_garantia"] = df["tipo_garantia"].fillna("SIN CLASIFICAR")
+
 # crear columna mes
 df["mes"] = df["fecha_garantia"].dt.to_period("M").astype(str)
 
@@ -90,14 +94,13 @@ with st.sidebar.expander("Mes", expanded=True):
         index=len(meses)-1
     )
 
-
 # ===============================
 # FILTRO CONTRATA
 # ===============================
 
 with st.sidebar.expander("Contrata", expanded=True):
 
-    contratas = sorted(df["contrata_causa_garantia"].dropna().unique())
+    contratas = sorted(df["contrata_causa_garantia"].unique())
 
     if "contrata_filtro" not in st.session_state:
         st.session_state.contrata_filtro = contratas
@@ -116,14 +119,13 @@ with st.sidebar.expander("Contrata", expanded=True):
         key="contrata_filtro"
     )
 
-
 # ===============================
 # FILTRO TIPO GARANTÍA
 # ===============================
 
 with st.sidebar.expander("Tipo Garantía", expanded=False):
 
-    tipos = df["tipo_garantia"].dropna().unique()
+    tipos = df["tipo_garantia"].unique()
 
     tipo_filtro = st.multiselect(
         "Seleccionar",
@@ -131,17 +133,15 @@ with st.sidebar.expander("Tipo Garantía", expanded=False):
         default=tipos
     )
 
-
 # ===============================
 # APLICAR FILTROS
 # ===============================
 
-df = df[
+df_filtrado = df[
     (df["mes"] == mes_filtro) &
     (df["contrata_causa_garantia"].isin(contrata_filtro)) &
     (df["tipo_garantia"].isin(tipo_filtro))
 ]
-
 
 # =====================================
 # KPIs
@@ -149,13 +149,13 @@ df = df[
 
 col1, col2, col3, col4 = st.columns(4)
 
-total = len(df)
+total = len(df_filtrado)
 
-internas = len(df[df["tipo_garantia"] == "INTERNA"])
+internas = len(df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"])
 
-externas = len(df[df["tipo_garantia"] == "EXTERNA"])
+externas = len(df_filtrado[df_filtrado["tipo_garantia"] == "EXTERNA"])
 
-promedio_dias = round(df["dias_desde_visita"].mean(), 1)
+promedio_dias = round(df_filtrado["dias_desde_visita"].mean(), 1)
 
 col1.metric("Total Garantías", total)
 
@@ -165,7 +165,6 @@ col3.metric("Garantías Externas", externas)
 
 col4.metric("Promedio días garantía", promedio_dias)
 
-
 # =====================================
 # GARANTÍAS POR CONTRATA
 # =====================================
@@ -173,7 +172,7 @@ col4.metric("Promedio días garantía", promedio_dias)
 st.subheader("Garantías por Contrata")
 
 garantias_contrata = (
-    df.groupby("contrata_causa_garantia")
+    df_filtrado.groupby("contrata_causa_garantia")
     .size()
     .reset_index(name="cantidad")
     .sort_values("cantidad", ascending=False)
@@ -193,7 +192,6 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-
 # =====================================
 # GARANTÍAS POR TÉCNICO
 # =====================================
@@ -201,7 +199,7 @@ st.plotly_chart(fig, use_container_width=True)
 st.subheader("Garantías por Técnico")
 
 garantias_tecnico = (
-    df.groupby("tecnico_causa_garantia")
+    df_filtrado.groupby("tecnico_causa_garantia")
     .size()
     .reset_index(name="cantidad")
     .sort_values("cantidad", ascending=False)
@@ -223,7 +221,6 @@ fig_tecnico.update_layout(
 
 st.plotly_chart(fig_tecnico, use_container_width=True)
 
-
 # =====================================
 # GARANTÍAS POR RANGO DE DÍAS
 # =====================================
@@ -231,7 +228,7 @@ st.plotly_chart(fig_tecnico, use_container_width=True)
 st.subheader("Garantías por Rango de Días")
 
 garantias_rango = (
-    df.groupby("rango_garantia")
+    df_filtrado.groupby("rango_garantia")
     .size()
     .reset_index(name="cantidad")
 )
@@ -260,7 +257,6 @@ fig_rango.update_layout(
 
 st.plotly_chart(fig_rango, use_container_width=True)
 
-
 # =====================================
 # CLASIFICACIÓN DEL SUPERVISOR
 # =====================================
@@ -268,7 +264,7 @@ st.plotly_chart(fig_rango, use_container_width=True)
 st.subheader("Clasificación de Garantías (Supervisor)")
 
 clasificacion = (
-    df.groupby("clasificacion_garantia")
+    df_filtrado.groupby("clasificacion_garantia")
     .size()
     .reset_index(name="cantidad")
     .sort_values("cantidad", ascending=False)
@@ -288,11 +284,10 @@ fig_clasificacion.update_layout(
 
 st.plotly_chart(fig_clasificacion, use_container_width=True)
 
-
 # =====================================
 # TABLA
 # =====================================
 
 st.subheader("Detalle de Garantías")
 
-st.dataframe(df, use_container_width=True)
+st.dataframe(df_filtrado, use_container_width=True)

@@ -552,30 +552,7 @@ with t2:
     )
     st.markdown('</div>', unsafe_allow_html=True)
 
-# =====================================
-# DETALLE FINAL
-# =====================================
 
-with st.expander("Ver detalle de garantías filtradas", expanded=False):
-    columnas_detalle = [
-        c for c in [
-            "orden_trabajo",
-            "numero_cliente",
-            "fecha_garantia",
-            "sub_tipo_orden",
-            "tipo_actividad",
-            "tecnologia",
-            "tecnico_causa_garantia",
-            "contrata_causa_garantia",
-            "codigo_completado",
-            "clasificacion_garantia",
-            "tipo_garantia",
-            "rango_garantia",
-            "dias_desde_visita"
-        ] if c in df_filtrado.columns
-    ]
-st.dataframe(
-    garantias_tecnico,
     use_container_width=True,
     hide_index=True,
     height=350

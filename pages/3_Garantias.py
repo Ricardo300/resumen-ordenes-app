@@ -112,6 +112,35 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
+# =====================================
+# GARANTÍAS POR TÉCNICO
+# =====================================
+
+st.subheader("Garantías por Técnico")
+
+garantias_tecnico = (
+    df.groupby("tecnico_causa_garantia")
+    .size()
+    .reset_index(name="cantidad")
+    .sort_values("cantidad", ascending=False)
+)
+
+# opcional: mostrar solo los 20 técnicos con más garantías
+garantias_tecnico = garantias_tecnico.head(20)
+
+fig_tecnico = px.bar(
+    garantias_tecnico,
+    x="tecnico_causa_garantia",
+    y="cantidad",
+    text="cantidad"
+)
+
+fig_tecnico.update_layout(
+    xaxis_title="Técnico",
+    yaxis_title="Cantidad de Garantías"
+)
+
+st.plotly_chart(fig_tecnico, use_container_width=True)
 
 # =====================================
 # TABLA

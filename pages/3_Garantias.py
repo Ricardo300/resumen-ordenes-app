@@ -574,10 +574,10 @@ with st.expander("Ver detalle de garantías filtradas", expanded=False):
             "dias_desde_visita"
         ] if c in df_filtrado.columns
     ]
-
-    st.dataframe(
-        df_filtrado[columnas_detalle],
-        use_container_width=True,
-        hide_index=True,
-        height=420
-    )
+st.dataframe(
+    garantias_tecnico,
+    use_container_width=True,
+    hide_index=True,
+    height=350,
+    row_height=28
+)

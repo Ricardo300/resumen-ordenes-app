@@ -20,6 +20,10 @@ if archivo is not None:
 
     df = pd.read_excel(archivo, engine="openpyxl")
 
+    # convertir fecha de asignacion a formato compatible
+    if "FECHA DE ASIGNACION" in df.columns:
+        df["fecha_asignacion"] = pd.to_datetime(df["FECHA DE ASIGNACION"], errors="coerce").dt.date
+
     if st.button("Insertar en base de datos"):
 
         # ============================================
@@ -237,6 +241,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

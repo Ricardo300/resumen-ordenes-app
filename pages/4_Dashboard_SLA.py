@@ -1,7 +1,6 @@
 import streamlit as st
 from supabase import create_client
 import pandas as pd
-import plotly.express as px
 
 # =====================================
 # CONFIGURACIÓN
@@ -12,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("Dashboard SLA Operación")
+st.title("Dilación desde creación hasta cierre")
 
 # =====================================
 # CONEXIÓN SUPABASE
@@ -24,91 +23,40 @@ supabase = create_client(
 )
 
 # =====================================
-# CARGAR DATOS
+# CONSULTA SQL (solo febrero)
 # =====================================
 
-response = supabase.table("view_sla_operacion").select("*").execute()
+query = """
+WITH base AS (
+
+SELECT
+dilacion_dias
+FROM view_sla_operacion
+WHERE DATE_TRUNC('month', fecha) = '2026-02-01'
+
+)
+
+SELECT
+dilacion_dias,
+ROUND(
+SUM(COUNT(*)) OVER (ORDER BY dilacion_dias)::numeric
+/
+SUM(COUNT(*)) OVER () * 100
+,2) AS febrero
+FROM base
+GROUP BY dilacion_dias
+ORDER BY dilacion_dias
+"""
+
+response = supabase.rpc("run_sql", {"query": query}).execute()
 
 df = pd.DataFrame(response.data)
 
 # =====================================
-# FILTRO
+# MOSTRAR TABLA
 # =====================================
 
-st.sidebar.header("Filtros")
-
-tipo_sla = st.sidebar.selectbox(
-    "Tipo SLA",
-    sorted(df["tipo_sla"].unique())
+st.dataframe(
+    df,
+    use_container_width=True
 )
-
-df = df[df["tipo_sla"] == tipo_sla]
-
-# =====================================
-# KPIs
-# =====================================
-
-col1, col2, col3 = st.columns(3)
-
-total_ordenes = len(df)
-
-promedio_dilacion = round(df["dilacion_dias"].mean(),2)
-
-# regla SLA según tipo
-if tipo_sla == "INSTALACION":
-    limite = 3
-elif tipo_sla == "REPARACION":
-    limite = 2
-else:
-    limite = 3
-
-sla = (df[df["dilacion_dias"] <= limite].shape[0] / total_ordenes) * 100
-
-col1.metric(
-    "Total Órdenes",
-    total_ordenes
-)
-
-col2.metric(
-    "Promedio Dilación",
-    promedio_dilacion
-)
-
-col3.metric(
-    "SLA %",
-    round(sla,2)
-)
-
-st.divider()
-
-# =====================================
-# DISTRIBUCIÓN DÍAS
-# =====================================
-
-dist = df.groupby("dilacion_dias").size().reset_index(name="cantidad")
-
-fig = px.bar(
-    dist,
-    x="dilacion_dias",
-    y="cantidad",
-    title="Distribución de Días de Dilación",
-    text="cantidad"
-)
-
-st.plotly_chart(fig, use_container_width=True)
-
-# =====================================
-# ÓRDENES POR CONTRATA
-# =====================================
-
-contrata = df.groupby("contrata").size().reset_index(name="ordenes")
-
-fig2 = px.bar(
-    contrata,
-    x="contrata",
-    y="ordenes",
-    title="Órdenes por Contrata",
-    text="ordenes"
-)
-
-st.plotly_chart(fig2, use_container_width=True)

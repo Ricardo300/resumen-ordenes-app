@@ -280,5 +280,27 @@ fig_cla = px.bar(
 )
 
 st.plotly_chart(fig_cla, use_container_width=True)
+# =====================================
+# TOP 15 CODIGOS MAS UTILIZADOS
+# =====================================
+st.subheader("Top 15 Códigos de Cierre")
 
+codigos_cierre = (
+    df_filtrado
+    .groupby("codigo_completado")
+    .size()
+    .reset_index(name="cantidad")
+    .sort_values("cantidad", ascending=False)
+    .head(15)
+)
 
+codigos_cierre = codigos_cierre.rename(columns={
+    "codigo_completado": "Código de Cierre",
+    "cantidad": "Garantías"
+})
+
+st.dataframe(
+    codigos_cierre,
+    use_container_width=True,
+    hide_index=True
+)

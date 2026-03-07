@@ -19,7 +19,6 @@ archivo = st.file_uploader("Subir archivo Excel", type=["xlsx"])
 
 if archivo is not None:
 
-```
 df = pd.read_excel(archivo, engine="openpyxl")
 
 # ============================================
@@ -231,6 +230,7 @@ try:
 except Exception as e:
     st.error(f"Error al insertar: {e}")
 ```
+
 
 
 

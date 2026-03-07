@@ -12,19 +12,24 @@ st.set_page_config(
 )
 
 # =====================================
-# ESTILO VISUAL
+# ESTILOS VISUALES
 # =====================================
 
 st.markdown("""
 <style>
 
 [data-testid="stMetricValue"]{
-font-size:40px;
+font-size:38px;
 font-weight:700;
 }
 
 [data-testid="stMetricLabel"]{
-font-size:14px;
+font-size:15px;
+}
+
+.block-container{
+padding-top:2rem;
+max-width:1100px;
 }
 
 </style>
@@ -35,23 +40,11 @@ font-size:14px;
 # =====================================
 
 st.markdown("""
-<div style="
-display:flex;
-align-items:center;
-gap:10px;
-margin-bottom:10px;
-">
-
-<span style="font-size:28px;">📊</span>
-
-<h2 style="
-margin:0;
-font-weight:600;
-letter-spacing:0.5px;
-">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+<span style="font-size:30px;">📊</span>
+<h2 style="margin:0;font-weight:600;">
 DILACIÓN DE ASIGNACIÓN
 </h2>
-
 </div>
 """, unsafe_allow_html=True)
 
@@ -65,7 +58,7 @@ supabase = create_client(
 )
 
 # =====================================
-# CARGAR DATOS (PAGINACIÓN)
+# CARGAR DATOS
 # =====================================
 
 datos = []
@@ -104,12 +97,11 @@ df = df[
 ]
 
 # =====================================
-# FILTROS DASHBOARD
+# FILTROS
 # =====================================
 
 st.sidebar.title("Filtros")
 
-# filtro tecnología
 opciones_tec = ["Todas"] + sorted(df["tecnologia"].dropna().unique().tolist())
 
 tec = st.sidebar.selectbox(
@@ -117,7 +109,6 @@ tec = st.sidebar.selectbox(
     opciones_tec
 )
 
-# filtro SLA dinámico
 opciones_sla = ["Todos"] + sorted(df["tipo_sla"].dropna().unique().tolist())
 
 sla = st.sidebar.selectbox(
@@ -162,21 +153,21 @@ if len(rep) > 0:
     )
 
 # =====================================
-# MOSTRAR KPI
+# KPIs
 # =====================================
 
 col1, col2, col3 = st.columns(3)
 
-col1.metric("Total órdenes", total_ordenes)
+col1.metric("📦 Total órdenes", total_ordenes)
 
-col2.metric("SLA Instalaciones %", sla_inst)
+col2.metric("🛠 SLA Instalaciones %", sla_inst)
 
-col3.metric("SLA Reparaciones %", sla_rep)
+col3.metric("🔧 SLA Reparaciones %", sla_rep)
 
 st.divider()
 
 # =====================================
-# TABLA DILACIÓN
+# TABLA
 # =====================================
 
 conteo = (
@@ -196,8 +187,12 @@ tabla_df = conteo.rename(columns={"dilacion_dias": "Dilación"})[
     ["Dilación", "Cantidad", "Febrero %"]
 ]
 
-st.dataframe(
-    tabla_df,
-    use_container_width=True,
-    hide_index=True
-)
+# centrar tabla
+col_tabla = st.columns([1,4,1])
+
+with col_tabla[1]:
+    st.dataframe(
+        tabla_df,
+        use_container_width=True,
+        hide_index=True
+    )

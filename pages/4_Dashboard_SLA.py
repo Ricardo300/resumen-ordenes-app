@@ -35,7 +35,7 @@ while True:
     response = (
         supabase
         .table("view_sla_operacion")
-        .select("dilacion_dias,fecha")
+        .select("dilacion_dias,fecha,tipo_sla")
         .range(inicio, inicio + limite - 1)
         .execute()
     )
@@ -62,7 +62,40 @@ df = df[
 ]
 
 # =====================================
-# CALCULAR TABLA
+# KPI
+# =====================================
+
+total_ordenes = len(df)
+
+inst = df[df["tipo_sla"] == "INSTALACION"]
+rep = df[df["tipo_sla"] == "REPARACION"]
+
+sla_inst = round(
+    (len(inst[inst["dilacion_dias"] <= 3]) / len(inst)) * 100,
+    2
+)
+
+sla_rep = round(
+    (len(rep[rep["dilacion_dias"] <= 2]) / len(rep)) * 100,
+    2
+)
+
+# =====================================
+# MOSTRAR KPI
+# =====================================
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Total órdenes", total_ordenes)
+
+col2.metric("SLA Instalaciones %", sla_inst)
+
+col3.metric("SLA Reparaciones %", sla_rep)
+
+st.divider()
+
+# =====================================
+# TABLA DE DILACIÓN
 # =====================================
 
 conteo = (
@@ -81,10 +114,6 @@ conteo["Febrero %"] = round((conteo["Acumulado"] / total) * 100, 2)
 tabla_df = conteo.rename(columns={"dilacion_dias": "Dilación"})[
     ["Dilación", "Cantidad", "Febrero %"]
 ]
-
-# =====================================
-# MOSTRAR TABLA
-# =====================================
 
 st.dataframe(
     tabla_df,

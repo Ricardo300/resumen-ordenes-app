@@ -229,7 +229,6 @@ garantias_tecnico = len(
     df_filtrado[df_filtrado["clasificacion_garantia"] == "TECNICO"]
 )
 
-promedio_dias = round(df_filtrado["dias_desde_visita"].mean(),1)
 
 if total_servicios > 0:
 

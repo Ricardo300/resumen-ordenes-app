@@ -212,22 +212,22 @@ st.plotly_chart(fig, use_container_width=True)
 st.subheader("Garantías por Técnico")
 
 garantias_tecnico = (
-    df_filtrado.groupby("tecnico_causa_garantia")
+    df_filtrado
+    .groupby("tecnico_causa_garantia")
     .size()
-    .reset_index(name="cantidad")
-    .sort_values("cantidad", ascending=False)
+    .reset_index(name="garantias")
+    .sort_values("garantias", ascending=False)
 )
 
-garantias_tecnico = garantias_tecnico.head(20)
+garantias_tecnico = garantias_tecnico.rename(columns={
+    "tecnico_causa_garantia": "Tecnico"
+})
 
-fig_tecnico = px.bar(
+st.dataframe(
     garantias_tecnico,
-    x="tecnico_causa_garantia",
-    y="cantidad",
-    text="cantidad"
+    use_container_width=True,
+    hide_index=True
 )
-
-st.plotly_chart(fig_tecnico, use_container_width=True)
 
 # =====================================
 # GARANTÍAS POR RANGO

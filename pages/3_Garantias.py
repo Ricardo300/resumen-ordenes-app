@@ -578,6 +578,5 @@ st.dataframe(
     garantias_tecnico,
     use_container_width=True,
     hide_index=True,
-    height=350,
-    row_height=28
+    height=350
 )

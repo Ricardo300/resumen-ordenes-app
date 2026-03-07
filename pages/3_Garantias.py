@@ -241,14 +241,13 @@ else:
     pct_garantia_tecnico = 0
 
 
-col1,col2,col3,col4,col5,col6 = st.columns(6)
+col1,col2,col3,col4,col5 = st.columns(5)
 
 col1.metric("Total Garantías", total_garantias)
 col2.metric("Garantías Internas", garantias_internas)
 col3.metric("Garantías Externas", garantias_externas)
-col4.metric("Promedio días", promedio_dias)
-col5.metric("% Garantía Interna", f"{pct_garantia_interna}%")
-col6.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
+col4.metric("% Garantía Interna", f"{pct_garantia_interna}%")
+col5.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
 
 # =====================================
 # GARANTÍAS POR CONTRATA

@@ -523,7 +523,7 @@ with t1:
         garantias_tecnico,
         use_container_width=True,
         hide_index=True,
-        height=420
+        height=350
     )
     st.markdown('</div>', unsafe_allow_html=True)
 

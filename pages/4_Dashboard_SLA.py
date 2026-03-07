@@ -109,14 +109,20 @@ df = df[
 
 st.sidebar.title("Filtros")
 
+# filtro tecnología
+opciones_tec = ["Todas"] + sorted(df["tecnologia"].dropna().unique().tolist())
+
 tec = st.sidebar.selectbox(
     "Tecnología",
-    ["Todas","GPON","DTH"]
+    opciones_tec
 )
+
+# filtro SLA dinámico
+opciones_sla = ["Todos"] + sorted(df["tipo_sla"].dropna().unique().tolist())
 
 sla = st.sidebar.selectbox(
     "Tipo SLA",
-    ["Todos","INSTALACION","REPARACION"]
+    opciones_sla
 )
 
 # =====================================

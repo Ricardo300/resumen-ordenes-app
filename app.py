@@ -77,7 +77,8 @@ if archivo is not None:
             "Finalización",
             "Hora de reserva de actividad",
             "Fecha Programación",
-            "Numero Cliente"
+            "Numero Cliente",
+            "Codigo de Completado"
         ]
 
         for col in columnas_necesarias:
@@ -106,7 +107,8 @@ if archivo is not None:
             "finalizacion",
             "hora_reserva_actividad",
             "fecha_programacion",
-            "numero_cliente"
+            "numero_cliente",
+            "codigo_completado"
         ]
         df["numero_cliente"] = (
             pd.to_numeric(df["numero_cliente"], errors="coerce")
@@ -231,6 +233,7 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
+
 
 
 

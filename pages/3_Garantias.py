@@ -575,6 +575,8 @@ with t1:
         "garantias": "Garantías"
     })
 
+    garantias_tecnico = garantias_tecnico.drop(columns=["Contrata"])
+
     tabla_compacta(garantias_tecnico)
     st.markdown('</div>', unsafe_allow_html=True)
 

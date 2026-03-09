@@ -574,7 +574,7 @@ with t1:
         "contrata_causa_garantia": "Contrata",
         "garantias": "Garantías"
     })
-
+# 👇 ESTA ES LA LINEA QUE OCULTA LA CONTRATA
     garantias_tecnico = garantias_tecnico.drop(columns=["Contrata"])
 
     tabla_compacta(garantias_tecnico)

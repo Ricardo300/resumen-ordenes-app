@@ -525,6 +525,9 @@ col_g3, col_g4 = st.columns([1.1, 0.9])
 #     st.plotly_chart(fig_contrata, use_container_width=True)
 #     st.markdown('</div>', unsafe_allow_html=True)
 
+# ACOMODAR GRAFICO EN TOTA LA FILA
+col_g4 = st.container()
+
 with col_g4:
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.subheader("Top 15 Códigos de Cierre")

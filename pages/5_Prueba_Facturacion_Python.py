@@ -17,51 +17,49 @@ if archivo is not None:
     st.subheader("Vista previa del archivo")
     st.dataframe(df.head(20))
 
-    # mostrar columnas
     st.subheader("Columnas detectadas")
     st.write(list(df.columns))
 
-    # detectar órdenes
-    st.subheader("Órdenes detectadas")
-
+    # agrupar órdenes
     ordenes = df.groupby("NUMERO DE ORDEN")
+
+    st.subheader("Órdenes detectadas")
+    st.write("Total de órdenes:", len(ordenes))
 
     st.subheader("Cálculo de materiales por orden")
 
     preview = []
-    
+
     for orden, grupo in ordenes:
-    
+
         fo_total = grupo.loc[
             grupo["MATERIAL"].str.contains("CABLE OPTICO", case=False, na=False),
             "CANTIDAD"
         ].sum()
-    
+
         utp_total = grupo.loc[
             grupo["MATERIAL"].str.contains("UTP", case=False, na=False),
             "CANTIDAD"
         ].sum()
-    
+
         stb_count = grupo.loc[
             grupo["MATERIAL"].str.contains("STB|ZXV10|B866", case=False, na=False),
             "CANTIDAD"
         ].sum()
-    
+
         switch_count = grupo.loc[
             grupo["MATERIAL"].str.contains("SWITCH", case=False, na=False),
             "CANTIDAD"
         ].sum()
-    
+
         preview.append({
-            "orden": orden,
-            "FO_total": fo_total,
-            "UTP_total": utp_total,
-            "STB_count": stb_count,
-            "SWITCH_count": switch_count
+            "ORDEN": orden,
+            "FO_TOTAL": fo_total,
+            "UTP_TOTAL": utp_total,
+            "STB_COUNT": stb_count,
+            "SWITCH_COUNT": switch_count
         })
-    
+
     preview_df = pd.DataFrame(preview)
-    
+
     st.dataframe(preview_df.head(20))
-    
-        st.write("Total de órdenes:", len(ordenes))

@@ -578,7 +578,7 @@ with t1:
         "garantias": "Garantías"
     })
 # 👇 ESTA ES LA LINEA QUE OCULTA LA CONTRATA
-    garantias_tecnico = garantias_tecnico.drop(columns=["Contrata"])
+    #garantias_tecnico = garantias_tecnico.drop(columns=["Contrata"])
 
     tabla_compacta(garantias_tecnico)
     st.markdown('</div>', unsafe_allow_html=True)

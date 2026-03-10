@@ -15,3 +15,9 @@ if archivo is not None:
   #detecta las columnas
     st.subheader("Columnas detectadas")
     st.write(list(df.columns))
+
+st.subheader("Órdenes detectadas")
+
+ordenes = df.groupby("NUMERO DE ORDEN")
+
+st.write("Total de órdenes:", len(ordenes))

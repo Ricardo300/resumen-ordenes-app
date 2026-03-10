@@ -500,30 +500,30 @@ with col_g2:
 
 col_g3, col_g4 = st.columns([1.1, 0.9])
 
- with col_g3:
-     st.markdown('<div class="section-card">', unsafe_allow_html=True)
-     st.subheader("Garantías por Contrata")
+with col_g3:
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.subheader("Garantías por Contrata")
 
-     garantias_contrata = (
-         df_filtrado
-         .groupby("contrata_causa_garantia")
-         .size()
-         .reset_index(name="cantidad")
-         .sort_values("cantidad", ascending=False)
-     )
+    garantias_contrata = (
+        df_filtrado
+        .groupby("contrata_causa_garantia")
+        .size()
+        .reset_index(name="cantidad")
+        .sort_values("cantidad", ascending=False)
+    )
 
-     fig_contrata = px.bar(
-         garantias_contrata,
-         x="contrata_causa_garantia",
-         y="cantidad",
-         text="cantidad"
-     )
-     fig_contrata.update_traces(textposition="outside")
-     fig_contrata = estilo_fig(fig_contrata, "Contrata", "Cantidad", 390)
-     fig_contrata.update_xaxes(tickangle=-35)
+    fig_contrata = px.bar(
+        garantias_contrata,
+        x="contrata_causa_garantia",
+        y="cantidad",
+        text="cantidad"
+    )
+    fig_contrata.update_traces(textposition="outside")
+    fig_contrata = estilo_fig(fig_contrata, "Contrata", "Cantidad", 390)
+    fig_contrata.update_xaxes(tickangle=-35)
 
-     st.plotly_chart(fig_contrata, use_container_width=True)
-     st.markdown('</div>', unsafe_allow_html=True)
+    st.plotly_chart(fig_contrata, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ACOMODAR GRAFICO EN TOTA LA FILA
 #col_g4 = st.container()

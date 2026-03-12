@@ -64,10 +64,15 @@ if archivo is not None:
             "SWITCH_COUNT": switch_count
         })
     
+        if "Traslado" in tipo_orden:
+            concepto = "TRASLADO_SERVICIO"
+        else:
+            concepto = "MANO_OBRA_BASE"
+
         facturacion.append({
             "ORDEN": orden,
             "TIPO_ORDEN": tipo_orden,
-            "CONCEPTO": "MANO_OBRA_BASE",
+            "CONCEPTO": concepto,
             "CANTIDAD": 1
         })
     

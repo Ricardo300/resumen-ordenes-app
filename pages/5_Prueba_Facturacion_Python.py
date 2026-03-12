@@ -77,3 +77,5 @@ if archivo is not None:
 
     st.subheader("Facturación generada por Python")
     st.dataframe(facturacion_df)
+
+    st.write(orden, tipo_orden)

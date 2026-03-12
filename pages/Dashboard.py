@@ -12,7 +12,7 @@ from streamlit_plotly_events import plotly_events
 
 usuarios = {
     "ricardo": "1234",
-    "jeffy": "12345",
+    "jeffrey": "12345",
     "hector": "123456",
     "supervisor": "abcd",
     "backoffice": "eta2026"

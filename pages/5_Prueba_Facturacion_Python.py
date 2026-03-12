@@ -75,6 +75,17 @@ if archivo is not None:
             "CONCEPTO": concepto,
             "CANTIDAD": 1
         })
+        
+        if fo_total > 100:
+
+            fo_adicional = fo_total - 100
+
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "METRO_ADICIONAL_FO",
+                "CANTIDAD": fo_adicional
+            })
     
     preview_df = pd.DataFrame(preview)
     

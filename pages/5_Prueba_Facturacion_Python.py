@@ -77,7 +77,8 @@ if archivo is not None:
     st.dataframe(preview_df.head(20))
     
     facturacion_df = pd.DataFrame(facturacion)
-    
+
+    st.write("Total líneas generadas:", len(facturacion_df))
     st.subheader("Facturación generada por Python")
-    st.dataframe(facturacion_df.head(20))
+    st.dataframe(facturacion_df)
     

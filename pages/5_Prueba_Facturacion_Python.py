@@ -78,7 +78,7 @@ if archivo is not None:
         # DEFINIR TV SEGÚN TIPO DE ORDEN
         # ================================
 
-        if "Traslado Externo" in tipo_orden:
+        if "Traslado" in tipo_orden:
             tv_count = grupo["TV"].fillna(0).iloc[0]
         else:
             tv_count = stb_count

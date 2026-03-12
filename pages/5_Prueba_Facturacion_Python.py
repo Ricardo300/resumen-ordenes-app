@@ -36,7 +36,7 @@ if archivo is not None:
         tipo_orden = grupo["TIPO DE ORDEN"].iloc[0]
     
         fo_total = grupo.loc[
-            grupo["MATERIAL"] == "CABLE DROP FO MONOMODO 2 HILOS",
+            grupo["MATERIAL"] == "CABLE OPTICO",
             "CANTIDAD"
         ].sum()
 

@@ -142,7 +142,20 @@ if archivo is not None:
                 "CONCEPTO": "INS METRO ADICIONAL DE CABLE UTP GPON",
                 "CANTIDAD": utp_adicional
             })
-
+        # ================================
+        # STB ADICIONAL (SOLO INSTALACIÓN)
+        # ================================
+        
+        if "Instal" in tipo_orden and stb_count > 2:
+        
+            stb_adicional = stb_count - 2
+        
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "INS ADICIONAL STB DE IPTV VISITA 1 GPON",
+                "CANTIDAD": stb_adicional
+            })
     # ========================================
     # RESULTADOS
     # ========================================

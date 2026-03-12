@@ -156,6 +156,19 @@ if archivo is not None:
                 "CONCEPTO": "INS ADICIONAL STB DE IPTV VISITA 1 GPON",
                 "CANTIDAD": stb_adicional
             })
+
+        # ================================
+        # INSTALACION DE SWITCH
+        # ================================
+        
+        if switch_count > 0:
+        
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "INSTALACION DE SWITCH ETHERNET PARA IPTV",
+                "CANTIDAD": switch_count
+            })
     # ========================================
     # RESULTADOS
     # ========================================

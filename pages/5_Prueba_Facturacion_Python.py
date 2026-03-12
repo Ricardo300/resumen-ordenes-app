@@ -95,11 +95,159 @@ if archivo is not None:
         # ========================================
         # CAPA 2 – MOTOR DE REGLAS DE FACTURACIÓN
         # ========================================
-
-        if "Traslado" in tipo_orden:
-            concepto = "TRASLADO_SERVICIO"
-        else:
-            concepto = "MANO_OBRA_BASE"
+        # ========================================
+        # MANO DE OBRA BASE POR TIPO DE SERVICIO
+        # ========================================
+        
+        t = tipo_orden.upper()
+        
+        desc = ""
+        cant = 1
+        
+        # ===============================
+        # CAMBIO DE PLAN
+        # ===============================
+        
+        if "CAMBIO DE PLAN CON CAMBIO DE EQUIPO DATOS Y TV" in t \
+        or "CAMBIO DE PLAN CON CAMBIO DE EQUIPO TRIPLE PLAY" in t:
+        
+            if stb_count <= 1:
+                sin_exist = 1
+                con_exist = 0
+            else:
+                sin_exist = max(1, stb_count // 2)
+                con_exist = 1 if (stb_count >= 3 and stb_count % 2 == 1) else 0
+        
+            if sin_exist > 0:
+                facturacion.append({
+                    "ORDEN": orden,
+                    "TIPO_ORDEN": tipo_orden,
+                    "CONCEPTO": "INS ADICIONAL TV SIN EXISTENTE VISITA 2",
+                    "CANTIDAD": sin_exist
+                })
+        
+            if con_exist > 0:
+                facturacion.append({
+                    "ORDEN": orden,
+                    "TIPO_ORDEN": tipo_orden,
+                    "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
+                    "CANTIDAD": con_exist
+                })
+        
+        
+        # ===============================
+        # EQUIPO ADICIONAL
+        # ===============================
+        
+        elif "EQUIPO ADICIONAL DATOS Y TV" in t:
+        
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
+                "CANTIDAD": 1
+            })
+        
+        elif "EQUIPO ADICIONAL TRIPLE PLAY" in t:
+        
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
+                "CANTIDAD": 1
+            })
+        
+        elif "EQUIPO ADICIONAL DATOS" in t:
+        
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "CONEXION/CONFIGURACION EXTENSORES WIFI",
+                "CANTIDAD": 1
+            })
+        
+        
+        # ===============================
+        # INSTALACIONES
+        # ===============================
+        
+        elif "INSTALACION INTERNET (DGPON)+TV (GPON)" in t:
+        
+            desc = "INSTALACIÓN TWO PLAY INTERNET Y TV"
+        
+        elif "INSTALACION INTERNET (GPON)" in t:
+        
+            desc = "INSTALACIÓN ONE PLAY DATOS"
+        
+        elif "INSTALACION LÍNEA FIJA (VGPON) + INTERNET (DGPON)+TV (GPON)" in t \
+        or "INSTALACION LINEA FIJA (VGPON) + INTERNET (DGPON)+TV (GPON)" in t:
+        
+            desc = "INSTALACIÓN TRIPLE PLAY TV, VOZ Y DATOS"
+        
+        elif "INSTALACION LÍNEA FIJA (VGPON) + INTERNET (DGPON)" in t \
+        or "INSTALACION LINEA FIJA (VGPON) + INTERNET (DGPON)" in t:
+        
+            desc = "INSTALACIÓN TWO PLAY VOZ E INTERNET"
+        
+        
+        # ===============================
+        # TRASLADOS EXTERNOS
+        # ===============================
+        
+        elif "TRASLADO EXTERNO LÍNEA FIJA (VGPON) + INTERNET (DGPON)" in t \
+        or "TRASLADO EXTERNO LINEA FIJA (VGPON) + INTERNET (DGPON)" in t:
+        
+            desc = "TRASLADO SER EXTERNO 2PLAY VOZ/INTE GPON"
+        
+        elif "TRASLADO EXTERNO INTERNET (DGPON) + TV (GPON)" in t:
+        
+            desc = "TRASLADO SERVICIO EX 2PLAY INTER/TV GPON"
+        
+        elif "TRASLADO EXTERNO INTERNET (GPON)" in t:
+        
+            desc = "TRASLADO SERV EXTERNO 1PLAY INTERNE GPON"
+        
+        elif "TRASLADO EXTERNO LÍNEA FIJA (VGPON) + INTERNET (DGPON)+TV (GPON)" in t \
+        or "TRASLADO EXTERNO LINEA FIJA (VGPON) + INTERNET (DGPON)+TV (GPON)" in t:
+        
+            desc = "TRASLADO DE SERVICIO EXTERNO 3PLAY GPON"
+        
+        
+        # ===============================
+        # TRASLADOS INTERNOS
+        # ===============================
+        
+        elif "TRASLADO INTERNO INTERNET (GPON)" in t:
+        
+            desc = "TRASLADO SERVICIO INT ACOMETIDA COMPLETA"
+        
+        elif "TRASLADO INTERNO DE INTERNET (GPON) + TV (GPON)" in t:
+        
+            if tv_count >= 3:
+                desc = "TRASLADO SERVICIO INT REUBICACION >=3STB"
+            else:
+                desc = "TRASLADO SERVICIO INT REUBICACION 2 STB"
+        
+        elif "TRASLADO INTERNO LINEA FIJA (GPON) + INTERNET (GPON) + TV (GPON)" in t:
+        
+            if tv_count >= 3:
+                desc = "TRASLADO SERVICIO INT REUBICACION >=3STB"
+            else:
+                desc = "TRASLADO SERVICIO INT REUBICACION 2 STB"
+        
+        
+        # ===============================
+        # GENERAR LINEA
+        # ===============================
+        
+        if desc != "":
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": desc,
+                "CANTIDAD": cant
+            })
+       
 
         facturacion.append({
             "ORDEN": orden,

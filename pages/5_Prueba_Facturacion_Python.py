@@ -42,8 +42,17 @@ if archivo is not None:
             "CANTIDAD"
         ].sum()
 
+        STB_VALIDAS = [
+            "BUNDLE ZTE B866V2-H + CONTROL",
+            "OTT PLAYER ZTE ZXV10 866v2",
+            "STB IPTV ZTE B866V2-H ANDROID",
+            "STB IPTV ZTE ZXV10 866v2 SO ANDROID12",
+            "STB IPTV ZTE ZXV10 866v2 SO ANDROID12(R)",
+            "STB SEI ROBOTICS ATV SEI800AMX"
+        ]
+        
         stb_count = grupo.loc[
-            grupo["MATERIAL"].str.contains("STB|ZXV10|B866|SEI800|OTT", case=False, na=False),
+            grupo["MATERIAL"].isin(STB_VALIDAS),
             "CANTIDAD"
         ].sum()
 

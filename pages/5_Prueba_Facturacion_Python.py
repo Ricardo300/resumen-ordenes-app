@@ -103,18 +103,27 @@ if archivo is not None:
         cant = 1
 
         # === CAMBIO DE PLAN (regla compuesta por STB) ===
+        # ===============================
+        # CAMBIO DE PLAN
+        # ===============================
+        
         if (
             "CAMBIO DE PLAN CON CAMBIO DE EQUIPO DATOS Y TV" in t
             or "CAMBIO DE PLAN CON CAMBIO DE EQUIPO TRIPLE PLAY" in t
         ):
-
-            if stb_count <= 1:
+        
+            if stb_count == 1:
                 sin_exist = 1
                 con_exist = 0
+        
             else:
-                sin_exist = max(1, int(stb_count / 2))
-                con_exist = 1 if (stb_count >= 3 and (stb_count % 2) == 1) else 0
-
+                sin_exist = max(1, stb_count // 2)
+        
+                if stb_count % 2 == 1 and stb_count >= 3:
+                    con_exist = 1
+                else:
+                    con_exist = 0
+        
             if sin_exist > 0:
                 facturacion.append({
                     "ORDEN": orden,
@@ -122,7 +131,7 @@ if archivo is not None:
                     "CONCEPTO": "INS ADICIONAL TV SIN EXISTENTE VISITA 2",
                     "CANTIDAD": sin_exist
                 })
-
+        
             if con_exist > 0:
                 facturacion.append({
                     "ORDEN": orden,
@@ -130,7 +139,6 @@ if archivo is not None:
                     "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
                     "CANTIDAD": con_exist
                 })
-
         # === EQUIPO ADICIONAL ===
         elif "EQUIPO ADICIONAL DATOS Y TV" in t:
             facturacion.append({

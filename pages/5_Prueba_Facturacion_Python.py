@@ -79,7 +79,7 @@ if archivo is not None:
         # ================================
 
         if "Traslado Externo" in tipo_orden:
-            tv_count = grupo["TV"].iloc[0]
+            tv_count = grupo["TV"].fillna(0).iloc[0]
         else:
             tv_count = stb_count
 
@@ -133,9 +133,8 @@ if archivo is not None:
 
             utp_adicional = utp_total - utp_base
 
-            # límite máximo
-            if utp_adicional > 85:
-                utp_adicional = 85
+            # límite máximo de adicional
+            utp_adicional = min(utp_adicional, 85)
 
             facturacion.append({
                 "ORDEN": orden,

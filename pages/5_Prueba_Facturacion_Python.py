@@ -37,6 +37,12 @@ if archivo is not None:
 
         tipo_orden = grupo["TIPO DE ORDEN"].iloc[0]
 
+        # determinar cantidad de TV según tipo de orden
+        if "Traslado Externo" in tipo_orden:
+            tv_count = grupo["TV"].iloc[0]
+        else:
+            tv_count = stb_count
+
         fo_total = grupo.loc[
             grupo["MATERIAL"].str.contains("CABLE OPTICO", case=False, na=False),
             "CANTIDAD"
@@ -108,7 +114,7 @@ if archivo is not None:
             })
 
         # Regla UTP adicional
-        utp_base = 5 * stb_count
+        utp_base = 5 * tv_count
         
         if utp_total > utp_base:
         

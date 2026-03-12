@@ -143,30 +143,46 @@ if archivo is not None:
                     "CANTIDAD": con_exist
                 })
         # === EQUIPO ADICIONAL ===
+        # ===============================
+        # EQUIPO ADICIONAL
+        # ===============================
+        
         elif "EQUIPO ADICIONAL DATOS Y TV" in t:
-            facturacion.append({
-                "ORDEN": orden,
-                "TIPO_ORDEN": tipo_orden,
-                "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
-                "CANTIDAD": 1
-            })
-
+        
+            if stb_count > 0:
+        
+                facturacion.append({
+                    "ORDEN": orden,
+                    "TIPO_ORDEN": tipo_orden,
+                    "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
+                    "CANTIDAD": stb_count
+                })
+        
+        
         elif "EQUIPO ADICIONAL TRIPLE PLAY" in t:
-            facturacion.append({
-                "ORDEN": orden,
-                "TIPO_ORDEN": tipo_orden,
-                "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
-                "CANTIDAD": 1
-            })
-
+        
+            if stb_count > 0:
+        
+                facturacion.append({
+                    "ORDEN": orden,
+                    "TIPO_ORDEN": tipo_orden,
+                    "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
+                    "CANTIDAD": stb_count
+                })
+        
+        
         elif "EQUIPO ADICIONAL DATOS" in t:
-            facturacion.append({
-                "ORDEN": orden,
-                "TIPO_ORDEN": tipo_orden,
-                "CONCEPTO": "CONEXION/CONFIGURACION EXTENSORES WIFI",
-                "CANTIDAD": 1
-            })
-
+        
+            equipos_datos = grupo["CANTIDAD"].sum()
+        
+            if equipos_datos > 0:
+        
+                facturacion.append({
+                    "ORDEN": orden,
+                    "TIPO_ORDEN": tipo_orden,
+                    "CONCEPTO": "CONEXION/CONFIGURACION EXTENSORES WIFI",
+                    "CANTIDAD": equipos_datos
+                })
         # === INSTALACIONES ===
         elif "INSTALACION INTERNET (DGPON)+TV (GPON)" in t:
             desc = "INSTALACIÓN TWO PLAY INTERNET Y TV"

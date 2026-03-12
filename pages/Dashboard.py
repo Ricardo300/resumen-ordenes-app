@@ -262,7 +262,7 @@ df["dia_mes"] = df["fecha"].dt.day
 ordenes_dia = (
     df.groupby("dia_mes")["orden_trabajo"]
     .nunique()
-    .reset_index(name="ordenes")
+    .reset_index(name="completadas ordenes")
 )
 
 tecnicos_dia = (

@@ -86,6 +86,19 @@ if archivo is not None:
                 "CONCEPTO": "INS METRO ADICIONAL DE CABLE DROP DE FO",
                 "CANTIDAD": fo_adicional
             })
+
+        utp_base = 5 * stb_count
+
+        if utp_total > utp_base:
+        
+            utp_adicional = utp_total - utp_base
+        
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "INS METRO ADICIONAL DE CABLE UTP GPON",
+                "CANTIDAD": utp_adicional
+            })
     
     preview_df = pd.DataFrame(preview)
     

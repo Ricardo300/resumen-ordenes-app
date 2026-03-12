@@ -200,6 +200,7 @@ if archivo is not None:
             or "TRASLADO INTERNO INTERNET (GPON) + TV (GPON)" in t
             or "TRASLADO INTERNO LINEA FIJA (GPON) + INTERNET (GPON) + TV (GPON)" in t
             or "TRASLADO INTERNO LINEA FIJA (VGPON) + INTERNET (DGPON)+TV (GPON)" in t
+            or "TRASLADO INTERNO LINEA FIJA (GPON) + INTERNET (GPON)+TV (GPON)" in t
         ):
             if tv_count >= 3:
                 desc = "TRASLADO SERVICIO INT REUBICACION >=3STB"

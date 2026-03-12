@@ -29,6 +29,7 @@ if archivo is not None:
     st.subheader("Cálculo de materiales por orden")
 
     preview = []
+    facturacion = []
 
     for orden, grupo in ordenes:
 
@@ -60,6 +61,17 @@ if archivo is not None:
             "SWITCH_COUNT": switch_count
         })
 
+        facturacion.append({
+            "ORDEN": orden,
+            "CONCEPTO": "MANO_OBRA_BASE",
+            "CANTIDAD": 1
+        })
+
     preview_df = pd.DataFrame(preview)
 
     st.dataframe(preview_df.head(20))
+
+    facturacion_df = pd.DataFrame(facturacion)
+
+    st.subheader("Facturación generada por Python")
+    st.dataframe(facturacion_df)

@@ -34,6 +34,7 @@ if archivo is not None:
     for orden, grupo in ordenes:
 
         tipo_orden = grupo["TIPO DE ORDEN"].iloc[0]
+        st.write(orden, tipo_orden)
         
         fo_total = grupo.loc[
             grupo["MATERIAL"].str.contains("CABLE OPTICO", case=False, na=False),
@@ -68,7 +69,7 @@ if archivo is not None:
             "CONCEPTO": "MANO_OBRA_BASE",
             "CANTIDAD": 1
         })
-
+    
     preview_df = pd.DataFrame(preview)
 
     st.dataframe(preview_df.head(20))
@@ -78,4 +79,4 @@ if archivo is not None:
     st.subheader("Facturación generada por Python")
     st.dataframe(facturacion_df)
 
-    st.write(orden, tipo_orden)
+    

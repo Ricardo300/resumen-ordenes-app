@@ -83,7 +83,7 @@ if archivo is not None:
             facturacion.append({
                 "ORDEN": orden,
                 "TIPO_ORDEN": tipo_orden,
-                "CONCEPTO": "METRO_ADICIONAL_FO",
+                "CONCEPTO": "INS METRO ADICIONAL DE CABLE DROP DE FO",
                 "CANTIDAD": fo_adicional
             })
     

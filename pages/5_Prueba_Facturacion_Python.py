@@ -55,12 +55,16 @@ if archivo is not None:
             grupo["MATERIAL"].isin(STB_VALIDAS),
             "CANTIDAD"
         ].sum()
+        
+        SWITCH_VALIDOS = [
+            "SWITCH DLINK DGS105"
+        ]
 
         switch_count = grupo.loc[
-            grupo["MATERIAL"].str.contains("SWITCH", case=False, na=False),
+            grupo["MATERIAL"].isin(SWITCH_VALIDOS),
             "CANTIDAD"
         ].sum()
-
+        
         preview.append({
             "ORDEN": orden,
             "TIPO_ORDEN": tipo_orden,

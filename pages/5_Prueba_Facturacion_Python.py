@@ -36,20 +36,20 @@ if archivo is not None:
         tipo_orden = grupo["TIPO DE ORDEN"].iloc[0]
     
         fo_total = grupo.loc[
-            grupo["MATERIAL"].str.contains("CABLE OPTICO", case=False, na=False),
+            grupo["MATERIAL"] == "CABLE DROP FO MONOMODO 2 HILOS",
             "CANTIDAD"
         ].sum()
-    
+
         utp_total = grupo.loc[
-            grupo["MATERIAL"].str.contains("UTP", case=False, na=False),
+            grupo["MATERIAL"] == "CABLE UTP CAT5 P/INTERIORES 66445532AM",
             "CANTIDAD"
         ].sum()
-    
+
         stb_count = grupo.loc[
-            grupo["MATERIAL"].str.contains("STB|ZXV10|B866", case=False, na=False),
+            grupo["MATERIAL"].str.contains("STB|ZXV10|B866|SEI800|OTT", case=False, na=False),
             "CANTIDAD"
         ].sum()
-    
+        
         switch_count = grupo.loc[
             grupo["MATERIAL"].str.contains("SWITCH", case=False, na=False),
             "CANTIDAD"

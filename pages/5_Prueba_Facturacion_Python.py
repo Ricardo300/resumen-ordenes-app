@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 
 st.set_page_config(layout="wide")
-st.title("Prueba Motor de Facturación GPON")
-st.write("Sube el mismo Excel que usas como base en el macro para comparar resultados.")
+st.title("Validación de Materiales GPON")
+st.write("Sube el Excel base para validar la detección de materiales.")
 
 archivo = st.file_uploader("Subir archivo Excel base del macro", type=["xlsx"])
 
@@ -26,15 +26,12 @@ if archivo is not None:
     st.subheader("Órdenes detectadas")
     st.write("Total de órdenes:", len(ordenes))
 
-    st.subheader("Cálculo de materiales por orden")
-
     preview = []
-    facturacion = []
-    
+
     for orden, grupo in ordenes:
-    
+
         tipo_orden = grupo["TIPO DE ORDEN"].iloc[0]
-    
+
         fo_total = grupo.loc[
             grupo["MATERIAL"].str.contains("CABLE OPTICO", case=False, na=False),
             "CANTIDAD"
@@ -49,12 +46,12 @@ if archivo is not None:
             grupo["MATERIAL"].str.contains("STB|ZXV10|B866|SEI800|OTT", case=False, na=False),
             "CANTIDAD"
         ].sum()
-        
+
         switch_count = grupo.loc[
             grupo["MATERIAL"].str.contains("SWITCH", case=False, na=False),
             "CANTIDAD"
         ].sum()
-    
+
         preview.append({
             "ORDEN": orden,
             "TIPO_ORDEN": tipo_orden,
@@ -63,51 +60,8 @@ if archivo is not None:
             "STB_COUNT": stb_count,
             "SWITCH_COUNT": switch_count
         })
-    
-        if "Traslado" in tipo_orden:
-            concepto = "TRASLADO_SERVICIO"
-        else:
-            concepto = "MANO_OBRA_BASE"
 
-        facturacion.append({
-            "ORDEN": orden,
-            "TIPO_ORDEN": tipo_orden,
-            "CONCEPTO": concepto,
-            "CANTIDAD": 1
-        })
-        
-        if fo_total > 100:
-
-            fo_adicional = fo_total - 100
-
-            facturacion.append({
-                "ORDEN": orden,
-                "TIPO_ORDEN": tipo_orden,
-                "CONCEPTO": "INS METRO ADICIONAL DE CABLE DROP DE FO",
-                "CANTIDAD": fo_adicional
-            })
-
-        utp_base = 5 * stb_count
-
-        if utp_total > utp_base:
-        
-            utp_adicional = utp_total - utp_base
-        
-            facturacion.append({
-                "ORDEN": orden,
-                "TIPO_ORDEN": tipo_orden,
-                "CONCEPTO": "INS METRO ADICIONAL DE CABLE UTP GPON",
-                "CANTIDAD": utp_adicional
-            })
-    
     preview_df = pd.DataFrame(preview)
-    
-    st.subheader("Cálculo de materiales por orden")
-    st.dataframe(preview_df.head(20))
-    
-    facturacion_df = pd.DataFrame(facturacion)
 
-    st.write("Total líneas generadas:", len(facturacion_df))
-    st.subheader("Facturación generada por Python")
-    st.dataframe(facturacion_df)
-    
+    st.subheader("Detección de materiales por orden")
+    st.dataframe(preview_df)

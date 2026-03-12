@@ -37,11 +37,9 @@ if archivo is not None:
 
         tipo_orden = grupo["TIPO DE ORDEN"].iloc[0]
 
-        # determinar cantidad de TV según tipo de orden
-        if "Traslado Externo" in tipo_orden:
-            tv_count = grupo["TV"].iloc[0]
-        else:
-            tv_count = stb_count
+        # ================================
+        # DETECCIÓN DE MATERIALES
+        # ================================
 
         fo_total = grupo.loc[
             grupo["MATERIAL"].str.contains("CABLE OPTICO", case=False, na=False),
@@ -76,6 +74,15 @@ if archivo is not None:
             "CANTIDAD"
         ].sum()
 
+        # ================================
+        # DEFINIR TV SEGÚN TIPO DE ORDEN
+        # ================================
+
+        if "Traslado Externo" in tipo_orden:
+            tv_count = grupo["TV"].iloc[0]
+        else:
+            tv_count = stb_count
+
         preview.append({
             "ORDEN": orden,
             "TIPO_ORDEN": tipo_orden,
@@ -101,7 +108,10 @@ if archivo is not None:
             "CANTIDAD": 1
         })
 
-        # Regla FO adicional
+        # ================================
+        # FO ADICIONAL
+        # ================================
+
         if fo_total > 100:
 
             fo_adicional = fo_total - 100
@@ -113,17 +123,20 @@ if archivo is not None:
                 "CANTIDAD": fo_adicional
             })
 
-        # Regla UTP adicional
+        # ================================
+        # UTP ADICIONAL
+        # ================================
+
         utp_base = 5 * tv_count
-        
+
         if utp_total > utp_base:
-        
+
             utp_adicional = utp_total - utp_base
-        
-            # regla: máximo 85 metros
+
+            # límite máximo
             if utp_adicional > 85:
                 utp_adicional = 85
-        
+
             facturacion.append({
                 "ORDEN": orden,
                 "TIPO_ORDEN": tipo_orden,
@@ -132,7 +145,7 @@ if archivo is not None:
             })
 
     # ========================================
-    # TABLAS DE RESULTADO
+    # RESULTADOS
     # ========================================
 
     preview_df = pd.DataFrame(preview)

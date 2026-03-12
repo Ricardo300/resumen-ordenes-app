@@ -109,11 +109,15 @@ if archivo is not None:
 
         # Regla UTP adicional
         utp_base = 5 * stb_count
-
+        
         if utp_total > utp_base:
-
+        
             utp_adicional = utp_total - utp_base
-
+        
+            # regla: máximo 85 metros
+            if utp_adicional > 85:
+                utp_adicional = 85
+        
             facturacion.append({
                 "ORDEN": orden,
                 "TIPO_ORDEN": tipo_orden,

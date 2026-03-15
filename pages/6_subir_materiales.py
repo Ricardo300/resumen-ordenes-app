@@ -2,10 +2,6 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client
 
-# ==========================================
-# CONFIGURACIÓN DE LA PÁGINA
-# ==========================================
-
 st.set_page_config(layout="wide")
 st.title("Carga de Materiales")
 
@@ -32,18 +28,18 @@ if archivo is not None:
     df = pd.read_excel(archivo)
 
     # ===============================
-    # LIMPIAR NOMBRES DE COLUMNAS
+    # LIMPIAR COLUMNAS
     # ===============================
     df.columns = df.columns.str.strip().str.upper()
 
     st.subheader("Columnas detectadas")
     st.write(df.columns.tolist())
 
-    st.subheader("Primeras filas del archivo")
+    st.subheader("Vista previa del archivo")
     st.dataframe(df.head())
 
     # ===============================
-    # COLUMNAS QUE NECESITAMOS
+    # COLUMNAS NECESARIAS
     # ===============================
     columnas_necesarias = [
         "NUMERO DE ORDEN",
@@ -53,28 +49,20 @@ if archivo is not None:
         "MODELO"
     ]
 
-    # ===============================
-    # CREAR COLUMNAS SI NO EXISTEN
-    # ===============================
     for col in columnas_necesarias:
         if col not in df.columns:
             df[col] = None
 
-    # ===============================
-    # FILTRAR COLUMNAS
-    # ===============================
     df_materiales = df[columnas_necesarias].copy()
 
-    # ===============================
-    # ELIMINAR FILAS SIN ORDEN
-    # ===============================
+    # eliminar filas sin orden
     df_materiales = df_materiales.dropna(subset=["NUMERO DE ORDEN"])
 
-    st.subheader("Datos preparados para guardar")
+    st.subheader("Datos preparados")
     st.dataframe(df_materiales)
 
     # ===============================
-    # RENOMBRAR PARA BASE DE DATOS
+    # RENOMBRAR COLUMNAS
     # ===============================
     df_db = df_materiales.rename(columns={
         "NUMERO DE ORDEN": "numero_orden",
@@ -84,6 +72,10 @@ if archivo is not None:
         "MODELO": "modelo"
     })
 
+    # convertir NaN a None
+    df_db = df_db.astype(object)
+    df_db = df_db.where(pd.notnull(df_db), None)
+
     # ===============================
     # BOTÓN GUARDAR
     # ===============================
@@ -91,15 +83,23 @@ if archivo is not None:
 
         try:
 
-            # convertir NaN a None (JSON compatible)
-            df_db = df_db.astype(object)
-            df_db = df_db.where(pd.notnull(df_db), None)
+            # detectar órdenes únicas
+            ordenes = df_db["numero_orden"].unique().tolist()
 
+            # eliminar materiales anteriores de esas órdenes
+            supabase.table("materiales_ordenes")\
+                .delete()\
+                .in_("numero_orden", ordenes)\
+                .execute()
+
+            # insertar nuevos materiales
             datos = df_db.to_dict(orient="records")
 
-            supabase.table("materiales_ordenes").insert(datos).execute()
+            supabase.table("materiales_ordenes")\
+                .insert(datos)\
+                .execute()
 
-            st.success("Materiales guardados correctamente en la base de datos")
+            st.success("Materiales cargados correctamente")
 
         except Exception as e:
 

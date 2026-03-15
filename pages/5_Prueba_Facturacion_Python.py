@@ -301,3 +301,37 @@ if archivo is not None:
     st.write("Total líneas generadas:", len(facturacion_df))
     st.subheader("Facturación generada por Python")
     st.dataframe(facturacion_df)
+    
+    # ================================
+    # REPORTE DE VALIDACION
+    # ================================
+    
+    # manos de obra por orden
+    mo_resumen = facturacion_df.groupby("ORDEN").agg(
+        MO_TOTAL=("CANTIDAD", "sum"),
+        CONCEPTOS=("CONCEPTO", lambda x: ", ".join(x.unique()))
+    ).reset_index()
+    
+    # materiales por orden
+    material_resumen = preview_df[[
+        "ORDEN",
+        "TIPO_ORDEN",
+        "STB_COUNT",
+        "UTP_TOTAL",
+        "FO_TOTAL",
+        "SWITCH_COUNT"
+    ]]
+    
+    # unir todo
+    reporte_validacion = material_resumen.merge(
+        mo_resumen,
+        on="ORDEN",
+        how="left"
+    )
+    
+    st.subheader("Reporte de Validación Manual")
+    
+    st.dataframe(
+        reporte_validacion.sort_values("ORDEN"),
+        use_container_width=True
+    )

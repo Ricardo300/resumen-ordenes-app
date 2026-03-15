@@ -62,12 +62,12 @@ if archivo is not None:
         # DETECCIÓN DE MATERIALES
         # ================================
         fo_total = grupo.loc[
-            grupo["MATERIAL"].astype(str).str.contains("CABLE UTP CAT5 P/INTERIORES 66445532AM", case=False, na=False),
+            grupo["MATERIAL"].astype(str).str.contains("CABLE OPTICO", case=False, na=False),
             "CANTIDAD"
         ].sum()
 
         utp_total = grupo.loc[
-            grupo["MATERIAL"] == "CABLE UTP",
+            grupo["MATERIAL"] == "CABLE UTP CAT5 P/INTERIORES 66445532AM",
             "CANTIDAD"
         ].sum()
 

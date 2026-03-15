@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from supabase import create_client
 
 st.set_page_config(layout="wide")
@@ -15,6 +16,27 @@ supabase = create_client(
 )
 
 # ==========================================
+# FUNCIÓN LIMPIAR JSON
+# ==========================================
+
+def limpiar_valor(v):
+
+    if pd.isna(v):
+        return None
+
+    if isinstance(v, (np.integer)):
+        return int(v)
+
+    if isinstance(v, (np.floating)):
+        return float(v)
+
+    if isinstance(v, str):
+        return v.strip()
+
+    return v
+
+
+# ==========================================
 # SUBIR ARCHIVO
 # ==========================================
 
@@ -22,24 +44,21 @@ archivo = st.file_uploader("Subir archivo de materiales", type=["xlsx"])
 
 if archivo is not None:
 
-    # ===============================
+    # ==========================================
     # LEER EXCEL
-    # ===============================
+    # ==========================================
 
     df = pd.read_excel(archivo)
 
-    # ===============================
-    # LIMPIAR NOMBRES DE COLUMNAS
-    # ===============================
-
+    # limpiar nombres de columnas
     df.columns = df.columns.str.strip().str.upper()
 
     st.subheader("Columnas detectadas")
     st.write(df.columns.tolist())
 
-    # ===============================
+    # ==========================================
     # COLUMNAS NECESARIAS
-    # ===============================
+    # ==========================================
 
     columnas = [
         "NUMERO DE ORDEN",
@@ -53,20 +72,20 @@ if archivo is not None:
         if col not in df.columns:
             df[col] = None
 
-    # ===============================
+    # ==========================================
     # PREPARAR DATAFRAME
-    # ===============================
+    # ==========================================
 
     df_materiales = df[columnas].copy()
 
     df_materiales = df_materiales.dropna(subset=["NUMERO DE ORDEN"])
 
-    st.subheader("Datos preparados")
+    st.subheader("Vista previa")
     st.dataframe(df_materiales.head(20))
 
-    # ===============================
+    # ==========================================
     # RENOMBRAR COLUMNAS
-    # ===============================
+    # ==========================================
 
     df_db = df_materiales.rename(columns={
         "NUMERO DE ORDEN": "numero_orden",
@@ -76,9 +95,9 @@ if archivo is not None:
         "MODELO": "modelo"
     }).copy()
 
-    # ===============================
-    # LIMPIEZA DE TIPOS
-    # ===============================
+    # ==========================================
+    # LIMPIAR TIPOS
+    # ==========================================
 
     df_db["numero_orden"] = df_db["numero_orden"].astype(str).str.strip()
 
@@ -86,7 +105,7 @@ if archivo is not None:
 
     df_db["cantidad"] = pd.to_numeric(df_db["cantidad"], errors="coerce")
 
-    # corregir modelo que viene como 7006421.0
+    # eliminar .0 del modelo
     df_db["modelo"] = df_db["modelo"].apply(
         lambda x: str(int(float(x))) if pd.notnull(x) else None
     )
@@ -95,54 +114,60 @@ if archivo is not None:
         lambda x: str(x).strip() if pd.notnull(x) else None
     )
 
-    # convertir NaN a None
-    df_db = df_db.where(pd.notnull(df_db), None)
-
-    # ===============================
-    # CONVERTIR A JSON SEGURO
-    # ===============================
+    # ==========================================
+    # CONVERTIR A JSON LIMPIO
+    # ==========================================
 
     datos = []
 
     for _, row in df_db.iterrows():
 
-        datos.append({
-            "numero_orden": row["numero_orden"],
-            "material": row["material"],
-            "cantidad": float(row["cantidad"]) if row["cantidad"] is not None else None,
-            "serie": row["serie"],
-            "modelo": row["modelo"]
-        })
+        registro = {
+            "numero_orden": limpiar_valor(row["numero_orden"]),
+            "material": limpiar_valor(row["material"]),
+            "cantidad": limpiar_valor(row["cantidad"]),
+            "serie": limpiar_valor(row["serie"]),
+            "modelo": limpiar_valor(row["modelo"])
+        }
 
-    # ===============================
+        datos.append(registro)
+
+    # ==========================================
+    # MOSTRAR JSON PARA DEBUG
+    # ==========================================
+
+    st.subheader("JSON generado (debug)")
+    st.json(datos[:10])
+
+    # ==========================================
     # DETECTAR ORDENES
-    # ===============================
+    # ==========================================
 
-    ordenes = sorted({d["numero_orden"] for d in datos if d["numero_orden"]})
+    ordenes = list({d["numero_orden"] for d in datos if d["numero_orden"]})
 
     st.write("Órdenes detectadas:", len(ordenes))
 
-    # ===============================
+    # ==========================================
     # BOTON GUARDAR
-    # ===============================
+    # ==========================================
 
     if st.button("Guardar materiales en base de datos"):
 
         try:
 
-            # eliminar materiales anteriores de esas órdenes
+            # borrar registros anteriores
             if ordenes:
                 supabase.table("materiales_ordenes") \
                     .delete() \
                     .in_("numero_orden", ordenes) \
                     .execute()
 
-            # insertar materiales nuevos
+            # insertar nuevos registros
             supabase.table("materiales_ordenes") \
                 .insert(datos) \
                 .execute()
 
-            st.success("Materiales cargados correctamente")
+            st.success("Materiales guardados correctamente")
 
         except Exception as e:
 

@@ -1,20 +1,32 @@
 import streamlit as st
 import pandas as pd
 
+st.set_page_config(layout="wide")
 st.title("Carga de Materiales")
 
 archivo = st.file_uploader("Subir archivo de materiales", type=["xlsx"])
 
 if archivo is not None:
 
-    df = pd.read_excel(archivo, header=1)
+    # ===============================
+    # LEER EXCEL
+    # ===============================
+    df = pd.read_excel(archivo)
 
-    st.write("Columnas detectadas:")
-    st.write(df.columns)
+    # ===============================
+    # LIMPIAR NOMBRES DE COLUMNAS
+    # ===============================
+    df.columns = df.columns.str.strip().str.upper()
 
-    st.write("Primeras filas del archivo:")
+    st.subheader("Columnas detectadas")
+    st.write(df.columns.tolist())
+
+    st.subheader("Primeras filas del archivo")
     st.dataframe(df.head())
 
+    # ===============================
+    # COLUMNAS QUE NECESITAMOS
+    # ===============================
     columnas_necesarias = [
         "NUMERO DE ORDEN",
         "MATERIAL",
@@ -23,7 +35,22 @@ if archivo is not None:
         "MODELO"
     ]
 
+    # ===============================
+    # CREAR COLUMNAS SI NO EXISTEN
+    # ===============================
+    for col in columnas_necesarias:
+        if col not in df.columns:
+            df[col] = None
+
+    # ===============================
+    # FILTRAR COLUMNAS
+    # ===============================
     df_materiales = df[columnas_necesarias].copy()
 
-    st.write("Datos preparados para guardar:")
-    st.dataframe(df_materiales.head())
+    # ===============================
+    # LIMPIAR FILAS VACIAS
+    # ===============================
+    df_materiales = df_materiales.dropna(subset=["NUMERO DE ORDEN"])
+
+    st.subheader("Datos preparados para guardar")
+    st.dataframe(df_materiales)

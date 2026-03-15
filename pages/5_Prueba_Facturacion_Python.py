@@ -142,34 +142,31 @@ if archivo is not None:
                     "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
                     "CANTIDAD": con_exist
                 })
-        # === EQUIPO ADICIONAL ===
         # ===============================
         # EQUIPO ADICIONAL
         # ===============================
-        
         elif "EQUIPO ADICIONAL DATOS Y TV" in t:
+
+            cantidad_mo = stb_count if stb_count > 0 else 1
         
-            if stb_count > 0:
-        
-                facturacion.append({
-                    "ORDEN": orden,
-                    "TIPO_ORDEN": tipo_orden,
-                    "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
-                    "CANTIDAD": stb_count
-                })
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
+                "CANTIDAD": cantidad_mo
+            })
         
         
         elif "EQUIPO ADICIONAL TRIPLE PLAY" in t:
         
-            if stb_count > 0:
+            cantidad_mo = stb_count if stb_count > 0 else 1
         
-                facturacion.append({
-                    "ORDEN": orden,
-                    "TIPO_ORDEN": tipo_orden,
-                    "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
-                    "CANTIDAD": stb_count
-                })
-        
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
+                "CANTIDAD": cantidad_mo
+            })
         
         elif "EQUIPO ADICIONAL DATOS" in t:
         

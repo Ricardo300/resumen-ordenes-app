@@ -14,3 +14,17 @@ if archivo is not None:
 
     st.write("Primeras filas del archivo:")
     st.dataframe(df.head())
+
+# columnas que necesitamos
+columnas_necesarias = [
+    "NUMERO DE ORDEN",
+    "MATERIAL",
+    "CANTIDAD",
+    "SERIE",
+    "MODELO"
+]
+
+df_materiales = df[columnas_necesarias].copy()
+
+st.write("Datos preparados para guardar:")
+st.dataframe(df_materiales.head())

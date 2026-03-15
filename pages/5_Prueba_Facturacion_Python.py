@@ -303,16 +303,19 @@ if archivo is not None:
     st.dataframe(facturacion_df)
     
     # ================================
-    # REPORTE DE VALIDACION
+    # REPORTE DE VALIDACIÓN DETALLADO
     # ================================
     
-    # manos de obra por orden
-    mo_resumen = facturacion_df.groupby("ORDEN").agg(
-        MO_TOTAL=("CANTIDAD", "sum"),
-        CONCEPTOS=("CONCEPTO", lambda x: ", ".join(x.unique()))
+    # convertir conceptos en columnas
+    mo_pivot = facturacion_df.pivot_table(
+        index="ORDEN",
+        columns="CONCEPTO",
+        values="CANTIDAD",
+        aggfunc="sum",
+        fill_value=0
     ).reset_index()
     
-    # materiales por orden
+    # materiales detectados
     material_resumen = preview_df[[
         "ORDEN",
         "TIPO_ORDEN",
@@ -322,16 +325,16 @@ if archivo is not None:
         "SWITCH_COUNT"
     ]]
     
-    # unir todo
+    # unir materiales con manos de obra
     reporte_validacion = material_resumen.merge(
-        mo_resumen,
+        mo_pivot,
         on="ORDEN",
         how="left"
-    )
+    ).fillna(0)
     
     st.subheader("Reporte de Validación Manual")
     
     st.dataframe(
-        reporte_validacion.sort_values("ORDEN"),
+        reporte_validacion,
         use_container_width=True
     )

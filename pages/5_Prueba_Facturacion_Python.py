@@ -67,7 +67,7 @@ if archivo is not None:
         ].sum()
 
         utp_total = grupo.loc[
-            grupo["MATERIAL"] == "CABLE UTP CAT5 P/INTERIORES 66445532AM",
+            grupo["MATERIAL"] == "CABLE UTP",
             "CANTIDAD"
         ].sum()
 

@@ -343,7 +343,7 @@ fig.update_layout(
     height=350,
     template="plotly_dark",
     xaxis_title="Día del mes",
-    yaxis_title="Órdenes",
+    yaxis_title="Ordenes Completas",
     coloraxis_showscale=False
 )
 

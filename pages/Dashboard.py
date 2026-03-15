@@ -101,13 +101,21 @@ from calendar import monthrange
 primer_dia_mes = datetime(año, mes, 1)
 ultimo_dia_mes = datetime(año, mes, monthrange(año, mes)[1])
 
-with st.expander("Fecha", expanded=False):
+with st.sidebar.expander("Fecha", expanded=False):
 
-    fecha_inicio, fecha_fin = st.date_input(
-        "Seleccionar rango",
-        value=(primer_dia_mes, ultimo_dia_mes),
-        key="filtro_fecha"
-    )
+    col1, col2 = st.columns(2)
+
+    with col1:
+        fecha_inicio = st.date_input(
+            "Inicio",
+            value=primer_dia_mes
+        )
+
+    with col2:
+        fecha_fin = st.date_input(
+            "Fin",
+            value=ultimo_dia_mes
+        )
 
 # ==========================================
 # FECHAS ISO (TIMESTAMP)

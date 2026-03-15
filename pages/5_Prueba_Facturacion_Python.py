@@ -322,7 +322,8 @@ if archivo is not None:
         "STB_COUNT",
         "UTP_TOTAL",
         "FO_TOTAL",
-        "SWITCH_COUNT"
+        "SWITCH_COUNT",
+        "TV_COUNT"
     ]]
     
     # unir materiales con manos de obra

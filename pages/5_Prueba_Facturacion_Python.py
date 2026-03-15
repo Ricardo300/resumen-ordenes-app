@@ -323,7 +323,7 @@ if archivo is not None:
         "UTP_TOTAL",
         "FO_TOTAL",
         "SWITCH_COUNT",
-        "TV_COUNT"
+        "TV_COUNT",
     ]]
     
     # unir materiales con manos de obra

@@ -1,15 +1,16 @@
+import streamlit as st
 import pandas as pd
 
-# ruta del archivo
-archivo = "materiales.xlsx"
+st.title("Carga de Materiales")
 
-# leer excel
-df = pd.read_excel(archivo)
+archivo = st.file_uploader("Subir archivo de materiales", type=["xlsx"])
 
-# ver columnas
-print("COLUMNAS DEL ARCHIVO:")
-print(df.columns)
+if archivo is not None:
+    
+    df = pd.read_excel(archivo)
 
-# ver primeras filas
-print("\nPRIMERAS FILAS:")
-print(df.head())
+    st.write("Columnas detectadas:")
+    st.write(df.columns)
+
+    st.write("Primeras filas del archivo:")
+    st.dataframe(df.head())

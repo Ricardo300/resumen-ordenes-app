@@ -93,6 +93,20 @@ with st.sidebar:
     mes = meses_dict[mes_nombre]
 
 # ==========================================
+# FILTRO RANGO DE FECHAS
+# ==========================================
+
+with st.expander("Rango de Fechas", expanded=False):
+
+    fecha_inicio, fecha_fin = st.date_input(
+        "Seleccionar rango",
+        value=(
+            datetime(año, mes, 1),
+            datetime(año, mes, 28)
+        )
+    )
+
+# ==========================================
 # FECHAS ISO (TIMESTAMP)
 # ==========================================
 primer_dia = f"{año}-{mes:02d}-01T00:00:00"
@@ -203,6 +217,15 @@ df = df[
     df["tecnologia"].isin(tecnologia) &
     df["contrata"].isin(contrata) &
     df["tipo_actividad"].isin(tipo_actividad)
+]
+
+# ==========================================
+# FILTRO POR RANGO DE FECHAS
+# ==========================================
+
+df = df[
+    (df["fecha"].dt.date >= fecha_inicio) &
+    (df["fecha"].dt.date <= fecha_fin)
 ]
 
 # resetear popup cuando cambian filtros

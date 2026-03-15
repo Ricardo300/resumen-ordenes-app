@@ -98,14 +98,17 @@ with st.sidebar:
 
 from calendar import monthrange
 
-# calcular primer y último día del mes
 primer_dia_mes = datetime(año, mes, 1)
 ultimo_dia_mes = datetime(año, mes, monthrange(año, mes)[1])
 
-fecha_inicio, fecha_fin = st.date_input(
-    "Fecha",
-    value=(primer_dia_mes, ultimo_dia_mes)
-)
+with st.expander("Fecha", expanded=False):
+
+    fecha_inicio, fecha_fin = st.date_input(
+        "Seleccionar rango",
+        value=(primer_dia_mes, ultimo_dia_mes),
+        key="filtro_fecha"
+    )
+
 # ==========================================
 # FECHAS ISO (TIMESTAMP)
 # ==========================================
@@ -219,15 +222,10 @@ df = df[
     df["tipo_actividad"].isin(tipo_actividad)
 ]
 
-# ==========================================
-# FILTRO POR FECHA
-# ==========================================
-
 df = df[
     (df["fecha"].dt.date >= fecha_inicio) &
     (df["fecha"].dt.date <= fecha_fin)
 ]
-
 # resetear popup cuando cambian filtros
 st.session_state["dia_click"] = None
 

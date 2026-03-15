@@ -181,7 +181,7 @@ if archivo is not None:
                     "ORDEN": orden,
                     "TIPO_ORDEN": tipo_orden,
                     "CONCEPTO": "CONEXION/CONFIGURACION EXTENSORES WIFI",
-                    "CANTIDAD": equipos_datos
+                    "CANTIDAD": 1
                 })
         # === INSTALACIONES ===
         elif "INSTALACION INTERNET (DGPON)+TV (GPON)" in t:

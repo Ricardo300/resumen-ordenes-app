@@ -2,38 +2,20 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client
 
-# ==========================================
-# CONFIGURACIÓN DE LA PÁGINA
-# ==========================================
-
 st.set_page_config(layout="wide")
 st.title("Carga de Materiales")
-
-# ==========================================
-# CONEXIÓN A SUPABASE
-# ==========================================
 
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
     st.secrets["SUPABASE_KEY"]
 )
 
-# ==========================================
-# SUBIR ARCHIVO
-# ==========================================
-
 archivo = st.file_uploader("Subir archivo de materiales", type=["xlsx"])
 
 if archivo is not None:
 
-    # ===============================
-    # LEER EXCEL
-    # ===============================
     df = pd.read_excel(archivo)
 
-    # ===============================
-    # LIMPIAR NOMBRES DE COLUMNAS
-    # ===============================
     df.columns = df.columns.str.strip().str.upper()
 
     st.subheader("Columnas detectadas")
@@ -42,9 +24,6 @@ if archivo is not None:
     st.subheader("Primeras filas del archivo")
     st.dataframe(df.head())
 
-    # ===============================
-    # COLUMNAS QUE NECESITAMOS
-    # ===============================
     columnas_necesarias = [
         "NUMERO DE ORDEN",
         "MATERIAL",
@@ -53,29 +32,17 @@ if archivo is not None:
         "MODELO"
     ]
 
-    # ===============================
-    # CREAR COLUMNAS SI NO EXISTEN
-    # ===============================
     for col in columnas_necesarias:
         if col not in df.columns:
             df[col] = None
 
-    # ===============================
-    # FILTRAR COLUMNAS
-    # ===============================
     df_materiales = df[columnas_necesarias].copy()
 
-    # ===============================
-    # ELIMINAR FILAS SIN ORDEN
-    # ===============================
     df_materiales = df_materiales.dropna(subset=["NUMERO DE ORDEN"])
 
     st.subheader("Datos preparados para guardar")
     st.dataframe(df_materiales)
 
-    # ===============================
-    # RENOMBRAR PARA BASE DE DATOS
-    # ===============================
     df_db = df_materiales.rename(columns={
         "NUMERO DE ORDEN": "numero_orden",
         "MATERIAL": "material",
@@ -84,22 +51,21 @@ if archivo is not None:
         "MODELO": "modelo"
     })
 
-    # ===============================
-    # BOTÓN GUARDAR
-    # ===============================
     if st.button("Guardar materiales en base de datos"):
 
         try:
 
-            # convertir NaN a None (JSON compatible)
             df_db = df_db.astype(object)
             df_db = df_db.where(pd.notnull(df_db), None)
 
             datos = df_db.to_dict(orient="records")
 
-            supabase.table("materiales_ordenes").insert(datos).execute()
+            supabase.table("materiales_ordenes").upsert(
+                datos,
+                on_conflict="numero_orden,material,serie"
+            ).execute()
 
-            st.success("Materiales guardados correctamente en la base de datos")
+            st.success("Materiales guardados correctamente (sin duplicados)")
 
         except Exception as e:
 

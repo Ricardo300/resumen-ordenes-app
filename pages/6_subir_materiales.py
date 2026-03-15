@@ -2,11 +2,15 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client
 
+# ==========================================
+# CONFIGURACIÓN DE LA PÁGINA
+# ==========================================
+
 st.set_page_config(layout="wide")
 st.title("Carga de Materiales")
 
 # ==========================================
-# CONEXIÓN SUPABASE
+# CONEXIÓN A SUPABASE
 # ==========================================
 
 supabase = create_client(
@@ -79,23 +83,24 @@ if archivo is not None:
         "SERIE": "serie",
         "MODELO": "modelo"
     })
-    
-    # convertir NaN a None
-    df_db = df_db.where(pd.notnull(df_db), None)
-    
+
     # ===============================
     # BOTÓN GUARDAR
     # ===============================
     if st.button("Guardar materiales en base de datos"):
-    
-        datos = df_db.to_dict(orient="records")
-    
+
         try:
-    
+
+            # convertir NaN a None (JSON compatible)
+            df_db = df_db.astype(object)
+            df_db = df_db.where(pd.notnull(df_db), None)
+
+            datos = df_db.to_dict(orient="records")
+
             supabase.table("materiales_ordenes").insert(datos).execute()
-    
+
             st.success("Materiales guardados correctamente en la base de datos")
-    
+
         except Exception as e:
-    
+
             st.error(f"Error al guardar: {e}")

@@ -93,19 +93,19 @@ with st.sidebar:
     mes = meses_dict[mes_nombre]
 
 # ==========================================
-# FILTRO RANGO DE FECHAS
+# FILTRO FECHA ESTILO POWER BI
 # ==========================================
 
-with st.expander("Rango de Fechas", expanded=False):
+from calendar import monthrange
 
-    fecha_inicio, fecha_fin = st.date_input(
-        "Seleccionar rango",
-        value=(
-            datetime(año, mes, 1),
-            datetime(año, mes, 28)
-        )
-    )
+# calcular primer y último día del mes
+primer_dia_mes = datetime(año, mes, 1)
+ultimo_dia_mes = datetime(año, mes, monthrange(año, mes)[1])
 
+fecha_inicio, fecha_fin = st.date_input(
+    "Fecha",
+    value=(primer_dia_mes, ultimo_dia_mes)
+)
 # ==========================================
 # FECHAS ISO (TIMESTAMP)
 # ==========================================
@@ -220,7 +220,7 @@ df = df[
 ]
 
 # ==========================================
-# FILTRO POR RANGO DE FECHAS
+# FILTRO POR FECHA
 # ==========================================
 
 df = df[

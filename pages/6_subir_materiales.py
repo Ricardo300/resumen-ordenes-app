@@ -1,8 +1,22 @@
 import streamlit as st
 import pandas as pd
+from supabase import create_client
 
 st.set_page_config(layout="wide")
 st.title("Carga de Materiales")
+
+# ==========================================
+# CONEXIÓN SUPABASE
+# ==========================================
+
+supabase = create_client(
+    st.secrets["SUPABASE_URL"],
+    st.secrets["SUPABASE_KEY"]
+)
+
+# ==========================================
+# SUBIR ARCHIVO
+# ==========================================
 
 archivo = st.file_uploader("Subir archivo de materiales", type=["xlsx"])
 
@@ -48,9 +62,37 @@ if archivo is not None:
     df_materiales = df[columnas_necesarias].copy()
 
     # ===============================
-    # LIMPIAR FILAS VACIAS
+    # ELIMINAR FILAS SIN ORDEN
     # ===============================
     df_materiales = df_materiales.dropna(subset=["NUMERO DE ORDEN"])
 
     st.subheader("Datos preparados para guardar")
     st.dataframe(df_materiales)
+
+    # ===============================
+    # RENOMBRAR PARA BASE DE DATOS
+    # ===============================
+    df_db = df_materiales.rename(columns={
+        "NUMERO DE ORDEN": "numero_orden",
+        "MATERIAL": "material",
+        "CANTIDAD": "cantidad",
+        "SERIE": "serie",
+        "MODELO": "modelo"
+    })
+
+    # ===============================
+    # BOTÓN GUARDAR
+    # ===============================
+    if st.button("Guardar materiales en base de datos"):
+
+        datos = df_db.to_dict(orient="records")
+
+        try:
+
+            supabase.table("materiales_ordenes").insert(datos).execute()
+
+            st.success("Materiales guardados correctamente en la base de datos")
+
+        except Exception as e:
+
+            st.error(f"Error al guardar: {e}")

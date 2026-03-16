@@ -18,6 +18,9 @@ if archivo is not None:
 
     df.columns = df.columns.str.strip().str.upper()
 
+    df["serie"] = df["serie"].fillna("SIN_SERIE")
+    df["serie"] = df["serie"].replace("", "SIN_SERIE")
+
     st.subheader("Columnas detectadas")
     st.write(df.columns.tolist())
 
@@ -51,6 +54,7 @@ if archivo is not None:
         "MODELO": "modelo"
     })
 
+    
     if st.button("Guardar materiales en base de datos"):
 
         try:

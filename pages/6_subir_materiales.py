@@ -62,7 +62,11 @@ if archivo is not None:
     df["modelo"] = df["modelo"].astype(str)
     df["serie"] = df["serie"].astype(str)
     df["cantidad"] = pd.to_numeric(df["cantidad"], errors="coerce").fillna(0)
-
+    
+    # eliminar duplicados antes de guardar
+    df = df.drop_duplicates(
+        subset=["numero_orden","material","modelo","serie","cantidad"]
+    )
     # ==========================================
     # VERIFICAR DUPLICADOS SEGÚN CLAVE UPSERT
     # ==========================================

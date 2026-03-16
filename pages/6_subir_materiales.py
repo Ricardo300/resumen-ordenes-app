@@ -18,13 +18,12 @@ archivo = st.file_uploader(
 
 if archivo is not None:
 
-    # leer archivo
     df = pd.read_excel(archivo)
 
     # normalizar nombres de columnas
     df.columns = df.columns.str.strip().str.lower()
 
-    # mapear posibles nombres de columnas de ETA
+    # mapear nombres posibles
     df = df.rename(columns={
         "numero de orden": "numero_orden",
         "número de orden": "numero_orden",
@@ -33,7 +32,6 @@ if archivo is not None:
         "serie equipo": "serie"
     })
 
-    # verificar columnas necesarias
     columnas_necesarias = [
         "numero_orden",
         "material",
@@ -48,47 +46,59 @@ if archivo is not None:
             st.write("Columnas detectadas:", df.columns.tolist())
             st.stop()
 
-    # QUEDARNOS SOLO CON LAS COLUMNAS NECESARIAS
+    # quedarnos solo con columnas necesarias
     df = df[columnas_necesarias].copy()
 
-    # limpiar serie vacía
+    # limpiar serie
     df["serie"] = df["serie"].fillna("SIN_SERIE")
     df["serie"] = df["serie"].replace("", "SIN_SERIE")
-    df["serie"] = df["serie"].replace(" ", "SIN_SERIE")
 
-    # limpiar nulos generales
+    # limpiar nulos
     df = df.fillna("")
 
-    # asegurar tipos correctos
-    df["numero_orden"] = df["numero_orden"].astype(str).str.strip()
-    df["material"] = df["material"].astype(str).str.strip()
-    df["modelo"] = df["modelo"].astype(str).str.strip()
-    df["serie"] = df["serie"].astype(str).str.strip()
+    # tipos
+    df["numero_orden"] = df["numero_orden"].astype(str)
+    df["material"] = df["material"].astype(str)
+    df["modelo"] = df["modelo"].astype(str)
+    df["serie"] = df["serie"].astype(str)
     df["cantidad"] = pd.to_numeric(df["cantidad"], errors="coerce").fillna(0)
 
-    st.subheader("Vista previa del archivo")
+    st.subheader("Vista previa")
     st.dataframe(df.head(20))
 
     if st.button("Guardar materiales en base de datos"):
 
         try:
-            # convertir a registros JSON seguros
-            datos = []
-            for _, row in df.iterrows():
-                datos.append({
-                    "numero_orden": str(row["numero_orden"]),
-                    "material": str(row["material"]),
-                    "modelo": str(row["modelo"]),
-                    "serie": str(row["serie"]),
-                    "cantidad": float(row["cantidad"])
-                })
+
+            # contar antes
+            conteo_antes = supabase.table("materiales_ordenes") \
+                .select("*", count="exact") \
+                .execute().count
+
+            registros_archivo = len(df)
+
+            # convertir a JSON seguro
+            datos = df.to_dict(orient="records")
 
             supabase.table("materiales_ordenes").upsert(
                 datos,
                 on_conflict="numero_orden,material,serie,modelo,cantidad"
             ).execute()
 
-            st.success("Materiales cargados correctamente")
+            # contar después
+            conteo_despues = supabase.table("materiales_ordenes") \
+                .select("*", count="exact") \
+                .execute().count
+
+            insertados = conteo_despues - conteo_antes
+            duplicados = registros_archivo - insertados
+
+            st.success("Carga completada")
+
+            st.write(f"Registros en archivo: {registros_archivo}")
+            st.write(f"Insertados nuevos: {insertados}")
+            st.write(f"Duplicados ignorados: {duplicados}")
+            st.write(f"Total en base: {conteo_despues}")
 
         except Exception as e:
             st.error(f"Error al guardar: {e}")

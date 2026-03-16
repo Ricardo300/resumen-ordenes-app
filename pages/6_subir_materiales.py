@@ -63,8 +63,28 @@ if archivo is not None:
     df["serie"] = df["serie"].astype(str)
     df["cantidad"] = pd.to_numeric(df["cantidad"], errors="coerce").fillna(0)
 
-    st.subheader("Vista previa")
-    st.dataframe(df.head(20))
+    # ==========================================
+    # VERIFICAR DUPLICADOS SEGÚN CLAVE UPSERT
+    # ==========================================
+    
+    df_check = df.groupby(
+        ["numero_orden", "material", "modelo", "serie", "cantidad"]
+    ).size().reset_index(name="conteo")
+    
+    duplicados = df_check[df_check["conteo"] > 1]
+    
+    st.subheader("Diagnóstico de duplicados")
+    
+    st.write("Filas totales en archivo:", len(df))
+    
+    if len(duplicados) == 0:
+        st.success("No se detectaron duplicados según la clave de conflicto")
+    else:
+        st.error(f"Se detectaron {len(duplicados)} combinaciones duplicadas")
+        st.dataframe(duplicados)
+        
+        st.subheader("Vista previa")
+        st.dataframe(df.head(20))
 
     if st.button("Guardar materiales en base de datos"):
 

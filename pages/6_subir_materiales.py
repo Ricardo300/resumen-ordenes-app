@@ -53,12 +53,15 @@ if archivo is not None:
     df["serie"] = df["serie"].fillna("SIN_SERIE")
     df["serie"] = df["serie"].replace("", "SIN_SERIE")
 
+    # eliminar NaN para que JSON sea válido
+    df = df.fillna("")
+
     # asegurar tipos correctos
     df["numero_orden"] = df["numero_orden"].astype(str)
     df["material"] = df["material"].astype(str)
     df["modelo"] = df["modelo"].astype(str)
     df["serie"] = df["serie"].astype(str)
-    df["cantidad"] = df["cantidad"].astype(float)
+    df["cantidad"] = pd.to_numeric(df["cantidad"], errors="coerce").fillna(0)
 
     st.subheader("Vista previa del archivo")
     st.dataframe(df.head(20))

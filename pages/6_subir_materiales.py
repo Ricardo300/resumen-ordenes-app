@@ -16,6 +16,8 @@ if archivo is not None:
 
     df = pd.read_excel(archivo)
 
+    st.write(df.columns)
+
     df.columns = df.columns.str.strip().str.upper()
 
     df["serie"] = df["serie"].fillna("SIN_SERIE")

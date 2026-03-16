@@ -3,75 +3,67 @@ import pandas as pd
 from supabase import create_client
 
 st.set_page_config(layout="wide")
+
 st.title("Carga de Materiales")
 
+# conexión a supabase
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
     st.secrets["SUPABASE_KEY"]
 )
 
-archivo = st.file_uploader("Subir archivo de materiales", type=["xlsx"])
+archivo = st.file_uploader(
+    "Subir archivo de materiales",
+    type=["xlsx"]
+)
 
 if archivo is not None:
 
     df = pd.read_excel(archivo)
 
-    st.write(df.columns)
+    # normalizar nombres de columnas
+    df.columns = df.columns.str.strip().str.lower()
 
-    df.columns = df.columns.str.strip().str.upper()
-
-    df["serie"] = df["serie"].fillna("SIN_SERIE")
-    df["serie"] = df["serie"].replace("", "SIN_SERIE")
-
-    st.subheader("Columnas detectadas")
-    st.write(df.columns.tolist())
-
-    st.subheader("Primeras filas del archivo")
-    st.dataframe(df.head())
-
+    # verificar columnas
     columnas_necesarias = [
-        "NUMERO DE ORDEN",
-        "MATERIAL",
-        "CANTIDAD",
-        "SERIE",
-        "MODELO"
+        "numero_orden",
+        "material",
+        "modelo",
+        "serie",
+        "cantidad"
     ]
 
     for col in columnas_necesarias:
         if col not in df.columns:
-            df[col] = None
+            st.error(f"Falta la columna: {col}")
+            st.stop()
 
-    df_materiales = df[columnas_necesarias].copy()
+    # limpiar datos
+    df["serie"] = df["serie"].fillna("SIN_SERIE")
+    df["serie"] = df["serie"].replace("", "SIN_SERIE")
 
-    df_materiales = df_materiales.dropna(subset=["NUMERO DE ORDEN"])
+    # asegurar tipos correctos
+    df["numero_orden"] = df["numero_orden"].astype(str)
+    df["material"] = df["material"].astype(str)
+    df["modelo"] = df["modelo"].astype(str)
+    df["serie"] = df["serie"].astype(str)
+    df["cantidad"] = df["cantidad"].astype(float)
 
-    st.subheader("Datos preparados para guardar")
-    st.dataframe(df_materiales)
+    st.subheader("Vista previa")
+    st.dataframe(df.head(20))
 
-    df_db = df_materiales.rename(columns={
-        "NUMERO DE ORDEN": "numero_orden",
-        "MATERIAL": "material",
-        "CANTIDAD": "cantidad",
-        "SERIE": "serie",
-        "MODELO": "modelo"
-    })
-
-    
     if st.button("Guardar materiales en base de datos"):
 
+        datos = df.to_dict(orient="records")
+
         try:
-
-            df_db = df_db.astype(object)
-            df_db = df_db.where(pd.notnull(df_db), None)
-
-            datos = df_db.to_dict(orient="records")
 
             supabase.table("materiales_ordenes").upsert(
                 datos,
                 on_conflict="numero_orden,material,serie,modelo,cantidad"
             ).execute()
 
-            st.success("Materiales guardados correctamente (sin duplicados)")
+            st.success("Materiales cargados correctamente")
 
         except Exception as e:
 

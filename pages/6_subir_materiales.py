@@ -62,7 +62,7 @@ if archivo is not None:
 
             supabase.table("materiales_ordenes").upsert(
                 datos,
-                on_conflict="numero_orden,material,modelo"
+                on_conflict="numero_orden,material,serie,modelo,cantidad"
             ).execute()
 
             st.success("Materiales guardados correctamente (sin duplicados)")

@@ -19,12 +19,22 @@ archivo = st.file_uploader(
 
 if archivo is not None:
 
+    # leer archivo
     df = pd.read_excel(archivo)
 
     # normalizar nombres de columnas
     df.columns = df.columns.str.strip().str.lower()
 
-    # verificar columnas
+    # mapear posibles nombres de columnas de ETA
+    df = df.rename(columns={
+        "numero de orden": "numero_orden",
+        "número de orden": "numero_orden",
+        "orden": "numero_orden",
+        "solicitud": "numero_orden",
+        "serie equipo": "serie"
+    })
+
+    # verificar columnas necesarias
     columnas_necesarias = [
         "numero_orden",
         "material",
@@ -36,9 +46,10 @@ if archivo is not None:
     for col in columnas_necesarias:
         if col not in df.columns:
             st.error(f"Falta la columna: {col}")
+            st.write("Columnas detectadas:", df.columns)
             st.stop()
 
-    # limpiar datos
+    # limpiar serie vacía
     df["serie"] = df["serie"].fillna("SIN_SERIE")
     df["serie"] = df["serie"].replace("", "SIN_SERIE")
 
@@ -49,7 +60,7 @@ if archivo is not None:
     df["serie"] = df["serie"].astype(str)
     df["cantidad"] = df["cantidad"].astype(float)
 
-    st.subheader("Vista previa")
+    st.subheader("Vista previa del archivo")
     st.dataframe(df.head(20))
 
     if st.button("Guardar materiales en base de datos"):

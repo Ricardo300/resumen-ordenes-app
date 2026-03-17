@@ -70,7 +70,8 @@ if archivo is not None:
         "Hora de reserva de actividad",
         "Fecha Programación",
         "Numero Cliente",
-        "Codigo de Completado"
+        "Codigo de Completado",
+        "Equipos Instalados"
     ]
 
     for col in columnas_necesarias:
@@ -99,7 +100,8 @@ if archivo is not None:
         "hora_reserva_actividad",
         "fecha_programacion",
         "numero_cliente",
-        "codigo_completado"
+        "codigo_completado",
+        "cantidad_tv"
     ]
 
     df["numero_cliente"] = (

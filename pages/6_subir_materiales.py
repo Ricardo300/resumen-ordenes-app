@@ -62,33 +62,51 @@ if archivo is not None:
     df["modelo"] = df["modelo"].astype(str)
     df["serie"] = df["serie"].astype(str)
     df["cantidad"] = pd.to_numeric(df["cantidad"], errors="coerce").fillna(0)
-    
-    # eliminar duplicados antes de guardar
-    df = df.drop_duplicates(
-        subset=["numero_orden","material","modelo","serie","cantidad"]
-    )
+
     # ==========================================
-    # VERIFICAR DUPLICADOS SEGÚN CLAVE UPSERT
+    # 📊 CONTROL DE DUPLICADOS (ANTES DE LIMPIAR)
     # ==========================================
-    
+
+    filas_originales = len(df)
+
     df_check = df.groupby(
         ["numero_orden", "material", "modelo", "serie", "cantidad"]
     ).size().reset_index(name="conteo")
-    
-    duplicados = df_check[df_check["conteo"] > 1]
-    
-    st.subheader("Diagnóstico de duplicados")
-    
-    st.write("Filas totales en archivo:", len(df))
-    
-    if len(duplicados) == 0:
-        st.success("No se detectaron duplicados según la clave de conflicto")
-    else:
-        st.error(f"Se detectaron {len(duplicados)} combinaciones duplicadas")
-        st.dataframe(duplicados)
-        
-        st.subheader("Vista previa")
-        st.dataframe(df.head(20))
+
+    duplicados_df = df_check[df_check["conteo"] > 1]
+
+    cantidad_duplicados = duplicados_df["conteo"].sum() - len(duplicados_df)
+
+    # ==========================================
+    # 🔧 LIMPIAR DUPLICADOS
+    # ==========================================
+
+    df = df.drop_duplicates(
+        subset=["numero_orden","material","modelo","serie","cantidad"]
+    )
+
+    filas_finales = len(df)
+
+    # ==========================================
+    # 📢 MOSTRAR RESULTADOS
+    # ==========================================
+
+    st.subheader("Control de calidad de datos")
+
+    st.write("Filas en archivo:", filas_originales)
+    st.write("Duplicados detectados:", cantidad_duplicados)
+    st.write("Duplicados eliminados:", filas_originales - filas_finales)
+    st.write("Filas finales a insertar:", filas_finales)
+
+    if cantidad_duplicados > 0:
+        st.warning("Se detectaron duplicados en el archivo. Fueron eliminados automáticamente.")
+
+    st.subheader("Vista previa")
+    st.dataframe(df.head(20))
+
+    # ==========================================
+    # 🚀 GUARDAR EN BASE DE DATOS
+    # ==========================================
 
     if st.button("Guardar materiales en base de datos"):
 
@@ -101,7 +119,6 @@ if archivo is not None:
 
             registros_archivo = len(df)
 
-            # convertir a JSON seguro
             datos = df.to_dict(orient="records")
 
             supabase.table("materiales_ordenes").upsert(
@@ -115,13 +132,13 @@ if archivo is not None:
                 .execute().count
 
             insertados = conteo_despues - conteo_antes
-            duplicados = registros_archivo - insertados
+            duplicados_bd = registros_archivo - insertados
 
             st.success("Carga completada")
 
-            st.write(f"Registros en archivo: {registros_archivo}")
+            st.write(f"Registros enviados: {registros_archivo}")
             st.write(f"Insertados nuevos: {insertados}")
-            st.write(f"Duplicados ignorados: {duplicados}")
+            st.write(f"Duplicados en base ignorados: {duplicados_bd}")
             st.write(f"Total en base: {conteo_despues}")
 
         except Exception as e:

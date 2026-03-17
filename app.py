@@ -216,6 +216,9 @@ if archivo is not None:
     # ============================================
     df = df.astype(object).where(pd.notnull(df), None)
 
+    st.write("Vista previa cantidad_tv:")
+    st.write(df[["orden_trabajo", "cantidad_tv"]].head(20))
+
     st.write("Cantidad de registros a insertar:", len(df))
     st.write("Órdenes duplicadas en archivo:", df["orden_trabajo"].duplicated().sum())
 

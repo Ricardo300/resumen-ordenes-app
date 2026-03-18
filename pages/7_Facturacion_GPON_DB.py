@@ -32,4 +32,4 @@ if st.button("Cargar datos"):
     df = pd.DataFrame(data)
 
     st.subheader("Datos desde Supabase")
-    st.dataframe(df.head(100))
+    st.dataframe(df.head(1500))

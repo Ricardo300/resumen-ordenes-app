@@ -30,6 +30,22 @@ if st.button("Cargar datos"):
         st.stop()
 
     df = pd.DataFrame(data)
+    # ==========================================
+    # ADAPTAR DATAFRAME AL FORMATO DEL MOTOR
+    # ==========================================
+    df_motor = df.copy()
+    
+    df_motor["NUMERO DE ORDEN"] = df_motor["orden_trabajo"]
+    df_motor["MATERIAL"] = df_motor["material"]
+    df_motor["CANTIDAD"] = df_motor["cantidad"]
+    df_motor["TIPO DE ORDEN"] = df_motor["sub_tipo_orden"]
+    df_motor["TV"] = df_motor["cantidad_tv"]
+    
+    df_motor["CANTIDAD"] = pd.to_numeric(df_motor["CANTIDAD"], errors="coerce").fillna(0)
+    df_motor["TV"] = pd.to_numeric(df_motor["TV"], errors="coerce").fillna(0)
+
+    st.subheader("Vista previa formato motor")
+    st.dataframe(df_motor[["NUMERO DE ORDEN", "MATERIAL", "CANTIDAD", "TIPO DE ORDEN", "TV"]].head(20))
 
     st.subheader("Datos desde Supabase")
-    st.dataframe(df.head(1500))
+    st.dataframe(df.head(1000))

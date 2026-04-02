@@ -33,6 +33,9 @@ fecha_fin = st.date_input("Fecha fin")
 
 if st.button("Cargar datos"):
 
+    # ==========================================
+    # CONSULTAR VIEW BASE
+    # ==========================================
     query = (
         supabase.table("view_base_facturacion")
         .select("*")
@@ -58,12 +61,12 @@ if st.button("Cargar datos"):
         .eq("activo", True)
         .execute()
     )
-    
+
     df_precios = pd.DataFrame(query_precios.data)
-    
+
     st.subheader("Tabla precios mano de obra")
     st.dataframe(df_precios, use_container_width=True)
-    
+
     # ==========================================
     # CARGAR TABLA DE CONTRATISTAS
     # ==========================================
@@ -73,9 +76,9 @@ if st.button("Cargar datos"):
         .eq("activo", True)
         .execute()
     )
-    
+
     df_contratistas = pd.DataFrame(query_contratistas.data)
-    
+
     st.subheader("Tabla contratistas")
     st.dataframe(df_contratistas, use_container_width=True)
 
@@ -90,7 +93,9 @@ if st.button("Cargar datos"):
         "CANTIDAD_TV": "TV"
     })
 
-    # Asegurar columnas que usa el motor
+    # ==========================================
+    # VALIDAR COLUMNAS REQUERIDAS
+    # ==========================================
     columnas_requeridas = [
         "NUMERO DE ORDEN",
         "TIPO DE ORDEN",
@@ -104,16 +109,21 @@ if st.button("Cargar datos"):
         st.error(f"Faltan columnas necesarias en el view: {faltantes}")
         st.stop()
 
-    # Tipos numéricos como en el motor
+    # ==========================================
+    # CONVERTIR TIPOS NUMÉRICOS
+    # ==========================================
     df["CANTIDAD"] = pd.to_numeric(df["CANTIDAD"], errors="coerce").fillna(0)
     df["TV"] = pd.to_numeric(df["TV"], errors="coerce").fillna(0)
 
     st.subheader("Vista previa del archivo")
-    st.dataframe(df.head(20))
+    st.dataframe(df.head(20), use_container_width=True)
 
     st.subheader("Columnas detectadas")
     st.write(list(df.columns))
 
+    # ==========================================
+    # AGRUPAR POR ORDEN
+    # ==========================================
     ordenes = df.groupby("NUMERO DE ORDEN")
 
     st.subheader("Órdenes detectadas")
@@ -122,6 +132,9 @@ if st.button("Cargar datos"):
     preview = []
     facturacion = []
 
+    # ==========================================
+    # CATÁLOGOS DE MATERIALES
+    # ==========================================
     STB_VALIDAS = [
         "BUNDLE ZTE B866V2-H + CONTROL",
         "OTT PLAYER ZTE ZXV10 866V2",
@@ -138,10 +151,23 @@ if st.button("Cargar datos"):
         "SWITCH DLINK DGS105"
     ]
 
+    # ==========================================
+    # RECORRER ÓRDENES
+    # ==========================================
     for orden, grupo in ordenes:
 
         tipo_orden = str(grupo["TIPO DE ORDEN"].iloc[0])
         t = normalizar_texto(tipo_orden)
+
+        # ==========================================
+        # IDENTIFICAR REPARACIONES
+        # ==========================================
+        es_reparacion = (
+            "REPARACION INTERNET (DGPON) + TV (GPON)" in t
+            or "REPARACION INTERNET (GPON)" in t
+            or "REPARACION LINEA FIJA (VGPON) + INTERNET (DGPON)" in t
+            or "REPARACION LINEA FIJA (VGPON) + INTERNET (DGPON)+TV (GPON)" in t
+        )
 
         # ================================
         # DETECCIÓN DE MATERIALES
@@ -190,28 +216,32 @@ if st.button("Cargar datos"):
         desc = ""
         cant = 1
 
-        # === CAMBIO DE PLAN (regla compuesta por STB) ===
+        # ===============================
+        # REPARACIONES
+        # ===============================
+        if es_reparacion:
+            desc = "REVISION_ACTIVACION_CONF EQ GPON URBANO"
+
         # ===============================
         # CAMBIO DE PLAN
         # ===============================
-        
-        if (
+        elif (
             "CAMBIO DE PLAN CON CAMBIO DE EQUIPO DATOS Y TV" in t
             or "CAMBIO DE PLAN CON CAMBIO DE EQUIPO TRIPLE PLAY" in t
         ):
-        
+
             if stb_count == 1:
                 sin_exist = 1
                 con_exist = 0
-        
+
             else:
                 sin_exist = max(1, stb_count // 2)
-        
+
                 if stb_count % 2 == 1 and stb_count >= 3:
                     con_exist = 1
                 else:
                     con_exist = 0
-        
+
             if sin_exist > 0:
                 facturacion.append({
                     "ORDEN": orden,
@@ -219,7 +249,7 @@ if st.button("Cargar datos"):
                     "CONCEPTO": "INS ADICIONAL TV SIN EXISTENTE VISITA 2",
                     "CANTIDAD": sin_exist
                 })
-        
+
             if con_exist > 0:
                 facturacion.append({
                     "ORDEN": orden,
@@ -227,62 +257,62 @@ if st.button("Cargar datos"):
                     "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
                     "CANTIDAD": con_exist
                 })
+
         # ===============================
         # EQUIPO ADICIONAL
         # ===============================
         elif "EQUIPO ADICIONAL DATOS Y TV" in t:
 
             cantidad_mo = stb_count if stb_count > 0 else 1
-        
+
             facturacion.append({
                 "ORDEN": orden,
                 "TIPO_ORDEN": tipo_orden,
                 "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
                 "CANTIDAD": cantidad_mo
             })
-        
-        
+
         elif "EQUIPO ADICIONAL TRIPLE PLAY" in t:
-        
+
             cantidad_mo = stb_count if stb_count > 0 else 1
-        
+
             facturacion.append({
                 "ORDEN": orden,
                 "TIPO_ORDEN": tipo_orden,
                 "CONCEPTO": "INS ADICIONAL TV CON EXISTENTE VISITA 2",
                 "CANTIDAD": cantidad_mo
             })
-        
+
         elif "EQUIPO ADICIONAL DATOS" in t:
-        
+
             equipos_datos = grupo["CANTIDAD"].sum()
-        
+
             if equipos_datos > 0:
-        
                 facturacion.append({
                     "ORDEN": orden,
                     "TIPO_ORDEN": tipo_orden,
                     "CONCEPTO": "CONEXION/CONFIGURACION EXTENSORES WIFI",
                     "CANTIDAD": 1
                 })
-        # === INSTALACIONES ===
+
+        # ===============================
+        # INSTALACIONES
+        # ===============================
         elif "INSTALACION INTERNET (DGPON)+TV (GPON)" in t:
             desc = "INSTALACIÓN TWO PLAY INTERNET Y TV"
 
         elif "INSTALACION INTERNET (GPON)" in t:
             desc = "INSTALACIÓN ONE PLAY DATOS"
 
-        elif (
-            "INSTALACION LINEA FIJA (VGPON) + INTERNET (DGPON)+TV (GPON)" in t
-        ):
+        elif "INSTALACION LINEA FIJA (VGPON) + INTERNET (DGPON)+TV (GPON)" in t:
             desc = "INSTALACIÓN TRIPLE PLAY TV, VOZ Y DATOS"
 
-        elif (
-            "INSTALACION LINEA FIJA (VGPON) + INTERNET (DGPON)" in t
-        ):
+        elif "INSTALACION LINEA FIJA (VGPON) + INTERNET (DGPON)" in t:
             desc = "INSTALACIÓN TWO PLAY VOZ E INTERNET"
 
-        # === TRASLADOS EXTERNOS ===
+        # ===============================
+        # TRASLADOS EXTERNOS
+        # ===============================
         elif (
             "TRASLADO EXTERNO LINEA FIJA (VGPON) + INTERNET (DGPON)" in t
             and "+TV (GPON)" not in t
@@ -295,12 +325,12 @@ if st.button("Cargar datos"):
         elif "TRASLADO EXTERNO INTERNET (GPON)" in t:
             desc = "TRASLADO SERV EXTERNO 1PLAY INTERNE GPON"
 
-        elif (
-            "TRASLADO EXTERNO LINEA FIJA (VGPON) + INTERNET (DGPON)+TV (GPON)" in t
-        ):
+        elif "TRASLADO EXTERNO LINEA FIJA (VGPON) + INTERNET (DGPON)+TV (GPON)" in t:
             desc = "TRASLADO DE SERVICIO EXTERNO 3PLAY GPON"
 
-        # === TRASLADOS INTERNOS ===
+        # ===============================
+        # TRASLADOS INTERNOS
+        # ===============================
         elif "TRASLADO INTERNO INTERNET (GPON)" in t:
             desc = "TRASLADO SERVICIO INT ACOMETIDA COMPLETA"
 
@@ -316,6 +346,9 @@ if st.button("Cargar datos"):
             else:
                 desc = "TRASLADO SERVICIO INT REUBICACION 2 STB"
 
+        # ===============================
+        # AGREGAR MANO DE OBRA BASE
+        # ===============================
         if desc != "":
             facturacion.append({
                 "ORDEN": orden,
@@ -326,8 +359,9 @@ if st.button("Cargar datos"):
 
         # ================================
         # FO ADICIONAL
+        # NO APLICA EN REPARACIONES
         # ================================
-        if fo_total > 100:
+        if not es_reparacion and fo_total > 100:
             facturacion.append({
                 "ORDEN": orden,
                 "TIPO_ORDEN": tipo_orden,
@@ -337,10 +371,11 @@ if st.button("Cargar datos"):
 
         # ================================
         # UTP ADICIONAL
+        # NO APLICA EN REPARACIONES
         # ================================
         utp_base = 5 * tv_count
 
-        if utp_total > utp_base:
+        if not es_reparacion and utp_total > utp_base:
             utp_adicional = utp_total - utp_base
             utp_adicional = min(utp_adicional, 85)
 
@@ -353,8 +388,9 @@ if st.button("Cargar datos"):
 
         # ================================
         # STB ADICIONAL (SOLO INSTALACIÓN)
+        # NO APLICA EN REPARACIONES
         # ================================
-        if "INSTALACION" in t and stb_count > 2:
+        if not es_reparacion and "INSTALACION" in t and stb_count > 2:
             stb_adicional = stb_count - 2
 
             facturacion.append({
@@ -366,8 +402,9 @@ if st.button("Cargar datos"):
 
         # ================================
         # INSTALACION DE SWITCH
+        # NO APLICA EN REPARACIONES
         # ================================
-        if switch_count > 0:
+        if not es_reparacion and switch_count > 0:
             facturacion.append({
                 "ORDEN": orden,
                 "TIPO_ORDEN": tipo_orden,
@@ -375,15 +412,16 @@ if st.button("Cargar datos"):
                 "CANTIDAD": switch_count
             })
 
+    # ==========================================
+    # DATAFRAME RESUMEN DE MATERIALES
+    # ==========================================
     preview_df = pd.DataFrame(preview)
     st.subheader("Cálculo de materiales por orden")
-    st.dataframe(preview_df)
+    st.dataframe(preview_df, use_container_width=True)
 
-    #facturacion_df = pd.DataFrame(facturacion)
-    #st.write("Total líneas generadas:", len(facturacion_df))
-    #st.subheader("Facturación generada por Python")
-    #st.dataframe(facturacion_df)
-    
+    # ==========================================
+    # DATAFRAME DE FACTURACIÓN
+    # ==========================================
     facturacion_df = pd.DataFrame(facturacion)
 
     # ==========================================
@@ -461,7 +499,7 @@ if st.button("Cargar datos"):
     st.write("Total líneas generadas:", len(facturacion_df))
     st.subheader("Facturación generada por Python con precios")
     st.dataframe(facturacion_df, use_container_width=True)
-    
+
     # ================================
     # REPORTE DE VALIDACIÓN DETALLADO
     # ================================
@@ -472,7 +510,7 @@ if st.button("Cargar datos"):
         aggfunc="sum",
         fill_value=0
     ).reset_index()
-    
+
     material_resumen = preview_df[[
         "ORDEN",
         "TIPO_ORDEN",
@@ -482,15 +520,14 @@ if st.button("Cargar datos"):
         "SWITCH_COUNT",
         "TV_COUNT"
     ]]
-    
+
     reporte_validacion = material_resumen.merge(
         mo_pivot,
         on="ORDEN",
         how="left"
     ).fillna(0)
-    
+
     st.subheader("Reporte de Validación Manual")
-    
     st.dataframe(
         reporte_validacion,
         use_container_width=True

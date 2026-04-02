@@ -379,10 +379,88 @@ if st.button("Cargar datos"):
     st.subheader("Cálculo de materiales por orden")
     st.dataframe(preview_df)
 
+    #facturacion_df = pd.DataFrame(facturacion)
+    #st.write("Total líneas generadas:", len(facturacion_df))
+    #st.subheader("Facturación generada por Python")
+    #st.dataframe(facturacion_df)
+    
     facturacion_df = pd.DataFrame(facturacion)
+
+    # ==========================================
+    # AGREGAR CONTRATA A FACTURACION
+    # ==========================================
+    df_contrata = df[["NUMERO DE ORDEN", "CONTRATA"]].drop_duplicates()
+
+    facturacion_df = facturacion_df.merge(
+        df_contrata,
+        left_on="ORDEN",
+        right_on="NUMERO DE ORDEN",
+        how="left"
+    )
+
+    facturacion_df = facturacion_df.drop(columns=["NUMERO DE ORDEN"])
+
+    # ==========================================
+    # PREPARAR TABLA DE PRECIOS
+    # ==========================================
+    df_precios = df_precios.rename(columns={
+        "descripcion_mo": "CONCEPTO"
+    })
+
+    # ==========================================
+    # CRUCE CON PRECIOS
+    # ==========================================
+    facturacion_df = facturacion_df.merge(
+        df_precios[[
+            "CONCEPTO",
+            "precio_venta",
+            "precio_costo_estandar",
+            "precio_costo_especial"
+        ]],
+        on="CONCEPTO",
+        how="left"
+    )
+
+    # ==========================================
+    # PREPARAR TABLA DE CONTRATISTAS
+    # ==========================================
+    df_contratistas = df_contratistas.rename(columns={
+        "contratista": "CONTRATA"
+    })
+
+    # ==========================================
+    # CRUCE CON TIPO DE TARIFA
+    # ==========================================
+    facturacion_df = facturacion_df.merge(
+        df_contratistas[["CONTRATA", "tipo_tarifa_costo"]],
+        on="CONTRATA",
+        how="left"
+    )
+
+    # ==========================================
+    # CALCULAR PRECIO COSTO
+    # ==========================================
+    facturacion_df["PRECIO_COSTO"] = facturacion_df.apply(
+        lambda x: x["precio_costo_especial"]
+        if x["tipo_tarifa_costo"] == "ESPECIAL"
+        else x["precio_costo_estandar"],
+        axis=1
+    )
+
+    # ==========================================
+    # CALCULAR MONTOS
+    # ==========================================
+    facturacion_df["MONTO_VENTA"] = (
+        facturacion_df["CANTIDAD"] * facturacion_df["precio_venta"]
+    )
+
+    facturacion_df["MONTO_COSTO"] = (
+        facturacion_df["CANTIDAD"] * facturacion_df["PRECIO_COSTO"]
+    )
+
     st.write("Total líneas generadas:", len(facturacion_df))
-    st.subheader("Facturación generada por Python")
-    st.dataframe(facturacion_df)
+    st.subheader("Facturación generada por Python con precios")
+    st.dataframe(facturacion_df, use_container_width=True)
     
     # ================================
     # REPORTE DE VALIDACIÓN DETALLADO

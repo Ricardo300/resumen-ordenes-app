@@ -50,6 +50,36 @@ if st.button("Cargar datos"):
     df = pd.DataFrame(data)
 
     # ==========================================
+    # CARGAR TABLA DE PRECIOS
+    # ==========================================
+    query_precios = (
+        supabase.table("precios_mano_obra")
+        .select("*")
+        .eq("activo", True)
+        .execute()
+    )
+    
+    df_precios = pd.DataFrame(query_precios.data)
+    
+    st.subheader("Tabla precios mano de obra")
+    st.dataframe(df_precios, use_container_width=True)
+    
+    # ==========================================
+    # CARGAR TABLA DE CONTRATISTAS
+    # ==========================================
+    query_contratistas = (
+        supabase.table("contratistas_tarifa")
+        .select("*")
+        .eq("activo", True)
+        .execute()
+    )
+    
+    df_contratistas = pd.DataFrame(query_contratistas.data)
+    
+    st.subheader("Tabla contratistas")
+    st.dataframe(df_contratistas, use_container_width=True)
+
+    # ==========================================
     # ADAPTAR COLUMNAS EXACTAMENTE AL MOTOR ORIGINAL
     # ==========================================
     df.columns = df.columns.str.strip().str.upper()

@@ -316,15 +316,12 @@ if st.button("Cargar datos"):
 
         elif "EQUIPO ADICIONAL DATOS" in t:
 
-            equipos_datos = grupo["CANTIDAD"].sum()
-
-            if equipos_datos > 0:
-                facturacion.append({
-                    "ORDEN": orden,
-                    "TIPO_ORDEN": tipo_orden,
-                    "CONCEPTO": "CONEXION/CONFIGURACION EXTENSORES WIFI",
-                    "CANTIDAD": 1
-                })
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "CONEXION/CONFIGURACION EXTENSORES WIFI",
+                "CANTIDAD": 1
+            })
 
         # ===============================
         # INSTALACIONES

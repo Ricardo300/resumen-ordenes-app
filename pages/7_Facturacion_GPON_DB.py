@@ -461,7 +461,7 @@ if st.button("Cargar datos"):
         "FECHA",
         "GARANTIA",
         "IDENTIFICADOR_TECNICO",
-        "TIPO DE ACTIVIDAD"
+        "TIPO_ACTIVIDAD"
     ]].drop_duplicates()
     
     facturacion_df = facturacion_df.merge(

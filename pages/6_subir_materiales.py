@@ -53,7 +53,6 @@ if archivo is not None:
     # NORMALIZACIÓN FUERTE
     # ==========================================
 
-    # numero_orden
     df["numero_orden"] = (
         df["numero_orden"]
         .fillna("")
@@ -62,7 +61,6 @@ if archivo is not None:
         .str.upper()
     )
 
-    # material
     df["material"] = (
         df["material"]
         .fillna("")
@@ -71,7 +69,6 @@ if archivo is not None:
         .str.upper()
     )
 
-    # serie
     df["serie"] = (
         df["serie"]
         .fillna("SIN_SERIE")
@@ -83,17 +80,26 @@ if archivo is not None:
     df.loc[df["serie"] == "NAN", "serie"] = "SIN_SERIE"
     df.loc[df["serie"] == "NONE", "serie"] = "SIN_SERIE"
 
-    # modelo
-    # convierte 4018238 y 4018238.0 al mismo valor: "4018238"
-    modelo_numerico = pd.to_numeric(df["modelo"], errors="coerce")
-
-    df["modelo"] = modelo_numerico.apply(
-        lambda x: "" if pd.isna(x) else str(int(x))
+    # MODELO:
+    # convierte 4018238 y 4018238.0 al mismo valor "4018238"
+    # y si viene vacío o inválido lo deja como SIN_MODELO
+    df["modelo"] = pd.to_numeric(df["modelo"], errors="coerce")
+    df["modelo"] = df["modelo"].apply(
+        lambda x: "SIN_MODELO" if pd.isna(x) else str(int(x))
     )
 
-    # cantidad
+    # CANTIDAD:
+    # convierte a número y elimina registros con cantidad <= 0
     df["cantidad"] = pd.to_numeric(df["cantidad"], errors="coerce").fillna(0)
     df["cantidad"] = df["cantidad"].astype(int)
+
+    filas_originales = len(df)
+
+    # eliminar registros con cantidad inválida
+    df_eliminadas_cantidad = df[df["cantidad"] <= 0].copy()
+    df = df[df["cantidad"] > 0].copy()
+
+    eliminadas_por_cantidad = len(df_eliminadas_cantidad)
 
     # ==========================================
     # VALIDACIONES DE CALIDAD
@@ -109,33 +115,20 @@ if archivo is not None:
     if not errores_material.empty:
         errores_material["error"] = "material vacío"
 
-    errores_modelo = df[df["modelo"] == ""].copy()
-    if not errores_modelo.empty:
-        errores_modelo["error"] = "modelo inválido o vacío"
-
-    errores_cantidad = df[df["cantidad"] <= 0].copy()
-    if not errores_cantidad.empty:
-        errores_cantidad["error"] = "cantidad inválida (<= 0)"
-
     errores = pd.concat(
         [
             errores_numero_orden,
-            errores_material,
-            errores_modelo,
-            errores_cantidad
+            errores_material
         ],
         ignore_index=True
     )
 
-    # quitar errores duplicados visuales
     if not errores.empty:
         errores = errores.drop_duplicates()
 
     # ==========================================
     # CONTROL DE DUPLICADOS
     # ==========================================
-
-    filas_originales = len(df)
 
     df_check = df.groupby(
         ["numero_orden", "material", "modelo", "serie", "cantidad"]
@@ -162,9 +155,13 @@ if archivo is not None:
     st.subheader("Control de calidad de datos")
 
     st.write("Filas en archivo:", filas_originales)
+    st.write("Registros eliminados por cantidad inválida:", eliminadas_por_cantidad)
     st.write("Duplicados detectados:", cantidad_duplicados)
-    st.write("Duplicados eliminados:", filas_originales - filas_finales)
+    st.write("Duplicados eliminados:", (filas_originales - eliminadas_por_cantidad) - filas_finales)
     st.write("Filas finales a insertar:", filas_finales)
+
+    if eliminadas_por_cantidad > 0:
+        st.warning("Se eliminaron registros con cantidad menor o igual a 0.")
 
     if cantidad_duplicados > 0:
         st.warning("Se detectaron duplicados en el archivo. Fueron eliminados automáticamente.")

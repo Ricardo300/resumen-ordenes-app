@@ -46,6 +46,8 @@ if st.button("Cargar datos"):
             .select("*")
             .gte("fecha", str(fecha_inicio))
             .lte("fecha", str(fecha_fin))
+            .order("orden_trabajo")
+            .order("material")
             .range(inicio, inicio + lote - 1)
             .execute()
         )
@@ -71,8 +73,12 @@ if st.button("Cargar datos"):
     df = pd.DataFrame(data)
 
     st.write("Total filas cargadas desde Supabase:", len(df))
+
     if "orden_trabajo" in df.columns:
         st.write("Órdenes únicas detectadas en bruto:", df["orden_trabajo"].nunique())
+
+    if "material" in df.columns:
+        st.write("Filas duplicadas exactas cargadas:", df.duplicated().sum())
 
     # ==========================================
     # CARGAR TABLA DE PRECIOS

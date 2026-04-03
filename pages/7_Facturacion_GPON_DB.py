@@ -453,19 +453,24 @@ if st.button("Cargar datos"):
     facturacion_df = pd.DataFrame(facturacion)
 
     # ==========================================
-    # AGREGAR CONTRATA A FACTURACION
+    # AGREGAR DATOS GENERALES DE LA ORDEN
     # ==========================================
-    df_contrata = df[["NUMERO DE ORDEN", "CONTRATA"]].drop_duplicates()
-
+    df_datos_orden = df[[
+        "NUMERO DE ORDEN",
+        "CONTRATA",
+        "FECHA",
+        "GARANTIA",
+        "IDENTIFICADOR_TECNICO"
+    ]].drop_duplicates()
+    
     facturacion_df = facturacion_df.merge(
-        df_contrata,
+        df_datos_orden,
         left_on="ORDEN",
         right_on="NUMERO DE ORDEN",
         how="left"
     )
-
+    
     facturacion_df = facturacion_df.drop(columns=["NUMERO DE ORDEN"])
-
     # ==========================================
     # PREPARAR TABLA DE PRECIOS
     # ==========================================

@@ -49,22 +49,90 @@ if archivo is not None:
     # quedarnos solo con columnas necesarias
     df = df[columnas_necesarias].copy()
 
-    # limpiar serie
-    df["serie"] = df["serie"].fillna("SIN_SERIE")
-    df["serie"] = df["serie"].replace("", "SIN_SERIE")
+    # ==========================================
+    # NORMALIZACIÓN FUERTE
+    # ==========================================
 
-    # limpiar nulos
-    df = df.fillna("")
+    # numero_orden
+    df["numero_orden"] = (
+        df["numero_orden"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
 
-    # tipos
-    df["numero_orden"] = df["numero_orden"].astype(str)
-    df["material"] = df["material"].astype(str)
-    df["modelo"] = df["modelo"].astype(str)
-    df["serie"] = df["serie"].astype(str)
+    # material
+    df["material"] = (
+        df["material"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    # serie
+    df["serie"] = (
+        df["serie"]
+        .fillna("SIN_SERIE")
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+    df.loc[df["serie"] == "", "serie"] = "SIN_SERIE"
+    df.loc[df["serie"] == "NAN", "serie"] = "SIN_SERIE"
+    df.loc[df["serie"] == "NONE", "serie"] = "SIN_SERIE"
+
+    # modelo
+    # convierte 4018238 y 4018238.0 al mismo valor: "4018238"
+    modelo_numerico = pd.to_numeric(df["modelo"], errors="coerce")
+
+    df["modelo"] = modelo_numerico.apply(
+        lambda x: "" if pd.isna(x) else str(int(x))
+    )
+
+    # cantidad
     df["cantidad"] = pd.to_numeric(df["cantidad"], errors="coerce").fillna(0)
+    df["cantidad"] = df["cantidad"].astype(int)
 
     # ==========================================
-    # 📊 CONTROL DE DUPLICADOS (ANTES DE LIMPIAR)
+    # VALIDACIONES DE CALIDAD
+    # ==========================================
+
+    errores = pd.DataFrame()
+
+    errores_numero_orden = df[df["numero_orden"] == ""].copy()
+    if not errores_numero_orden.empty:
+        errores_numero_orden["error"] = "numero_orden vacío"
+
+    errores_material = df[df["material"] == ""].copy()
+    if not errores_material.empty:
+        errores_material["error"] = "material vacío"
+
+    errores_modelo = df[df["modelo"] == ""].copy()
+    if not errores_modelo.empty:
+        errores_modelo["error"] = "modelo inválido o vacío"
+
+    errores_cantidad = df[df["cantidad"] <= 0].copy()
+    if not errores_cantidad.empty:
+        errores_cantidad["error"] = "cantidad inválida (<= 0)"
+
+    errores = pd.concat(
+        [
+            errores_numero_orden,
+            errores_material,
+            errores_modelo,
+            errores_cantidad
+        ],
+        ignore_index=True
+    )
+
+    # quitar errores duplicados visuales
+    if not errores.empty:
+        errores = errores.drop_duplicates()
+
+    # ==========================================
+    # CONTROL DE DUPLICADOS
     # ==========================================
 
     filas_originales = len(df)
@@ -75,20 +143,20 @@ if archivo is not None:
 
     duplicados_df = df_check[df_check["conteo"] > 1]
 
-    cantidad_duplicados = duplicados_df["conteo"].sum() - len(duplicados_df)
+    cantidad_duplicados = (
+        duplicados_df["conteo"].sum() - len(duplicados_df)
+        if not duplicados_df.empty else 0
+    )
 
-    # ==========================================
-    # 🔧 LIMPIAR DUPLICADOS
-    # ==========================================
-
+    # eliminar duplicados ya normalizados
     df = df.drop_duplicates(
-        subset=["numero_orden","material","modelo","serie","cantidad"]
+        subset=["numero_orden", "material", "modelo", "serie", "cantidad"]
     )
 
     filas_finales = len(df)
 
     # ==========================================
-    # 📢 MOSTRAR RESULTADOS
+    # MOSTRAR RESULTADOS
     # ==========================================
 
     st.subheader("Control de calidad de datos")
@@ -101,21 +169,31 @@ if archivo is not None:
     if cantidad_duplicados > 0:
         st.warning("Se detectaron duplicados en el archivo. Fueron eliminados automáticamente.")
 
+    if not errores.empty:
+        st.error("Se detectaron registros inválidos. La carga será bloqueada hasta corregirlos.")
+        st.subheader("Registros con error")
+        st.dataframe(errores, use_container_width=True)
+
     st.subheader("Vista previa")
-    st.dataframe(df.head(20))
+    st.dataframe(df.head(20), use_container_width=True)
 
     # ==========================================
-    # 🚀 GUARDAR EN BASE DE DATOS
+    # GUARDAR EN BASE DE DATOS
     # ==========================================
 
     if st.button("Guardar materiales en base de datos"):
 
-        try:
+        if not errores.empty:
+            st.error("No se puede guardar porque hay registros inválidos en el archivo.")
+            st.stop()
 
-            # contar antes
-            conteo_antes = supabase.table("materiales_ordenes") \
-                .select("*", count="exact") \
-                .execute().count
+        try:
+            conteo_antes = (
+                supabase.table("materiales_ordenes")
+                .select("*", count="exact")
+                .execute()
+                .count
+            )
 
             registros_archivo = len(df)
 
@@ -126,16 +204,17 @@ if archivo is not None:
                 on_conflict="numero_orden,material,serie,modelo,cantidad"
             ).execute()
 
-            # contar después
-            conteo_despues = supabase.table("materiales_ordenes") \
-                .select("*", count="exact") \
-                .execute().count
+            conteo_despues = (
+                supabase.table("materiales_ordenes")
+                .select("*", count="exact")
+                .execute()
+                .count
+            )
 
             insertados = conteo_despues - conteo_antes
             duplicados_bd = registros_archivo - insertados
 
             st.success("Carga completada")
-
             st.write(f"Registros enviados: {registros_archivo}")
             st.write(f"Insertados nuevos: {insertados}")
             st.write(f"Duplicados en base ignorados: {duplicados_bd}")

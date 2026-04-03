@@ -34,23 +34,45 @@ fecha_fin = st.date_input("Fecha fin")
 if st.button("Cargar datos"):
 
     # ==========================================
-    # CONSULTAR VIEW BASE
+    # CONSULTAR VIEW BASE POR LOTES
     # ==========================================
-    query = (
-        supabase.table("view_base_facturacion")
-        .select("*")
-        .gte("fecha", str(fecha_inicio))
-        .lte("fecha", str(fecha_fin))
-        .execute()
-    )
+    data_total = []
+    inicio = 0
+    lote = 1000
 
-    data = query.data
+    while True:
+        query = (
+            supabase.table("view_base_facturacion")
+            .select("*")
+            .gte("fecha", str(fecha_inicio))
+            .lte("fecha", str(fecha_fin))
+            .range(inicio, inicio + lote - 1)
+            .execute()
+        )
+
+        data_lote = query.data
+
+        if not data_lote:
+            break
+
+        data_total.extend(data_lote)
+
+        if len(data_lote) < lote:
+            break
+
+        inicio += lote
+
+    data = data_total
 
     if len(data) == 0:
         st.warning("No hay datos en ese rango")
         st.stop()
 
     df = pd.DataFrame(data)
+
+    st.write("Total filas cargadas desde Supabase:", len(df))
+    if "orden_trabajo" in df.columns:
+        st.write("Órdenes únicas detectadas en bruto:", df["orden_trabajo"].nunique())
 
     # ==========================================
     # CARGAR TABLA DE PRECIOS
@@ -92,6 +114,9 @@ if st.button("Cargar datos"):
         "SUB_TIPO_ORDEN": "TIPO DE ORDEN",
         "CANTIDAD_TV": "TV"
     })
+
+    if "NUMERO DE ORDEN" in df.columns:
+        st.write("Órdenes únicas luego del rename:", df["NUMERO DE ORDEN"].nunique())
 
     # ==========================================
     # VALIDAR COLUMNAS REQUERIDAS

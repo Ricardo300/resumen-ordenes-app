@@ -582,8 +582,7 @@ if st.button("Cargar datos"):
     )
     facturacion_df = facturacion_df.drop(columns=[
         "precio_costo_estandar",
-        "precio_costo_especial",
-        "tipo_tarifa_costo"
+        "precio_costo_especial"
     ], errors="ignore")
     
     st.write("Total líneas generadas:", len(facturacion_df))

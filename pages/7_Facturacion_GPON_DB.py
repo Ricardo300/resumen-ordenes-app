@@ -212,7 +212,7 @@ if st.button("Cargar datos"):
         if es_mantenimiento_px:
             facturacion.append({
                 "ORDEN": orden,
-                "TIPO_ORDEN": tipo_orden,
+                "TIPO_ORDEN": "MantenimientoPX,
                 "CONCEPTO": "MANTENIMIENTO PX - NO FACTURABLE",
                 "CANTIDAD": 1
             })

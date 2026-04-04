@@ -561,14 +561,14 @@ if st.button("Cargar datos"):
     # ==========================================
     # CALCULAR PRECIO COSTO
     # ==========================================
-    facturacion_df["PRECIO_COSTO"] = facturacion_df.apply(
+    facturacion_df["precio_costo"] = facturacion_df.apply(
         lambda x: x["precio_costo_especial"]
         if x["tipo_tarifa_costo"] == "ESPECIAL"
         else x["precio_costo_estandar"],
         axis=1
     )
 
-    facturacion_df.loc[mask_no_facturable, "PRECIO_COSTO"] = 0
+    facturacion_df.loc[mask_no_facturable, "precio_costo"] = 0
 
     # ==========================================
     # CALCULAR MONTOS
@@ -578,9 +578,14 @@ if st.button("Cargar datos"):
     )
 
     facturacion_df["MONTO_COSTO"] = (
-        facturacion_df["CANTIDAD"] * facturacion_df["PRECIO_COSTO"]
+        facturacion_df["CANTIDAD"] * facturacion_df["precio_costo"]
     )
-
+    facturacion_df = facturacion_df.drop(columns=[
+        "precio_costo_estandar",
+        "precio_costo_especial",
+        "tipo_tarifa_costo"
+    ], errors="ignore")
+    
     st.write("Total líneas generadas:", len(facturacion_df))
     st.subheader("Facturación generada por Python con precios")
     st.dataframe(facturacion_df, use_container_width=True)

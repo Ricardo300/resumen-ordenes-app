@@ -188,7 +188,42 @@ if st.button("Cargar datos"):
     for orden, grupo in ordenes:
 
         tipo_orden = str(grupo["TIPO DE ORDEN"].iloc[0])
+
+        if "TIPO_ACTIVIDAD" in grupo.columns:
+            tipo_actividad = str(grupo["TIPO_ACTIVIDAD"].iloc[0])
+        else:
+            tipo_actividad = ""
+
         t = normalizar_texto(tipo_orden)
+        ta = normalizar_texto(tipo_actividad)
+
+        es_mantenimiento_px = (
+            t == ""
+            and ta == "MANTENIMIENTOPX"
+        )
+
+        # ==========================================
+        # CASO ESPECIAL: MANTENIMIENTO PX
+        # ==========================================
+        if es_mantenimiento_px:
+            facturacion.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "CONCEPTO": "MANTENIMIENTO PX - NO FACTURABLE",
+                "CANTIDAD": 1
+            })
+
+            preview.append({
+                "ORDEN": orden,
+                "TIPO_ORDEN": tipo_orden,
+                "FO_TOTAL": 0,
+                "UTP_TOTAL": 0,
+                "STB_COUNT": 0,
+                "SWITCH_COUNT": 0,
+                "TV_COUNT": 0
+            })
+
+            continue
 
         # ==========================================
         # IDENTIFICAR REPARACIONES
@@ -463,15 +498,16 @@ if st.button("Cargar datos"):
         "IDENTIFICADOR_TECNICO",
         "TIPO_ACTIVIDAD"
     ]].drop_duplicates()
-    
+
     facturacion_df = facturacion_df.merge(
         df_datos_orden,
         left_on="ORDEN",
         right_on="NUMERO DE ORDEN",
         how="left"
     )
-    
+
     facturacion_df = facturacion_df.drop(columns=["NUMERO DE ORDEN"])
+
     # ==========================================
     # PREPARAR TABLA DE PRECIOS
     # ==========================================
@@ -510,6 +546,15 @@ if st.button("Cargar datos"):
     )
 
     # ==========================================
+    # FORZAR 0 PARA MANTENIMIENTO PX NO FACTURABLE
+    # ==========================================
+    mask_no_facturable = facturacion_df["CONCEPTO"] == "MANTENIMIENTO PX - NO FACTURABLE"
+
+    facturacion_df.loc[mask_no_facturable, "precio_venta"] = 0
+    facturacion_df.loc[mask_no_facturable, "precio_costo_estandar"] = 0
+    facturacion_df.loc[mask_no_facturable, "precio_costo_especial"] = 0
+
+    # ==========================================
     # CALCULAR PRECIO COSTO
     # ==========================================
     facturacion_df["PRECIO_COSTO"] = facturacion_df.apply(
@@ -518,6 +563,8 @@ if st.button("Cargar datos"):
         else x["precio_costo_estandar"],
         axis=1
     )
+
+    facturacion_df.loc[mask_no_facturable, "PRECIO_COSTO"] = 0
 
     # ==========================================
     # CALCULAR MONTOS

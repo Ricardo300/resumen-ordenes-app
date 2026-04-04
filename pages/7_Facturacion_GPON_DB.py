@@ -185,24 +185,26 @@ if st.button("Cargar datos"):
     # ==========================================
     # RECORRER ÓRDENES
     # ==========================================
-    tipo_orden_raw = grupo["TIPO DE ORDEN"].iloc[0]
-    tipo_orden = "" if pd.isna(tipo_orden_raw) else str(tipo_orden_raw)
-    
-    if "TIPO_ACTIVIDAD" in grupo.columns:
-        tipo_actividad_raw = grupo["TIPO_ACTIVIDAD"].iloc[0]
-        tipo_actividad = "" if pd.isna(tipo_actividad_raw) else str(tipo_actividad_raw)
-    else:
-        tipo_actividad = ""
-    
-    t = normalizar_texto(tipo_orden)
-    ta = normalizar_texto(tipo_actividad)
-    
-    tipo_orden_vacio = t in ["", "NAN", "NONE"]
-    
-    es_mantenimiento_px = (
-        tipo_orden_vacio
-        and ta == "MANTENIMIENTOPX"
-    )
+    for orden, grupo in ordenes:
+
+        tipo_orden_raw = grupo["TIPO DE ORDEN"].iloc[0]
+        tipo_orden = "" if pd.isna(tipo_orden_raw) else str(tipo_orden_raw)
+
+        if "TIPO_ACTIVIDAD" in grupo.columns:
+            tipo_actividad_raw = grupo["TIPO_ACTIVIDAD"].iloc[0]
+            tipo_actividad = "" if pd.isna(tipo_actividad_raw) else str(tipo_actividad_raw)
+        else:
+            tipo_actividad = ""
+
+        t = normalizar_texto(tipo_orden)
+        ta = normalizar_texto(tipo_actividad)
+
+        tipo_orden_vacio = t in ["", "NAN", "NONE"]
+
+        es_mantenimiento_px = (
+            tipo_orden_vacio
+            and ta == "MANTENIMIENTOPX"
+        )
 
         # ==========================================
         # CASO ESPECIAL: MANTENIMIENTO PX

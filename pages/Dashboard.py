@@ -247,16 +247,18 @@ if df.empty:
 # ==========================================
 total_ordenes = len(df)
 total_tecnicos = df["identificador_tecnico"].nunique()
+productividad_tecnico = round(total_ordenes / total_tecnicos, 2) if total_tecnicos else 0
 dias_operativos = df["fecha"].nunique()
 promedio_diario = round(total_ordenes / dias_operativos, 2) if dias_operativos else 0
 total_garantias = len(df[df["garantia"].astype(str).str.strip().str.upper() == "SI"])
 
-c1, c2, c3, c4, c5 = st.columns(5)
+c1, c2, c3, c4, c5, c6 = st.columns(6)
 c1.metric("Órdenes", f"{total_ordenes:,}")
 c2.metric("Técnicos", total_tecnicos)
-c3.metric("Días Operativos", dias_operativos)
-c4.metric("Promedio Día", promedio_diario)
-c5.metric("Garantías", total_garantias)
+c3.metric("Prod. Tecnicos", productividad_tecnico)
+c4.metric("Días Operativos", dias_operativos)
+c5.metric("Promedio Día", promedio_diario)
+c6.metric("Garantías", total_garantias)
 
 # ==========================================
 # POPUP TECNICOS

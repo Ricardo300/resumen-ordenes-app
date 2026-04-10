@@ -241,21 +241,35 @@ st.session_state["dia_click"] = None
 if df.empty:
     st.warning("No hay datos con los filtros seleccionados.")
     st.stop()
-
 # ==========================================
 # MÉTRICAS
 # ==========================================
-total_ordenes = len(df)
+total_ordenes = df["orden_trabajo"].nunique()
 total_tecnicos = df["identificador_tecnico"].nunique()
-productividad_tecnico = round(total_ordenes / total_tecnicos, 2) if total_tecnicos else 0
-dias_operativos = df["fecha"].nunique()
+dias_operativos = df["fecha"].dt.date.nunique()
 promedio_diario = round(total_ordenes / dias_operativos, 2) if dias_operativos else 0
 total_garantias = len(df[df["garantia"].astype(str).str.strip().str.upper() == "SI"])
+
+# productividad promedio diaria = promedio de (órdenes del día / técnicos del día)
+productividad_diaria = (
+    df.groupby(df["fecha"].dt.date)
+    .agg(
+        ordenes=("orden_trabajo", "nunique"),
+        tecnicos=("identificador_tecnico", "nunique")
+    )
+    .reset_index()
+)
+
+productividad_diaria["productividad"] = (
+    productividad_diaria["ordenes"] / productividad_diaria["tecnicos"]
+)
+
+productividad_promedio = round(productividad_diaria["productividad"].mean(), 2) if not productividad_diaria.empty else 0
 
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 c1.metric("Órdenes", f"{total_ordenes:,}")
 c2.metric("Técnicos", total_tecnicos)
-c3.metric("Prod. Tecnicos", productividad_tecnico)
+c3.metric("Productividad", productividad_promedio)
 c4.metric("Días Operativos", dias_operativos)
 c5.metric("Promedio Día", promedio_diario)
 c6.metric("Garantías", total_garantias)

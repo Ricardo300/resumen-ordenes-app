@@ -363,6 +363,54 @@ else:
     )
 
     st.plotly_chart(fig, use_container_width=True)
+    
+# =====================================
+# FILA 2 - GRÁFICOS
+# =====================================
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("Atribuible vs No Atribuible")
+
+    df_pie = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
+
+    if df_pie.empty:
+        st.warning("No hay garantías internas con los filtros seleccionados.")
+    else:
+        df_pie["atribucion"] = df_pie["clasificacion_garantia"].fillna("").astype(str).str.strip().apply(
+            lambda x: "Atribuible" if x == "TECNICO" else "No atribuible"
+        )
+
+        df_pie_resumen = (
+            df_pie["atribucion"]
+            .value_counts()
+            .reset_index()
+        )
+
+        df_pie_resumen.columns = ["Categoría", "Cantidad"]
+
+        import plotly.express as px
+
+        fig_pie = px.pie(
+            df_pie_resumen,
+            names="Categoría",
+            values="Cantidad",
+            hole=0
+        )
+
+        fig_pie.update_traces(
+            textinfo="percent+label+value"
+        )
+
+        fig_pie.update_layout(
+            height=450
+        )
+
+        st.plotly_chart(fig_pie, use_container_width=True)
+
+with col2:
+    st.subheader("Pendiente")
 # =====================================
 # DEBUG
 # =====================================

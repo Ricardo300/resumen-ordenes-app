@@ -232,11 +232,6 @@ if tecnologia_sel:
 else:
     df_filtrado = df_filtrado.iloc[0:0]
 
-if tipo_actividad_sel:
-    df_filtrado = df_filtrado[df_filtrado["tipo_actividad"].isin(tipo_actividad_sel)]
-else:
-    df_filtrado = df_filtrado.iloc[0:0]
-
 df_filtrado = df_filtrado.reset_index(drop=True)
 
 # =====================================

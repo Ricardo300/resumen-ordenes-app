@@ -337,6 +337,17 @@ df_clasif = (
 df_clasif.columns = ["Clasificación", "Cantidad"]
 st.write("Filas filtradas:", len(df_filtrado))
 st.write(df_filtrado["clasificacion_garantia"].head(10))
+
+df_clasif = (
+    df_filtrado["clasificacion_garantia"]
+    .fillna("SIN CLASIFICAR")
+    .astype(str)
+    .str.strip()
+    .value_counts()
+    .reset_index()
+)
+
+st.dataframe(df_clasif, use_container_width=True)
 # =====================================
 # DEBUG
 # =====================================

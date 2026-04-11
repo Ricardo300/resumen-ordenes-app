@@ -163,7 +163,7 @@ def cargar_garantias():
         response = (
             supabase
             .table("vista_garantias")
-            .select("*")
+            .select("orden_trabajo")
             .range(inicio, inicio + limite - 1)
             .execute()
         )

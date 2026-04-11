@@ -8,11 +8,11 @@ from datetime import datetime
 # =====================================
 
 st.set_page_config(
-    page_title="Prueba Vista Garantías",
+    page_title="Dashboard Garantías",
     layout="wide"
 )
 
-st.title("Prueba Vista Garantías")
+st.title("Dashboard de Garantías")
 
 # =====================================
 # CONEXIÓN SUPABASE
@@ -24,7 +24,7 @@ supabase = create_client(
 )
 
 # =====================================
-# FUNCIÓN PARA CARGAR TODA LA VISTA
+# FUNCIONES DE CARGA
 # =====================================
 
 @st.cache_data(ttl=600)
@@ -56,11 +56,42 @@ def cargar_garantias():
 
     return pd.DataFrame(todos)
 
+
+@st.cache_data(ttl=600)
+def cargar_servicios():
+    todos = []
+    limite = 1000
+    inicio = 0
+
+    while True:
+        response = (
+            supabase
+            .table("kpi_ordenes_completadas")
+            .select("fecha, contrata, tecnologia")
+            .range(inicio, inicio + limite - 1)
+            .execute()
+        )
+
+        data = response.data
+
+        if not data:
+            break
+
+        todos.extend(data)
+
+        if len(data) < limite:
+            break
+
+        inicio += limite
+
+    return pd.DataFrame(todos)
+
 # =====================================
 # CARGA DE DATOS
 # =====================================
 
 df = cargar_garantias()
+df_servicios = cargar_servicios()
 
 # =====================================
 # VALIDACIÓN Y LIMPIEZA
@@ -97,6 +128,14 @@ if "tecnologia" in df.columns:
 if "dias_desde_visita" in df.columns:
     df["dias_desde_visita"] = pd.to_numeric(df["dias_desde_visita"], errors="coerce")
 
+if not df_servicios.empty:
+    if "fecha" in df_servicios.columns:
+        df_servicios["fecha"] = pd.to_datetime(df_servicios["fecha"], errors="coerce")
+    if "contrata" in df_servicios.columns:
+        df_servicios["contrata"] = df_servicios["contrata"].fillna("SIN CONTRATA")
+    if "tecnologia" in df_servicios.columns:
+        df_servicios["tecnologia"] = df_servicios["tecnologia"].fillna("SIN TECNOLOGIA")
+
 # =====================================
 # COLUMNAS AUXILIARES
 # =====================================
@@ -107,6 +146,13 @@ if "fecha_garantia" in df.columns:
 else:
     df["anio"] = None
     df["mes_num"] = None
+
+if not df_servicios.empty and "fecha" in df_servicios.columns:
+    df_servicios["anio"] = df_servicios["fecha"].dt.year
+    df_servicios["mes_num"] = df_servicios["fecha"].dt.month
+else:
+    df_servicios["anio"] = None
+    df_servicios["mes_num"] = None
 
 # =====================================
 # HELPERS DE FILTRO
@@ -155,7 +201,6 @@ hoy = datetime.today()
 anio_actual = hoy.year
 mes_actual = hoy.month
 
-# ----- FECHA -----
 anios_disponibles = sorted([x for x in df["anio"].dropna().unique()])
 meses_disponibles = sorted([x for x in df["mes_num"].dropna().unique()])
 
@@ -177,26 +222,14 @@ with st.sidebar.expander("Fecha", expanded=True):
     else:
         mes_sel = None
 
-# ----- CONTRATA -----
 opciones_contrata = sorted(df["contrata_causa_garantia"].dropna().unique()) if "contrata_causa_garantia" in df.columns else []
-contrata_sel = filtro_checkbox(
-    "Contrata",
-    opciones_contrata,
-    "con",
-    expanded=False
-)
+contrata_sel = filtro_checkbox("Contrata", opciones_contrata, "con", expanded=False)
 
-# ----- TECNOLOGÍA -----
 opciones_tecnologia = sorted(df["tecnologia"].dropna().unique()) if "tecnologia" in df.columns else []
-tecnologia_sel = filtro_checkbox(
-    "Tecnología",
-    opciones_tecnologia,
-    "tec",
-    expanded=False
-)
+tecnologia_sel = filtro_checkbox("Tecnología", opciones_tecnologia, "tec", expanded=False)
 
 # =====================================
-# APLICAR FILTROS
+# APLICAR FILTROS GARANTÍAS
 # =====================================
 
 df_filtrado = df.copy()
@@ -220,8 +253,58 @@ else:
 df_filtrado = df_filtrado.reset_index(drop=True)
 
 # =====================================
-# MOSTRAR RESULTADOS
+# APLICAR FILTROS SERVICIOS
 # =====================================
 
-st.write("Total registros filtrados:", len(df_filtrado))
+servicios_filtrados = df_servicios.copy()
+
+if anio_sel is not None:
+    servicios_filtrados = servicios_filtrados[servicios_filtrados["anio"] == anio_sel]
+
+if mes_sel is not None:
+    servicios_filtrados = servicios_filtrados[servicios_filtrados["mes_num"] == mes_sel]
+
+if contrata_sel:
+    servicios_filtrados = servicios_filtrados[servicios_filtrados["contrata"].isin(contrata_sel)]
+else:
+    servicios_filtrados = servicios_filtrados.iloc[0:0]
+
+if tecnologia_sel:
+    servicios_filtrados = servicios_filtrados[servicios_filtrados["tecnologia"].isin(tecnologia_sel)]
+else:
+    servicios_filtrados = servicios_filtrados.iloc[0:0]
+
+total_servicios = len(servicios_filtrados)
+
+# =====================================
+# KPIs
+# =====================================
+
+total_garantias = len(df_filtrado)
+garantias_internas = len(df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"])
+garantias_externas = len(df_filtrado[df_filtrado["tipo_garantia"] == "EXTERNA"])
+garantias_tecnico = len(df_filtrado[df_filtrado["clasificacion_garantia"] == "TECNICO"])
+
+if total_servicios > 0:
+    pct_garantia_interna = round((garantias_internas / total_servicios) * 100, 2)
+    pct_garantia_tecnico = round((garantias_tecnico / total_servicios) * 100, 2)
+else:
+    pct_garantia_interna = 0
+    pct_garantia_tecnico = 0
+
+k1, k2, k3, k4, k5 = st.columns(5)
+
+k1.metric("Total Garantías", f"{total_garantias:,}")
+k2.metric("Garantías Internas", f"{garantias_internas:,}")
+k3.metric("Garantías Externas", f"{garantias_externas:,}")
+k4.metric("% Garantía Interna", f"{pct_garantia_interna}%")
+k5.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
+
+# =====================================
+# TABLA
+# =====================================
+
+st.write("Total servicios filtrados:", total_servicios)
+st.write("Total garantías filtradas:", len(df_filtrado))
+
 st.dataframe(df_filtrado, use_container_width=True)

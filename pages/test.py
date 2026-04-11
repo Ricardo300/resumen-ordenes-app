@@ -67,7 +67,7 @@ def cargar_servicios():
         response = (
             supabase
             .table("kpi_ordenes_completadas")
-            .select("fecha, contrata, tecnologia")
+            .select("orden_trabajo, fecha, contrata, tecnologia")
             .range(inicio, inicio + limite - 1)
             .execute()
         )
@@ -135,6 +135,10 @@ if not df_servicios.empty:
         df_servicios["contrata"] = df_servicios["contrata"].fillna("SIN CONTRATA")
     if "tecnologia" in df_servicios.columns:
         df_servicios["tecnologia"] = df_servicios["tecnologia"].fillna("SIN TECNOLOGIA")
+    if "orden_trabajo" in df_servicios.columns:
+        df_servicios["orden_trabajo"] = df_servicios["orden_trabajo"].astype(str).str.strip()
+        df_servicios = df_servicios[df_servicios["orden_trabajo"] != ""]
+        df_servicios = df_servicios[df_servicios["orden_trabajo"].str.upper() != "NONE"]
 
 # =====================================
 # COLUMNAS AUXILIARES
@@ -274,7 +278,10 @@ if tecnologia_sel:
 else:
     servicios_filtrados = servicios_filtrados.iloc[0:0]
 
-total_servicios = len(servicios_filtrados)
+if "orden_trabajo" in servicios_filtrados.columns:
+    total_servicios = servicios_filtrados["orden_trabajo"].nunique()
+else:
+    total_servicios = 0
 
 # =====================================
 # KPIs

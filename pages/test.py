@@ -63,7 +63,7 @@ def cargar_garantias():
 df = cargar_garantias()
 
 # =====================================
-# VALIDACIÓN Y LIMPIEZA BÁSICA
+# VALIDACIÓN Y LIMPIEZA
 # =====================================
 
 if df.empty:
@@ -94,6 +94,9 @@ if "rango_garantia" in df.columns:
 if "tecnologia" in df.columns:
     df["tecnologia"] = df["tecnologia"].fillna("SIN TECNOLOGIA")
 
+if "tipo_actividad" in df.columns:
+    df["tipo_actividad"] = df["tipo_actividad"].fillna("SIN TIPO ACTIVIDAD")
+
 if "dias_desde_visita" in df.columns:
     df["dias_desde_visita"] = pd.to_numeric(df["dias_desde_visita"], errors="coerce")
 
@@ -109,6 +112,39 @@ else:
     df["mes_num"] = None
 
 # =====================================
+# HELPERS DE FILTRO
+# =====================================
+
+def filtro_checkbox(label, opciones, key_prefix, seleccion_default=None, expanded=False):
+    if seleccion_default is None:
+        seleccion_default = opciones.copy()
+
+    # inicializar session state
+    for opcion in opciones:
+        estado_key = f"{key_prefix}_{opcion}"
+        if estado_key not in st.session_state:
+            st.session_state[estado_key] = opcion in seleccion_default
+
+    with st.sidebar.expander(label, expanded=expanded):
+        col1, col2 = st.columns(2)
+
+        if col1.button("✓ Todo", key=f"{key_prefix}_all"):
+            for opcion in opciones:
+                st.session_state[f"{key_prefix}_{opcion}"] = True
+
+        if col2.button("✕ Ninguno", key=f"{key_prefix}_none"):
+            for opcion in opciones:
+                st.session_state[f"{key_prefix}_{opcion}"] = False
+
+        seleccionados = []
+        for opcion in opciones:
+            estado = st.checkbox(opcion, key=f"{key_prefix}_{opcion}")
+            if estado:
+                seleccionados.append(opcion)
+
+    return seleccionados
+
+# =====================================
 # FILTROS
 # =====================================
 
@@ -120,50 +156,68 @@ meses = {
     9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
 }
 
-anios = sorted([x for x in df["anio"].dropna().unique()])
-meses_disponibles = sorted([x for x in df["mes_num"].dropna().unique()])
-
 hoy = datetime.today()
 anio_actual = hoy.year
 mes_actual = hoy.month
 
-if anios:
-    if anio_actual in anios:
-        index_anio = anios.index(anio_actual)
+# ----- FECHA -----
+anios_disponibles = sorted([x for x in df["anio"].dropna().unique()])
+meses_disponibles = sorted([x for x in df["mes_num"].dropna().unique()])
+
+with st.sidebar.expander("Fecha", expanded=True):
+    if anios_disponibles:
+        if anio_actual in anios_disponibles:
+            index_anio = anios_disponibles.index(anio_actual)
+        else:
+            index_anio = len(anios_disponibles) - 1
+
+        anio_sel = st.selectbox("Año", anios_disponibles, index=index_anio)
     else:
-        index_anio = len(anios) - 1
+        anio_sel = None
 
-    anio_sel = st.sidebar.selectbox("Año", anios, index=index_anio)
-else:
-    anio_sel = None
+    if meses_disponibles:
+        if mes_actual in meses_disponibles:
+            index_mes = meses_disponibles.index(mes_actual)
+        else:
+            index_mes = len(meses_disponibles) - 1
 
-if meses_disponibles:
-    if mes_actual in meses_disponibles:
-        index_mes = meses_disponibles.index(mes_actual)
+        mes_sel = st.selectbox(
+            "Mes",
+            meses_disponibles,
+            index=index_mes,
+            format_func=lambda x: meses.get(x, str(x))
+        )
     else:
-        index_mes = max(len(meses_disponibles) - 1, 0)
+        mes_sel = None
 
-    mes_sel = st.sidebar.selectbox(
-        "Mes",
-        meses_disponibles,
-        index=index_mes,
-        format_func=lambda x: meses.get(x, str(x))
-    )
-else:
-    mes_sel = None
-
-tipos_disponibles = sorted(df["tipo_garantia"].dropna().unique()) if "tipo_garantia" in df.columns else []
-tipo_sel = st.sidebar.multiselect(
-    "Tipo Garantía",
-    tipos_disponibles,
-    default=tipos_disponibles
+# ----- CONTRATA -----
+opciones_contrata = sorted(df["contrata_causa_garantia"].dropna().unique()) if "contrata_causa_garantia" in df.columns else []
+contrata_sel = filtro_checkbox(
+    "Contrata",
+    opciones_contrata,
+    "con",
+    seleccion_default=opciones_contrata,
+    expanded=False
 )
 
-tecnologias_disponibles = sorted(df["tecnologia"].dropna().unique()) if "tecnologia" in df.columns else []
-tec_sel = st.sidebar.multiselect(
+# ----- TECNOLOGÍA -----
+opciones_tecnologia = sorted(df["tecnologia"].dropna().unique()) if "tecnologia" in df.columns else []
+tecnologia_sel = filtro_checkbox(
     "Tecnología",
-    tecnologias_disponibles,
-    default=tecnologias_disponibles
+    opciones_tecnologia,
+    "tec",
+    seleccion_default=opciones_tecnologia,
+    expanded=False
+)
+
+# ----- TIPO ACTIVIDAD -----
+opciones_tipo_actividad = sorted(df["tipo_actividad"].dropna().unique()) if "tipo_actividad" in df.columns else []
+tipo_actividad_sel = filtro_checkbox(
+    "Tipo Actividad",
+    opciones_tipo_actividad,
+    "act",
+    seleccion_default=opciones_tipo_actividad,
+    expanded=False
 )
 
 # =====================================
@@ -178,11 +232,20 @@ if anio_sel is not None:
 if mes_sel is not None:
     df_filtrado = df_filtrado[df_filtrado["mes_num"] == mes_sel]
 
-if tipo_sel:
-    df_filtrado = df_filtrado[df_filtrado["tipo_garantia"].isin(tipo_sel)]
+if contrata_sel:
+    df_filtrado = df_filtrado[df_filtrado["contrata_causa_garantia"].isin(contrata_sel)]
+else:
+    df_filtrado = df_filtrado.iloc[0:0]
 
-if tec_sel:
-    df_filtrado = df_filtrado[df_filtrado["tecnologia"].isin(tec_sel)]
+if tecnologia_sel:
+    df_filtrado = df_filtrado[df_filtrado["tecnologia"].isin(tecnologia_sel)]
+else:
+    df_filtrado = df_filtrado.iloc[0:0]
+
+if tipo_actividad_sel:
+    df_filtrado = df_filtrado[df_filtrado["tipo_actividad"].isin(tipo_actividad_sel)]
+else:
+    df_filtrado = df_filtrado.iloc[0:0]
 
 df_filtrado = df_filtrado.reset_index(drop=True)
 
@@ -191,13 +254,5 @@ df_filtrado = df_filtrado.reset_index(drop=True)
 # =====================================
 
 st.write("Total registros filtrados:", len(df_filtrado))
-
-st.write("Valores seleccionados:")
-st.write({
-    "anio": int(anio_sel) if anio_sel is not None else None,
-    "mes": meses.get(mes_sel, mes_sel) if mes_sel is not None else None,
-    "tipos_garantia": tipo_sel,
-    "tecnologias": tec_sel
-})
 
 st.dataframe(df_filtrado, use_container_width=True)

@@ -2,33 +2,42 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 
-st.set_page_config(layout="wide")
+# =====================================
+# CONFIGURACIÓN GENERAL
+# =====================================
+
+st.set_page_config(
+    page_title="Prueba Vista Garantías",
+    layout="wide"
+)
 
 st.title("Prueba Vista Garantías")
 
-# conexión
+# =====================================
+# CONEXIÓN SUPABASE
+# =====================================
+
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
     st.secrets["SUPABASE_KEY"]
 )
 
-# consulta simple
+# =====================================
+# CARGA DE DATOS
+# =====================================
+
 response = supabase.table("vista_garantias").select("*").limit(100).execute()
-
 data = response.data
-
-# convertir a DataFrame
 df = pd.DataFrame(data)
 
-#LIMPIEZA BASICA
+# =====================================
+# VALIDACIÓN Y LIMPIEZA BÁSICA
+# =====================================
+
 if df.empty:
     st.warning("No se encontraron datos en vista_garantias.")
     st.stop()
 
-st.write("Columnas recibidas:")
-st.write(df.columns.tolist())
-
-# limpieza básica segura
 if "fecha_garantia" in df.columns:
     df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"], errors="coerce")
 
@@ -50,7 +59,11 @@ if "codigo_completado" in df.columns:
 if "rango_garantia" in df.columns:
     df["rango_garantia"] = df["rango_garantia"].fillna("SIN RANGO")
 
-st.dataframe(df)
-# mostrar
-st.write("Columnas:", df.columns.tolist())
-st.dataframe(df)
+# =====================================
+# MOSTRAR RESULTADO
+# =====================================
+
+st.write("Columnas recibidas:")
+st.write(df.columns.tolist())
+
+st.dataframe(df, use_container_width=True)

@@ -325,18 +325,27 @@ k6.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
 
 st.subheader("Garantías Internas por Clasificación")
 
+# 1. Filtrar solo internas
 df_internas = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"]
 
-df_clasif = (
-    df_internas["clasificacion_garantia"]
-    .fillna("SIN CLASIFICAR")
-    .astype(str)
-    .str.strip()
-    .value_counts()
-    .reset_index()
-)
+# 2. Validación (por si no hay datos)
+if df_internas.empty:
+    st.warning("No hay garantías internas con los filtros seleccionados.")
+else:
+    # 3. Agrupar por clasificación
+    df_clasif = (
+        df_internas["clasificacion_garantia"]
+        .fillna("SIN CLASIFICAR")
+        .astype(str)
+        .str.strip()
+        .value_counts()
+        .reset_index()
+    )
 
-df_clasif.columns = ["Clasificación", "Cantidad"]
+    df_clasif.columns = ["Clasificación", "Cantidad"]
+
+    # 4. Mostrar gráfico de barras
+    st.bar_chart(df_clasif.set_index("Clasificación"))
 # =====================================
 # DEBUG
 # =====================================

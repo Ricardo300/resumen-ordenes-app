@@ -345,7 +345,7 @@ else:
     df_clasif = df_clasif.sort_values("Cantidad", ascending=False).reset_index(drop=True)
     total_internas = df_clasif["Cantidad"].sum()
     df_clasif["Porcentaje"] = (df_clasif["Cantidad"] / total_internas * 100).round(1)
-    df_clasif["Etiqueta"] = df_clasif["Porcentaje"].astype(str) + "%"
+    df_clasif["Etiqueta"] = df_clasif["Porcentaje"].astype(str) + "% (" + df_clasif["Cantidad"].astype(str) + ")"
 
     fig = px.bar(
         df_clasif,

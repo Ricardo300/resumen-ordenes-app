@@ -280,6 +280,7 @@ total_servicios = len(servicios_filtrados)
 # KPIs
 # =====================================
 
+ordenes_atendidas = total_servicios
 total_garantias = len(df_filtrado)
 garantias_internas = len(df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"])
 garantias_externas = len(df_filtrado[df_filtrado["tipo_garantia"] == "EXTERNA"])
@@ -292,13 +293,14 @@ else:
     pct_garantia_interna = 0
     pct_garantia_tecnico = 0
 
-k1, k2, k3, k4, k5 = st.columns(5)
+k1, k2, k3, k4, k5, k6 = st.columns(6)
 
-k1.metric("Total Garantías", f"{total_garantias:,}")
-k2.metric("Garantías Internas", f"{garantias_internas:,}")
-k3.metric("Garantías Externas", f"{garantias_externas:,}")
-k4.metric("% Garantía Interna", f"{pct_garantia_interna}%")
-k5.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
+k1.metric("Órdenes Atendidas", f"{ordenes_atendidas:,}")
+k2.metric("Total Garantías", f"{total_garantias:,}")
+k3.metric("Garantías Internas", f"{garantias_internas:,}")
+k4.metric("Garantías Externas", f"{garantias_externas:,}")
+k5.metric("% Garantía Interna", f"{pct_garantia_interna}%")
+k6.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
 
 # =====================================
 # TABLA

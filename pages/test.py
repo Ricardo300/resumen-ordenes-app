@@ -105,25 +105,25 @@ if "fecha_garantia" in df.columns:
     df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"], errors="coerce")
 
 if "contrata_causa_garantia" in df.columns:
-    df["contrata_causa_garantia"] = df["contrata_causa_garantia"].fillna("SIN CONTRATA")
+    df["contrata_causa_garantia"] = df["contrata_causa_garantia"].fillna("SIN CONTRATA").astype(str).str.strip()
 
 if "tipo_garantia" in df.columns:
-    df["tipo_garantia"] = df["tipo_garantia"].fillna("SIN CLASIFICAR")
+    df["tipo_garantia"] = df["tipo_garantia"].fillna("SIN CLASIFICAR").astype(str).str.strip()
 
 if "clasificacion_garantia" in df.columns:
-    df["clasificacion_garantia"] = df["clasificacion_garantia"].fillna("SIN CLASIFICAR")
+    df["clasificacion_garantia"] = df["clasificacion_garantia"].fillna("SIN CLASIFICAR").astype(str).str.strip()
 
 if "tecnico_causa_garantia" in df.columns:
-    df["tecnico_causa_garantia"] = df["tecnico_causa_garantia"].fillna("SIN TECNICO")
+    df["tecnico_causa_garantia"] = df["tecnico_causa_garantia"].fillna("SIN TECNICO").astype(str).str.strip()
 
 if "codigo_completado" in df.columns:
-    df["codigo_completado"] = df["codigo_completado"].fillna("SIN CODIGO")
+    df["codigo_completado"] = df["codigo_completado"].fillna("SIN CODIGO").astype(str).str.strip()
 
 if "rango_garantia" in df.columns:
-    df["rango_garantia"] = df["rango_garantia"].fillna("SIN RANGO")
+    df["rango_garantia"] = df["rango_garantia"].fillna("SIN RANGO").astype(str).str.strip()
 
 if "tecnologia" in df.columns:
-    df["tecnologia"] = df["tecnologia"].fillna("SIN TECNOLOGIA")
+    df["tecnologia"] = df["tecnologia"].fillna("SIN TECNOLOGIA").astype(str).str.strip()
 
 if "dias_desde_visita" in df.columns:
     df["dias_desde_visita"] = pd.to_numeric(df["dias_desde_visita"], errors="coerce")
@@ -131,12 +131,15 @@ if "dias_desde_visita" in df.columns:
 if not df_servicios.empty:
     if "fecha" in df_servicios.columns:
         df_servicios["fecha"] = pd.to_datetime(df_servicios["fecha"], errors="coerce")
+
     if "contrata" in df_servicios.columns:
-        df_servicios["contrata"] = df_servicios["contrata"].fillna("SIN CONTRATA")
+        df_servicios["contrata"] = df_servicios["contrata"].fillna("SIN CONTRATA").astype(str).str.strip()
+
     if "tecnologia" in df_servicios.columns:
-        df_servicios["tecnologia"] = df_servicios["tecnologia"].fillna("SIN TECNOLOGIA")
+        df_servicios["tecnologia"] = df_servicios["tecnologia"].fillna("SIN TECNOLOGIA").astype(str).str.strip()
+
     if "orden_trabajo" in df_servicios.columns:
-        df_servicios["orden_trabajo"] = df_servicios["orden_trabajo"].astype(str).str.strip()
+        df_servicios["orden_trabajo"] = df_servicios["orden_trabajo"].fillna("").astype(str).str.strip()
         df_servicios = df_servicios[df_servicios["orden_trabajo"] != ""]
         df_servicios = df_servicios[df_servicios["orden_trabajo"].str.upper() != "NONE"]
 
@@ -226,10 +229,17 @@ with st.sidebar.expander("Fecha", expanded=True):
     else:
         mes_sel = None
 
-opciones_contrata = sorted(df["contrata_causa_garantia"].dropna().unique()) if "contrata_causa_garantia" in df.columns else []
+# Unión de contratas de garantías y servicios para que no falten opciones
+opciones_contrata_garantias = sorted(df["contrata_causa_garantia"].dropna().unique()) if "contrata_causa_garantia" in df.columns else []
+opciones_contrata_servicios = sorted(df_servicios["contrata"].dropna().unique()) if "contrata" in df_servicios.columns else []
+opciones_contrata = sorted(list(set(opciones_contrata_garantias) | set(opciones_contrata_servicios)))
+
 contrata_sel = filtro_checkbox("Contrata", opciones_contrata, "con", expanded=False)
 
-opciones_tecnologia = sorted(df["tecnologia"].dropna().unique()) if "tecnologia" in df.columns else []
+opciones_tecnologia_garantias = sorted(df["tecnologia"].dropna().unique()) if "tecnologia" in df.columns else []
+opciones_tecnologia_servicios = sorted(df_servicios["tecnologia"].dropna().unique()) if "tecnologia" in df_servicios.columns else []
+opciones_tecnologia = sorted(list(set(opciones_tecnologia_garantias) | set(opciones_tecnologia_servicios)))
+
 tecnologia_sel = filtro_checkbox("Tecnología", opciones_tecnologia, "tec", expanded=False)
 
 # =====================================
@@ -308,6 +318,48 @@ k3.metric("Garantías Internas", f"{garantias_internas:,}")
 k4.metric("Garantías Externas", f"{garantias_externas:,}")
 k5.metric("% Garantía Interna", f"{pct_garantia_interna}%")
 k6.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
+
+# =====================================
+# DEBUG
+# =====================================
+
+with st.expander("DEBUG SERVICIOS", expanded=True):
+    base_serv = df_servicios.copy()
+
+    st.write("Base total filas:", len(base_serv))
+    st.write("Base órdenes únicas:", base_serv["orden_trabajo"].nunique() if "orden_trabajo" in base_serv.columns else 0)
+
+    st.write("Servicios con fecha nula:", base_serv["fecha"].isna().sum() if "fecha" in base_serv.columns else 0)
+    st.write("Servicios con orden_trabajo nulo/vacío:", (base_serv["orden_trabajo"].isna().sum() if "orden_trabajo" in base_serv.columns else 0))
+    st.write("Servicios con contrata nula:", base_serv["contrata"].isna().sum() if "contrata" in base_serv.columns else 0)
+    st.write("Servicios con tecnologia nula:", base_serv["tecnologia"].isna().sum() if "tecnologia" in base_serv.columns else 0)
+
+    serv_ym = base_serv.copy()
+    if anio_sel is not None:
+        serv_ym = serv_ym[serv_ym["anio"] == anio_sel]
+    if mes_sel is not None:
+        serv_ym = serv_ym[serv_ym["mes_num"] == mes_sel]
+
+    st.write("Solo año/mes - filas:", len(serv_ym))
+    st.write("Solo año/mes - órdenes únicas:", serv_ym["orden_trabajo"].nunique() if "orden_trabajo" in serv_ym.columns else 0)
+
+    serv_ymc = serv_ym.copy()
+    if contrata_sel:
+        serv_ymc = serv_ymc[serv_ymc["contrata"].isin(contrata_sel)]
+    else:
+        serv_ymc = serv_ymc.iloc[0:0]
+
+    st.write("Año/mes + contrata - filas:", len(serv_ymc))
+    st.write("Año/mes + contrata - órdenes únicas:", serv_ymc["orden_trabajo"].nunique() if "orden_trabajo" in serv_ymc.columns else 0)
+
+    serv_ymct = serv_ymc.copy()
+    if tecnologia_sel:
+        serv_ymct = serv_ymct[serv_ymct["tecnologia"].isin(tecnologia_sel)]
+    else:
+        serv_ymct = serv_ymct.iloc[0:0]
+
+    st.write("Año/mes + contrata + tecnología - filas:", len(serv_ymct))
+    st.write("Año/mes + contrata + tecnología - órdenes únicas:", serv_ymct["orden_trabajo"].nunique() if "orden_trabajo" in serv_ymct.columns else 0)
 
 # =====================================
 # TABLA

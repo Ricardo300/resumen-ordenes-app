@@ -210,16 +210,6 @@ tecnologia_sel = filtro_checkbox(
     expanded=False
 )
 
-# ----- TIPO ACTIVIDAD -----
-opciones_tipo_actividad = sorted(df["tipo_actividad"].dropna().unique()) if "tipo_actividad" in df.columns else []
-tipo_actividad_sel = filtro_checkbox(
-    "Tipo Actividad",
-    opciones_tipo_actividad,
-    "act",
-    seleccion_default=opciones_tipo_actividad,
-    expanded=False
-)
-
 # =====================================
 # APLICAR FILTROS
 # =====================================

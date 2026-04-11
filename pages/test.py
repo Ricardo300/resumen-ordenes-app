@@ -1,6 +1,7 @@
 import streamlit as st
 from supabase import create_client
 import pandas as pd
+from datetime import datetime
 
 # =====================================
 # CONFIGURACIÓN GENERAL
@@ -120,16 +121,32 @@ meses = {
 }
 
 anios = sorted([x for x in df["anio"].dropna().unique()])
+meses_disponibles = sorted([x for x in df["mes_num"].dropna().unique()])
+
+hoy = datetime.today()
+anio_actual = hoy.year
+mes_actual = hoy.month
+
 if anios:
-    anio_sel = st.sidebar.selectbox("Año", anios, index=len(anios) - 1)
+    if anio_actual in anios:
+        index_anio = anios.index(anio_actual)
+    else:
+        index_anio = len(anios) - 1
+
+    anio_sel = st.sidebar.selectbox("Año", anios, index=index_anio)
 else:
     anio_sel = None
 
-meses_disponibles = sorted([x for x in df["mes_num"].dropna().unique()])
 if meses_disponibles:
+    if mes_actual in meses_disponibles:
+        index_mes = meses_disponibles.index(mes_actual)
+    else:
+        index_mes = max(len(meses_disponibles) - 1, 0)
+
     mes_sel = st.sidebar.selectbox(
         "Mes",
         meses_disponibles,
+        index=index_mes,
         format_func=lambda x: meses.get(x, str(x))
     )
 else:
@@ -167,16 +184,17 @@ if tipo_sel:
 if tec_sel:
     df_filtrado = df_filtrado[df_filtrado["tecnologia"].isin(tec_sel)]
 
+df_filtrado = df_filtrado.reset_index(drop=True)
+
 # =====================================
 # MOSTRAR RESULTADOS
 # =====================================
 
-st.write("Total registros cargados desde la vista:", len(df))
-st.write("Total registros luego de filtros:", len(df_filtrado))
+st.write("Total registros filtrados:", len(df_filtrado))
 
 st.write("Valores seleccionados:")
 st.write({
-    "anio": anio_sel,
+    "anio": int(anio_sel) if anio_sel is not None else None,
     "mes": meses.get(mes_sel, mes_sel) if mes_sel is not None else None,
     "tipos_garantia": tipo_sel,
     "tecnologias": tec_sel

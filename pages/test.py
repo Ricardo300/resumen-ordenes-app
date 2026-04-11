@@ -94,9 +94,6 @@ if "rango_garantia" in df.columns:
 if "tecnologia" in df.columns:
     df["tecnologia"] = df["tecnologia"].fillna("SIN TECNOLOGIA")
 
-if "tipo_actividad" in df.columns:
-    df["tipo_actividad"] = df["tipo_actividad"].fillna("SIN TIPO ACTIVIDAD")
-
 if "dias_desde_visita" in df.columns:
     df["dias_desde_visita"] = pd.to_numeric(df["dias_desde_visita"], errors="coerce")
 
@@ -115,16 +112,7 @@ else:
 # HELPERS DE FILTRO
 # =====================================
 
-def filtro_checkbox(label, opciones, key_prefix, seleccion_default=None, expanded=False):
-    if seleccion_default is None:
-        seleccion_default = opciones.copy()
-
-    # inicializar session state
-    for opcion in opciones:
-        estado_key = f"{key_prefix}_{opcion}"
-        if estado_key not in st.session_state:
-            st.session_state[estado_key] = opcion in seleccion_default
-
+def filtro_checkbox(label, opciones, key_prefix, expanded=False):
     with st.sidebar.expander(label, expanded=expanded):
         col1, col2 = st.columns(2)
 
@@ -137,8 +125,15 @@ def filtro_checkbox(label, opciones, key_prefix, seleccion_default=None, expande
                 st.session_state[f"{key_prefix}_{opcion}"] = False
 
         seleccionados = []
+
         for opcion in opciones:
-            estado = st.checkbox(opcion, key=f"{key_prefix}_{opcion}")
+            estado_key = f"{key_prefix}_{opcion}"
+
+            if estado_key not in st.session_state:
+                st.session_state[estado_key] = True
+
+            estado = st.checkbox(opcion, key=estado_key)
+
             if estado:
                 seleccionados.append(opcion)
 
@@ -166,21 +161,13 @@ meses_disponibles = sorted([x for x in df["mes_num"].dropna().unique()])
 
 with st.sidebar.expander("Fecha", expanded=True):
     if anios_disponibles:
-        if anio_actual in anios_disponibles:
-            index_anio = anios_disponibles.index(anio_actual)
-        else:
-            index_anio = len(anios_disponibles) - 1
-
+        index_anio = anios_disponibles.index(anio_actual) if anio_actual in anios_disponibles else len(anios_disponibles) - 1
         anio_sel = st.selectbox("Año", anios_disponibles, index=index_anio)
     else:
         anio_sel = None
 
     if meses_disponibles:
-        if mes_actual in meses_disponibles:
-            index_mes = meses_disponibles.index(mes_actual)
-        else:
-            index_mes = len(meses_disponibles) - 1
-
+        index_mes = meses_disponibles.index(mes_actual) if mes_actual in meses_disponibles else len(meses_disponibles) - 1
         mes_sel = st.selectbox(
             "Mes",
             meses_disponibles,
@@ -196,7 +183,6 @@ contrata_sel = filtro_checkbox(
     "Contrata",
     opciones_contrata,
     "con",
-    seleccion_default=opciones_contrata,
     expanded=False
 )
 
@@ -206,7 +192,6 @@ tecnologia_sel = filtro_checkbox(
     "Tecnología",
     opciones_tecnologia,
     "tec",
-    seleccion_default=opciones_tecnologia,
     expanded=False
 )
 
@@ -239,5 +224,4 @@ df_filtrado = df_filtrado.reset_index(drop=True)
 # =====================================
 
 st.write("Total registros filtrados:", len(df_filtrado))
-
 st.dataframe(df_filtrado, use_container_width=True)

@@ -23,12 +23,43 @@ supabase = create_client(
 )
 
 # =====================================
+# FUNCIÓN PARA CARGAR TODA LA VISTA
+# =====================================
+
+@st.cache_data(ttl=600)
+def cargar_garantias():
+    todos = []
+    limite = 1000
+    inicio = 0
+
+    while True:
+        response = (
+            supabase
+            .table("vista_garantias")
+            .select("*")
+            .range(inicio, inicio + limite - 1)
+            .execute()
+        )
+
+        data = response.data
+
+        if not data:
+            break
+
+        todos.extend(data)
+
+        if len(data) < limite:
+            break
+
+        inicio += limite
+
+    return pd.DataFrame(todos)
+
+# =====================================
 # CARGA DE DATOS
 # =====================================
 
-response = supabase.table("vista_garantias").select("*").limit(1000).execute()
-data = response.data
-df = pd.DataFrame(data)
+df = cargar_garantias()
 
 # =====================================
 # VALIDACIÓN Y LIMPIEZA BÁSICA
@@ -62,8 +93,11 @@ if "rango_garantia" in df.columns:
 if "tecnologia" in df.columns:
     df["tecnologia"] = df["tecnologia"].fillna("SIN TECNOLOGIA")
 
+if "dias_desde_visita" in df.columns:
+    df["dias_desde_visita"] = pd.to_numeric(df["dias_desde_visita"], errors="coerce")
+
 # =====================================
-# COLUMNAS DE APOYO
+# COLUMNAS AUXILIARES
 # =====================================
 
 if "fecha_garantia" in df.columns:
@@ -79,15 +113,15 @@ else:
 
 st.sidebar.header("Filtros")
 
-anios = sorted([x for x in df["anio"].dropna().unique()])
 meses = {
     1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
     5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
     9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
 }
 
+anios = sorted([x for x in df["anio"].dropna().unique()])
 if anios:
-    anio_sel = st.sidebar.selectbox("Año", anios, index=len(anios)-1)
+    anio_sel = st.sidebar.selectbox("Año", anios, index=len(anios) - 1)
 else:
     anio_sel = None
 
@@ -102,10 +136,18 @@ else:
     mes_sel = None
 
 tipos_disponibles = sorted(df["tipo_garantia"].dropna().unique()) if "tipo_garantia" in df.columns else []
-tipo_sel = st.sidebar.multiselect("Tipo Garantía", tipos_disponibles, default=tipos_disponibles)
+tipo_sel = st.sidebar.multiselect(
+    "Tipo Garantía",
+    tipos_disponibles,
+    default=tipos_disponibles
+)
 
 tecnologias_disponibles = sorted(df["tecnologia"].dropna().unique()) if "tecnologia" in df.columns else []
-tec_sel = st.sidebar.multiselect("Tecnología", tecnologias_disponibles, default=tecnologias_disponibles)
+tec_sel = st.sidebar.multiselect(
+    "Tecnología",
+    tecnologias_disponibles,
+    default=tecnologias_disponibles
+)
 
 # =====================================
 # APLICAR FILTROS
@@ -126,11 +168,18 @@ if tec_sel:
     df_filtrado = df_filtrado[df_filtrado["tecnologia"].isin(tec_sel)]
 
 # =====================================
-# MOSTRAR RESULTADO
+# MOSTRAR RESULTADOS
 # =====================================
 
-st.write("Total registros filtrados:", len(df_filtrado))
-st.write("Columnas recibidas:")
-st.write(df_filtrado.columns.tolist())
+st.write("Total registros cargados desde la vista:", len(df))
+st.write("Total registros luego de filtros:", len(df_filtrado))
+
+st.write("Valores seleccionados:")
+st.write({
+    "anio": anio_sel,
+    "mes": meses.get(mes_sel, mes_sel) if mes_sel is not None else None,
+    "tipos_garantia": tipo_sel,
+    "tecnologias": tec_sel
+})
 
 st.dataframe(df_filtrado, use_container_width=True)

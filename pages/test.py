@@ -323,16 +323,15 @@ k6.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
 # GRÁFICO GARANTÍAS INTERNAS POR CLASIFICACIÓN
 # =====================================
 
+import plotly.express as px
+
 st.subheader("Garantías Internas por Clasificación")
 
-# 1. Filtrar solo internas
-df_internas = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"]
+df_internas = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
 
-# 2. Validación (por si no hay datos)
 if df_internas.empty:
     st.warning("No hay garantías internas con los filtros seleccionados.")
 else:
-    # 3. Agrupar por clasificación
     df_clasif = (
         df_internas["clasificacion_garantia"]
         .fillna("SIN CLASIFICAR")
@@ -343,9 +342,27 @@ else:
     )
 
     df_clasif.columns = ["Clasificación", "Cantidad"]
+    df_clasif = df_clasif.sort_values("Cantidad", ascending=False).reset_index(drop=True)
+    total_internas = df_clasif["Cantidad"].sum()
+    df_clasif["Porcentaje"] = (df_clasif["Cantidad"] / total_internas * 100).round(1)
+    df_clasif["Etiqueta"] = df_clasif["Porcentaje"].astype(str) + "%"
 
-    # 4. Mostrar gráfico de barras
-    st.bar_chart(df_clasif.set_index("Clasificación"))
+    fig = px.bar(
+        df_clasif,
+        x="Clasificación",
+        y="Cantidad",
+        text="Etiqueta"
+    )
+
+    fig.update_traces(textposition="outside")
+    fig.update_layout(
+        xaxis_title="Clasificación",
+        yaxis_title="Cantidad",
+        showlegend=False,
+        height=500
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 # =====================================
 # DEBUG
 # =====================================

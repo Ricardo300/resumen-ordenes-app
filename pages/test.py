@@ -320,6 +320,22 @@ k5.metric("% Garantía Interna", f"{pct_garantia_interna}%")
 k6.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
 
 # =====================================
+# GRÁFICO POR CLASIFICACIÓN
+# =====================================
+
+st.subheader("Garantías por Clasificación")
+
+df_clasif = (
+    df_filtrado["clasificacion_garantia"]
+    .fillna("SIN CLASIFICAR")
+    .astype(str)
+    .str.strip()
+    .value_counts()
+    .reset_index()
+)
+
+df_clasif.columns = ["Clasificación", "Cantidad"]
+# =====================================
 # DEBUG
 # =====================================
 

@@ -3,8 +3,7 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
-import streamlit as st
-from streamlit_plotly_events import plotly_events
+from calendar import monthrange
 
 # ==========================================
 # LOGIN SIMPLE
@@ -39,6 +38,7 @@ def login():
 if not st.session_state["logueado"]:
     login()
     st.stop()
+
 # ==========================================
 # CONFIGURACIÓN
 # ==========================================
@@ -54,7 +54,6 @@ h3 { font-size: 16px !important; margin-top: 5px !important; }
 .block-container { padding-top: 1rem; }
 div[data-testid="stMetricValue"] { font-size: 28px !important; }
 
-/* botones un poco más compactos */
 div.stButton > button {
     padding: 0.25rem 0.55rem !important;
     font-size: 0.80rem !important;
@@ -96,26 +95,17 @@ with st.sidebar:
 # FILTRO FECHA ESTILO POWER BI
 # ==========================================
 
-from calendar import monthrange
-
 primer_dia_mes = datetime(año, mes, 1)
 ultimo_dia_mes = datetime(año, mes, monthrange(año, mes)[1])
 
 with st.sidebar.expander("Fecha", expanded=False):
-
     col1, col2 = st.columns(2)
 
     with col1:
-        fecha_inicio = st.date_input(
-            "Inicio",
-            value=primer_dia_mes
-        )
+        fecha_inicio = st.date_input("Inicio", value=primer_dia_mes)
 
     with col2:
-        fecha_fin = st.date_input(
-            "Fin",
-            value=ultimo_dia_mes
-        )
+        fecha_fin = st.date_input("Fin", value=ultimo_dia_mes)
 
 # ==========================================
 # FECHAS ISO (TIMESTAMP)
@@ -157,6 +147,8 @@ def obtener_datos(inicio, fin):
             .select("*")
             .gte("fecha", inicio)
             .lt("fecha", fin)
+            .order("fecha", desc=False)
+            .order("orden_trabajo", desc=False)
             .range(offset, offset + limite - 1)
             .execute()
         )
@@ -174,6 +166,7 @@ def obtener_datos(inicio, fin):
 
     return todos
 
+
 data = obtener_datos(primer_dia, primer_dia_siguiente)
 
 if not data:
@@ -181,22 +174,27 @@ if not data:
     st.stop()
 
 df = pd.DataFrame(data)
-df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
 # ==========================================
-# FILTRO CHECKBOX + BOTONES TODO/NINGUNO (FUNCIONAL)
+# LIMPIEZA BASE
+# ==========================================
+df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+
+for col in ["orden_trabajo", "contrata", "tecnologia", "tipo_actividad", "identificador_tecnico", "garantia", "provincia"]:
+    if col in df.columns:
+        df[col] = df[col].astype(str).str.strip()
+
+# ==========================================
+# FILTRO CHECKBOX + BOTONES TODO/NINGUNO
 # ==========================================
 def filtro_checkbox(label, opciones, key_prefix):
     with st.sidebar.expander(label, expanded=False):
-
         col1, col2 = st.columns(2)
 
-        # ✓ Todo
         if col1.button("✓ Todo", key=f"{key_prefix}_all", type="secondary"):
             for opcion in opciones:
                 st.session_state[f"{key_prefix}_{opcion}"] = True
 
-        # ✕ Ninguno
         if col2.button("✕ Ninguno", key=f"{key_prefix}_none", type="secondary"):
             for opcion in opciones:
                 st.session_state[f"{key_prefix}_{opcion}"] = False
@@ -204,26 +202,28 @@ def filtro_checkbox(label, opciones, key_prefix):
         seleccionados = []
 
         for opcion in opciones:
-            # Inicializar estado
-            if f"{key_prefix}_{opcion}" not in st.session_state:
-                st.session_state[f"{key_prefix}_{opcion}"] = True
+            estado_key = f"{key_prefix}_{opcion}"
+            if estado_key not in st.session_state:
+                st.session_state[estado_key] = True
 
-            estado = st.checkbox(opcion, key=f"{key_prefix}_{opcion}")
+            estado = st.checkbox(opcion, key=estado_key)
             if estado:
                 seleccionados.append(opcion)
 
     return seleccionados
 
 # Opciones dinámicas
-opciones_contrata = sorted(df["contrata"].dropna().unique())
-opciones_tecnologia = sorted(df["tecnologia"].dropna().unique())
-opciones_tipo = sorted(df["tipo_actividad"].dropna().unique())
+opciones_contrata = sorted(df["contrata"].dropna().unique().tolist())
+opciones_tecnologia = sorted(df["tecnologia"].dropna().unique().tolist())
+opciones_tipo = sorted(df["tipo_actividad"].dropna().unique().tolist())
 
 contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
 tecnologia = filtro_checkbox("Tecnología", opciones_tecnologia, "tec")
 tipo_actividad = filtro_checkbox("Tipo Actividad", opciones_tipo, "tip")
 
-# Aplicar filtros
+# ==========================================
+# APLICAR FILTROS
+# ==========================================
 df = df[
     df["tecnologia"].isin(tecnologia) &
     df["contrata"].isin(contrata) &
@@ -233,21 +233,30 @@ df = df[
 df = df[
     (df["fecha"].dt.date >= fecha_inicio) &
     (df["fecha"].dt.date <= fecha_fin)
-]
+].copy()
 
-st.write("DEBUG ------------------")
-st.write("Tecnologías seleccionadas:", tecnologia)
-st.write("Contratas seleccionadas:", contrata)
-st.write("Tipos seleccionados:", tipo_actividad)
-st.write("Total registros después filtros:", len(df))
-st.write("Total órdenes únicas:", df["orden_trabajo"].nunique())
+# ==========================================
+# DESDUPLICACIÓN DEFENSIVA
+# ==========================================
+registros_filtrados = len(df)
+
+# Si por cambios en el orden físico / paginación entró una misma orden más de una vez,
+# nos quedamos con la primera aparición estable.
+df = (
+    df.sort_values(["fecha", "orden_trabajo"], ascending=[True, True])
+      .drop_duplicates(subset=["orden_trabajo"], keep="first")
+      .reset_index(drop=True)
+)
+
+ordenes_unicas_final = len(df)
+
 # resetear popup cuando cambian filtros
 st.session_state["dia_click"] = None
 
-# Si te quedas sin selección (todo en falso), evita error y muestra aviso
 if df.empty:
     st.warning("No hay datos con los filtros seleccionados.")
     st.stop()
+
 # ==========================================
 # MÉTRICAS
 # ==========================================
@@ -257,7 +266,6 @@ dias_operativos = df["fecha"].dt.date.nunique()
 promedio_diario = round(total_ordenes / dias_operativos, 2) if dias_operativos else 0
 total_garantias = len(df[df["garantia"].astype(str).str.strip().str.upper() == "SI"])
 
-# productividad promedio diaria = promedio de (órdenes del día / técnicos del día)
 productividad_diaria = (
     df.groupby(df["fecha"].dt.date)
     .agg(
@@ -281,12 +289,16 @@ c4.metric("Días Operativos", dias_operativos)
 c5.metric("Promedio Día", promedio_diario)
 c6.metric("Garantías", total_garantias)
 
+with st.expander("Validación de carga", expanded=False):
+    st.write("Registros después de filtros:", registros_filtrados)
+    st.write("Órdenes únicas finales:", ordenes_unicas_final)
+    st.write("Duplicados removidos por seguridad:", registros_filtrados - ordenes_unicas_final)
+
 # ==========================================
-# POPUP TECNICOS
+# POPUP TÉCNICOS
 # ==========================================
 @st.dialog("Técnicos del día")
 def mostrar_tecnicos(dia):
-
     lista_tecnicos = (
         df[df["dia_mes"] == dia]
         .groupby("identificador_tecnico")["orden_trabajo"]
@@ -296,7 +308,6 @@ def mostrar_tecnicos(dia):
     )
 
     st.write(f"Técnicos que trabajaron el día {dia}")
-
     st.dataframe(lista_tecnicos, use_container_width=True)
 
     st.download_button(
@@ -305,10 +316,10 @@ def mostrar_tecnicos(dia):
         file_name=f"tecnicos_dia_{dia}.csv",
         mime="text/csv"
     )
-# ==========================================
-# GRÁFICO ORDENES POR DÍA + TECNICOS
-# ==========================================
 
+# ==========================================
+# GRÁFICO ÓRDENES POR DÍA + TÉCNICOS
+# ==========================================
 df["dia_mes"] = df["fecha"].dt.day
 
 ordenes_dia = (
@@ -334,13 +345,8 @@ fig = px.bar(
     color_continuous_scale="Blues"
 )
 
-fig.update_traces(textposition="outside")
-#TRANSPARECIA DE BARRAS
-fig.update_traces(
-    textposition="outside",
-    opacity=0.65
-)
-#LINEA DE TECINCOS
+fig.update_traces(textposition="outside", opacity=0.65)
+
 fig.add_scatter(
     x=ordenes_dia["dia_mes"],
     y=ordenes_dia["tecnicos"],
@@ -352,21 +358,11 @@ fig.add_scatter(
     name="Técnicos"
 )
 
-# técnicos dentro de la barra
-#for _, row in ordenes_dia.iterrows():
-   # fig.add_annotation(
-   #     x=row["dia_mes"],
-   #     y=row["ordenes"] / 2,
-   #     text=str(row["tecnicos"]),
-   #     showarrow=False,
-    #    font=dict(size=12, color="white")
-  #  )
-
 fig.update_layout(
     height=350,
     template="plotly_dark",
     xaxis_title="Día del mes",
-    yaxis_title="Ordenes Completas",
+    yaxis_title="Órdenes Completas",
     coloraxis_showscale=False
 )
 
@@ -378,9 +374,8 @@ st.plotly_chart(
 )
 
 # ==========================================
-# GUARDAR DIA SELECCIONADO
+# GUARDAR DÍA SELECCIONADO
 # ==========================================
-
 if "dia_click" not in st.session_state:
     st.session_state["dia_click"] = None
 
@@ -390,11 +385,11 @@ if event and "selection" in event and event["selection"]["points"]:
     st.session_state["dia_click"] = event["selection"]["points"][0]["x"]
 
 # ==========================================
-# MOSTRAR TECNICOS
+# MOSTRAR TÉCNICOS
 # ==========================================
-
 if st.session_state["dia_click"]:
     mostrar_tecnicos(st.session_state["dia_click"])
+
 # ==========================================
 # TABLAS
 # ==========================================
@@ -417,7 +412,7 @@ with col_tab2:
     df_prod = (
         df.groupby(["identificador_tecnico", "contrata"])
         .agg(
-            Producción=("orden_trabajo", "count"),
+            Producción=("orden_trabajo", "nunique"),
             Dias_Trabajados=("fecha", "nunique")
         )
         .reset_index()
@@ -425,32 +420,25 @@ with col_tab2:
     df_prod["Productividad"] = (df_prod["Producción"] / df_prod["Dias_Trabajados"]).round(2)
     df_prod = df_prod.drop(columns=["Dias_Trabajados"]).sort_values("Producción", ascending=False)
     st.dataframe(df_prod, use_container_width=True, height=300)
-#================================================
-#  GRAFICO CUMPLIMIENTO META 4 ORDENES
-#================================================
+
+# ==========================================
+# GRÁFICO CUMPLIMIENTO META 4 ÓRDENES
+# ==========================================
 st.subheader("Promedio de Órdenes por Técnico por Contrata")
 
-# asegurar formato fecha
-df["fecha"] = pd.to_datetime(df["fecha"])
-
-# contar órdenes por técnico por día
 ordenes_tecnico = (
-    df.groupby(["fecha", "contrata", "identificador_tecnico"])
-      .size()
+    df.groupby(["fecha", "contrata", "identificador_tecnico"])["orden_trabajo"]
+      .nunique()
       .reset_index(name="ordenes")
 )
 
-# calcular promedio por contrata
 promedio_contrata = (
     ordenes_tecnico.groupby("contrata")["ordenes"]
       .mean()
       .reset_index()
+      .sort_values("ordenes", ascending=False)
 )
 
-# ordenar de mayor a menor
-promedio_contrata = promedio_contrata.sort_values("ordenes", ascending=False)
-
-# crear gráfico
 fig = px.bar(
     promedio_contrata,
     x="contrata",
@@ -458,18 +446,10 @@ fig = px.bar(
     text_auto=".2f"
 )
 
-# colores alternados
 colors = ["#1565C0" if i % 2 == 0 else "#90CAF9" for i in range(len(promedio_contrata))]
-
-fig.update_traces(
-    marker_color=colors,
-    width=0.6
-)
-
-# reducir espacio entre barras
+fig.update_traces(marker_color=colors, width=0.6)
 fig.update_layout(bargap=0.15)
 
-# línea meta
 fig.add_hline(
     y=4,
     line_dash="dash",
@@ -478,7 +458,6 @@ fig.add_hline(
     annotation_position="top right"
 )
 
-# apariencia
 fig.update_layout(
     showlegend=False,
     xaxis_title="Contrata",
@@ -488,19 +467,15 @@ fig.update_layout(
     margin=dict(b=120)
 )
 
-# mostrar gráfico (con key para evitar duplicados)
 st.plotly_chart(
     fig,
     use_container_width=True,
     key="grafico_productividad_contrata"
 )
 
-#================================================
-#  GRAFICO CUMPLIMIENTO POR TECNICO
-#================================================
-# --- Filtro por día ---
-df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
-
+# ==========================================
+# GRÁFICO CUMPLIMIENTO POR TÉCNICO
+# ==========================================
 fecha_seleccionada = st.date_input(
     "Seleccionar día",
     value=df["fecha"].dropna().min().date()
@@ -508,23 +483,18 @@ fecha_seleccionada = st.date_input(
 
 df_dia = df[df["fecha"].dt.date == fecha_seleccionada]
 
-# --- Conteo por técnico ---
 ordenes_tecnico_dia = (
-    df_dia.groupby("identificador_tecnico")
-    .size()
+    df_dia.groupby("identificador_tecnico")["orden_trabajo"]
+    .nunique()
     .reset_index(name="ordenes")
 )
 
 if ordenes_tecnico_dia.empty:
     st.info("No hay órdenes completadas para el día seleccionado.")
 else:
-    # ordenar
     ordenes_tecnico_dia = ordenes_tecnico_dia.sort_values("ordenes", ascending=False)
-
-    # índice (para navegar por códigos sin “espejo”)
     ordenes_tecnico_dia["indice"] = range(len(ordenes_tecnico_dia))
 
-    # gráfico
     fig_tecnico = px.bar(
         ordenes_tecnico_dia,
         x="indice",
@@ -532,20 +502,17 @@ else:
         text_auto=True
     )
 
-    # mostrar códigos reales en X
     fig_tecnico.update_xaxes(
         tickmode="array",
         tickvals=ordenes_tecnico_dia["indice"],
         ticktext=ordenes_tecnico_dia["identificador_tecnico"],
         tickangle=-90,
-        range=[0, 19]  # primeros 20 visibles
+        range=[0, 19]
     )
 
-    # colores alternados
     colors = ["#0D47A1" if i % 2 == 0 else "#90CAF9" for i in range(len(ordenes_tecnico_dia))]
     fig_tecnico.update_traces(marker_color=colors, width=0.6)
 
-    # línea meta
     fig_tecnico.add_hline(
         y=4,
         line_dash="dash",

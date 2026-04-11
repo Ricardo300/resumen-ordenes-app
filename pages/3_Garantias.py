@@ -162,8 +162,8 @@ def cargar_garantias():
     while True:
         response = (
             supabase
-            .table("kpi_ordenes_completadas")
-            .select("orden_trabajo, fecha")
+            .table("vista_garantias_test")
+            .select("*")
             .range(inicio, inicio + limite - 1)
             .execute()
         )

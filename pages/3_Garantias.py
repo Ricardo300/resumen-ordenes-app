@@ -162,7 +162,7 @@ def cargar_garantias():
     while True:
         response = (
             supabase
-            .table("vista_garantias_test")
+            .table("vista_garantias")
             .select("*")
             .range(inicio, inicio + limite - 1)
             .execute()
@@ -239,7 +239,7 @@ if df.empty:
     st.stop()
 
 df["fecha_garantia"] = pd.to_datetime(df["fecha_garantia"], errors="coerce")
-#df["contrata_causa_garantia"] = df["contrata_causa_garantia"].fillna("SIN CONTRATA")
+df["contrata_causa_garantia"] = df["contrata_causa_garantia"].fillna("SIN CONTRATA")
 df["tipo_garantia"] = df["tipo_garantia"].fillna("SIN CLASIFICAR")
 df["clasificacion_garantia"] = df["clasificacion_garantia"].fillna("SIN CLASIFICAR")
 df["tecnico_causa_garantia"] = df["tecnico_causa_garantia"].fillna("SIN TECNICO")

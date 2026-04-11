@@ -320,13 +320,15 @@ k5.metric("% Garantía Interna", f"{pct_garantia_interna}%")
 k6.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
 
 # =====================================
-# GRÁFICO POR CLASIFICACIÓN
+# GRÁFICO GARANTÍAS INTERNAS POR CLASIFICACIÓN
 # =====================================
 
-st.subheader("Garantías por Clasificación")
+st.subheader("Garantías Internas por Clasificación")
+
+df_internas = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"]
 
 df_clasif = (
-    df_filtrado["clasificacion_garantia"]
+    df_internas["clasificacion_garantia"]
     .fillna("SIN CLASIFICAR")
     .astype(str)
     .str.strip()
@@ -335,19 +337,6 @@ df_clasif = (
 )
 
 df_clasif.columns = ["Clasificación", "Cantidad"]
-st.write("Filas filtradas:", len(df_filtrado))
-st.write(df_filtrado["clasificacion_garantia"].head(10))
-
-df_clasif = (
-    df_filtrado["clasificacion_garantia"]
-    .fillna("SIN CLASIFICAR")
-    .astype(str)
-    .str.strip()
-    .value_counts()
-    .reset_index()
-)
-
-st.dataframe(df_clasif, use_container_width=True)
 # =====================================
 # DEBUG
 # =====================================

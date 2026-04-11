@@ -335,6 +335,8 @@ df_clasif = (
 )
 
 df_clasif.columns = ["Clasificación", "Cantidad"]
+st.write("Filas filtradas:", len(df_filtrado))
+st.write(df_filtrado["clasificacion_garantia"].head(10))
 # =====================================
 # DEBUG
 # =====================================

@@ -234,6 +234,13 @@ df = df[
     (df["fecha"].dt.date >= fecha_inicio) &
     (df["fecha"].dt.date <= fecha_fin)
 ]
+
+st.write("DEBUG ------------------")
+st.write("Tecnologías seleccionadas:", tecnologia)
+st.write("Contratas seleccionadas:", contrata)
+st.write("Tipos seleccionados:", tipo_actividad)
+st.write("Total registros después filtros:", len(df))
+st.write("Total órdenes únicas:", df["orden_trabajo"].nunique())
 # resetear popup cuando cambian filtros
 st.session_state["dia_click"] = None
 

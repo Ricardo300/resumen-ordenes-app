@@ -408,9 +408,57 @@ with col1:
         )
 
         st.plotly_chart(fig_pie, use_container_width=True)
+#=======================================
+#RANGO DE GARANTIA
+#=======================================
 
 with col2:
-    st.subheader("Pendiente")
+    st.subheader("Rango de Atención")
+
+    df_rango = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
+
+    if df_rango.empty:
+        st.warning("No hay garantías internas con los filtros seleccionados.")
+    else:
+        orden_rangos = ["0-7", "8-15", "16-30", "31-60", "61-90", ">90", "SIN RANGO"]
+
+        df_rango["rango_garantia"] = (
+            df_rango["rango_garantia"]
+            .fillna("SIN RANGO")
+            .astype(str)
+            .str.strip()
+        )
+
+        df_rango_resumen = (
+            df_rango["rango_garantia"]
+            .value_counts()
+            .reset_index()
+        )
+
+        df_rango_resumen.columns = ["Rango", "Cantidad"]
+        df_rango_resumen["Rango"] = pd.Categorical(
+            df_rango_resumen["Rango"],
+            categories=orden_rangos,
+            ordered=True
+        )
+        df_rango_resumen = df_rango_resumen.sort_values("Rango")
+
+        fig_rango = px.bar(
+            df_rango_resumen,
+            x="Rango",
+            y="Cantidad",
+            text="Cantidad"
+        )
+
+        fig_rango.update_traces(textposition="outside")
+        fig_rango.update_layout(
+            xaxis_title="Rango",
+            yaxis_title="Cantidad",
+            showlegend=False,
+            height=450
+        )
+
+        st.plotly_chart(fig_rango, use_container_width=True)
 # =====================================
 # DEBUG
 # =====================================

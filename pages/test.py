@@ -417,7 +417,7 @@ with col1:
         st.plotly_chart(fig_pie, use_container_width=True)
 
 with col2:
-    st.markdown("### ⏱️ Rango de Atención")
+    st.markdown("### ⏱️ Rango de Garantía")
 
     df_rango = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
 

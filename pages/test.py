@@ -499,9 +499,53 @@ with col1:
         tabla_origen.columns = ["Código Técnico", "Contrata", "Cantidad Garantías"]
 
         st.dataframe(tabla_origen, use_container_width=True, hide_index=True)
+#=============================
+#GRAFICO DE CODIGOS CIERRES
+#=============================
 
 with col2:
-    st.subheader("Pendiente")
+    st.subheader("Códigos de Cierre - Garantías Internas")
+
+    df_codigos = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
+
+    if df_codigos.empty:
+        st.warning("No hay garantías internas con los filtros seleccionados.")
+    else:
+        df_codigos["codigo_completado"] = (
+            df_codigos["codigo_completado"]
+            .fillna("SIN CODIGO")
+            .astype(str)
+            .str.strip()
+        )
+
+        df_codigos_resumen = (
+            df_codigos["codigo_completado"]
+            .value_counts()
+            .reset_index()
+        )
+
+        df_codigos_resumen.columns = ["Código", "Cantidad"]
+        df_codigos_resumen = df_codigos_resumen.sort_values("Cantidad", ascending=True)
+
+        import plotly.express as px
+
+        fig_codigos = px.bar(
+            df_codigos_resumen,
+            x="Cantidad",
+            y="Código",
+            orientation="h",
+            text="Cantidad"
+        )
+
+        fig_codigos.update_traces(textposition="outside")
+
+        fig_codigos.update_layout(
+            yaxis_title="Código",
+            xaxis_title="Cantidad",
+            height=500
+        )
+
+        st.plotly_chart(fig_codigos, use_container_width=True)
 # =====================================
 # DEBUG
 # =====================================

@@ -525,6 +525,7 @@ with col2:
 
         df_codigos_resumen.columns = ["Código", "Cantidad"]
 
+        # Top 10
         df_codigos_resumen = df_codigos_resumen.sort_values("Cantidad", ascending=False).head(10)
         df_codigos_resumen = df_codigos_resumen.sort_values("Cantidad", ascending=True)
 
@@ -538,27 +539,21 @@ with col2:
             text="Cantidad"
         )
 
-        fig_codigos.update_traces(textposition="outside")
-
-        fig_codigos.update_layout(
-            yaxis_title="Código",
-            xaxis_title="Cantidad",
-            height=800,
-            showlegend=False,
-            margin=dict(l=20, r=20, t=20, b=20)
+        fig_codigos.update_traces(
+            textposition="outside"
         )
 
-        st.markdown(
-            """
-            <div style="height:600px; overflow-y:auto;">
-            """,
-            unsafe_allow_html=True
+        fig_codigos.update_layout(
+            height=520,
+            showlegend=False,
+            margin=dict(l=10, r=40, t=10, b=10),
+            xaxis_title="Cantidad",
+            yaxis_title="Código",
+            yaxis=dict(automargin=True),
+            xaxis=dict(automargin=True)
         )
 
         st.plotly_chart(fig_codigos, use_container_width=True)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
 # =====================================
 # DEBUG
 # =====================================

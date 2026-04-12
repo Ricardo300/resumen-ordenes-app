@@ -29,7 +29,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("# 📡 Dashboard de Garantías")
+st.markdown("# 📈 Dashboard de Garantías")
 
 # =====================================
 # CONEXIÓN SUPABASE

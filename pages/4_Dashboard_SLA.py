@@ -178,13 +178,13 @@ sla_rep = 0
 
 if len(inst) > 0:
     sla_inst = round(
-        (len(inst[inst["dilacion_dias"] <= 3]) / len(inst)) * 100,
+        (len(inst[inst["dilacion_dias"] <= 2]) / len(inst)) * 100,
         2
     )
 
 if len(rep) > 0:
     sla_rep = round(
-        (len(rep[rep["dilacion_dias"] <= 2]) / len(rep)) * 100,
+        (len(rep[rep["dilacion_dias"] <= 1]) / len(rep)) * 100,
         2
     )
 

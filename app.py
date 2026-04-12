@@ -158,6 +158,52 @@ if archivo is not None:
     df["tecnologia"] = df["tecnologia"].fillna("NO_CLASIFICADO")
 
     # ============================================
+    # 🔥 CLASIFICAR TIPO SLA
+    # ============================================
+    map_tipo_sla = {
+        # DTH
+        "Cambio de Plan con Cambio de Equipo DTH": "Cambio de Plan",
+        "Equipo Adicional TV": "Adición de Equipos",
+        "Instalación de Cajas Adicionales DTH": "Adición de Equipos",
+        "Instalación de servicio televisión DTH": "Instalación",
+        "Instalación de TV (DTH)": "Instalación",
+        "Cambio de Equipo TV": "Reparación",
+        "Reparacion DTH": "Reparación",
+        "Reparacion Linea Fija LFI": "Reparación",
+        "Reparación servicio DTH": "Reparación",
+        "Traslado Externo de TV (DTH)": "Traslado Externo",
+        "Traslado Interno de Servicio de DTH": "Traslado Interno",
+        "Traslado Interno de TV (DTH)": "Traslado Interno",
+        "Traslado TV (DTH)": "Traslado Externo",
+
+        # GPON
+        "Cambio de Plan con Cambio de Equipo Datos y TV": "Cambio de Plan",
+        "Cambio de Plan con Cambio de Equipo Triple Play": "Cambio de Plan",
+        "Equipo Adicional Datos": "Adición de Equipos",
+        "Equipo Adicional Datos y TV": "Adición de Equipos",
+        "Equipo Adicional Triple Play": "Adición de Equipos",
+        "Instalacion Internet (DGPON)+TV (GPON)": "Instalación",
+        "Instalacion Internet (GPON)": "Instalación",
+        "Instalacion Línea fija (VGPON) + Internet (DGPON)": "Instalación",
+        "Instalacion Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "Instalación",
+        "Reparación Internet (DGPON) + TV (GPON)": "Reparación",
+        "Reparación Internet (GPON)": "Reparación",
+        "Reparación Línea fija (VGPON) + Internet (DGPON)": "Reparación",
+        "Reparación Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "Reparación",
+        "Traslado Externo Internet (DGPON) + TV (GPON)": "Traslado Externo",
+        "Traslado Externo Internet (GPON)": "Traslado Externo",
+        "Traslado Externo Línea fija (VGPON) + Internet (DGPON)": "Traslado Externo",
+        "Traslado Externo Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "Traslado Externo",
+        "Traslado Interno de Internet (GPON) + TV (GPON)": "Traslado Interno",
+        "Traslado Interno Internet (GPON)": "Traslado Interno",
+        "Traslado Interno Linea fIja (GPON) + Internet (GPON)": "Traslado Interno",
+        "Traslado Interno Linea fIja (GPON) + Internet (GPON) + TV (GPON)": "Traslado Interno",
+    }
+
+    df["tipo_sla"] = df["sub_tipo_orden"].map(map_tipo_sla)
+    df["tipo_sla"] = df["tipo_sla"].fillna("NO_CLASIFICADO")
+
+    # ============================================
     # 🔥 AGREGAR CONTRATA DESDE TABLA AUXILIAR
     # ============================================
     respuesta = supabase.table("tabla_tecnicos_contrata").select("*").execute()
@@ -239,8 +285,3 @@ if archivo is not None:
 
         except Exception as e:
             st.error(f"Error al insertar: {e}")
-
-
-
-
-

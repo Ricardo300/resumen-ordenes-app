@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client
 import pandas as pd
 from datetime import datetime
+import plotly.express as px
 
 # =====================================
 # CONFIGURACIÓN GENERAL
@@ -12,7 +13,23 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("Dashboard de Garantías")
+st.markdown("""
+    <style>
+        .block-container {
+            padding-top: 1.5rem;
+            padding-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2.2rem !important;
+        }
+        h3 {
+            font-size: 1.15rem !important;
+            margin-bottom: 0.3rem !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("# 📡 Dashboard de Garantías")
 
 # =====================================
 # CONEXIÓN SUPABASE
@@ -229,7 +246,6 @@ with st.sidebar.expander("Fecha", expanded=True):
     else:
         mes_sel = None
 
-# Unión de contratas de garantías y servicios para que no falten opciones
 opciones_contrata_garantias = sorted(df["contrata_causa_garantia"].dropna().unique()) if "contrata_causa_garantia" in df.columns else []
 opciones_contrata_servicios = sorted(df_servicios["contrata"].dropna().unique()) if "contrata" in df_servicios.columns else []
 opciones_contrata = sorted(list(set(opciones_contrata_garantias) | set(opciones_contrata_servicios)))
@@ -323,9 +339,7 @@ k6.metric("% Garantía Técnico", f"{pct_garantia_tecnico}%")
 # GRÁFICO GARANTÍAS INTERNAS POR CLASIFICACIÓN
 # =====================================
 
-import plotly.express as px
-
-st.subheader("Garantías Internas por Clasificación")
+st.markdown("### 📊 Garantías Internas por Clasificación")
 
 df_internas = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
 
@@ -363,7 +377,7 @@ else:
     )
 
     st.plotly_chart(fig, use_container_width=True)
-    
+
 # =====================================
 # FILA 2 - GRÁFICOS
 # =====================================
@@ -371,7 +385,7 @@ else:
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Atribuible vs No Atribuible")
+    st.markdown("### ⚖️ Atribuible vs No Atribuible")
 
     df_pie = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
 
@@ -390,8 +404,6 @@ with col1:
 
         df_pie_resumen.columns = ["Categoría", "Cantidad"]
 
-        import plotly.express as px
-
         fig_pie = px.pie(
             df_pie_resumen,
             names="Categoría",
@@ -399,21 +411,13 @@ with col1:
             hole=0
         )
 
-        fig_pie.update_traces(
-            textinfo="percent+label+value"
-        )
-
-        fig_pie.update_layout(
-            height=450
-        )
+        fig_pie.update_traces(textinfo="percent+label+value")
+        fig_pie.update_layout(height=450)
 
         st.plotly_chart(fig_pie, use_container_width=True)
-#=======================================
-#RANGO DE GARANTIA
-#=======================================
 
 with col2:
-    st.subheader("Rango de Atención")
+    st.markdown("### ⏱️ Rango de Atención")
 
     df_rango = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
 
@@ -459,6 +463,7 @@ with col2:
         )
 
         st.plotly_chart(fig_rango, use_container_width=True)
+
 # =====================================
 # FILA - TABLA ORIGEN + GRÁFICO CÓDIGOS
 # =====================================
@@ -466,7 +471,7 @@ with col2:
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Técnicos / Contratas que más originan Garantías Internas")
+    st.markdown("### 👷 Técnicos / Contratas que más originan Garantías")
 
     df_tabla_origen = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
 
@@ -499,11 +504,9 @@ with col1:
         tabla_origen.columns = ["Código Técnico", "Contrata", "Cantidad Garantías"]
 
         st.dataframe(tabla_origen, use_container_width=True, hide_index=True)
-#=============================
-#GRAFICO DE CODIGOS CIERRES
-#=============================
+
 with col2:
-    st.subheader("Top 10 Códigos de Cierre - Garantías Internas")
+    st.markdown("### 🧾 Top 10 Códigos de Cierre")
 
     df_codigos = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
 
@@ -524,12 +527,8 @@ with col2:
         )
 
         df_codigos_resumen.columns = ["Código", "Cantidad"]
-
-        # Top 10
         df_codigos_resumen = df_codigos_resumen.sort_values("Cantidad", ascending=False).head(10)
         df_codigos_resumen = df_codigos_resumen.sort_values("Cantidad", ascending=True)
-
-        import plotly.express as px
 
         fig_codigos = px.bar(
             df_codigos_resumen,
@@ -539,10 +538,7 @@ with col2:
             text="Cantidad"
         )
 
-        fig_codigos.update_traces(
-            textposition="auto"
-        )
-
+        fig_codigos.update_traces(textposition="auto")
         fig_codigos.update_layout(
             height=520,
             showlegend=False,
@@ -554,6 +550,7 @@ with col2:
         )
 
         st.plotly_chart(fig_codigos, use_container_width=True)
+
 # =====================================
 # DEBUG
 # =====================================
@@ -565,7 +562,7 @@ with st.expander("DEBUG SERVICIOS", expanded=True):
     st.write("Base órdenes únicas:", base_serv["orden_trabajo"].nunique() if "orden_trabajo" in base_serv.columns else 0)
 
     st.write("Servicios con fecha nula:", base_serv["fecha"].isna().sum() if "fecha" in base_serv.columns else 0)
-    st.write("Servicios con orden_trabajo nulo/vacío:", (base_serv["orden_trabajo"].isna().sum() if "orden_trabajo" in base_serv.columns else 0))
+    st.write("Servicios con orden_trabajo nulo/vacío:", base_serv["orden_trabajo"].isna().sum() if "orden_trabajo" in base_serv.columns else 0)
     st.write("Servicios con contrata nula:", base_serv["contrata"].isna().sum() if "contrata" in base_serv.columns else 0)
     st.write("Servicios con tecnologia nula:", base_serv["tecnologia"].isna().sum() if "tecnologia" in base_serv.columns else 0)
 

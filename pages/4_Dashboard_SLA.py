@@ -228,3 +228,15 @@ with col_tabla[1]:
         use_container_width=True,
         hide_index=True
     )
+#===========================
+#TABLA DEL VIEW
+#===========================
+st.divider()
+
+st.subheader("Detalle del view filtrado")
+
+st.dataframe(
+    df_filtrado,
+    use_container_width=True,
+    hide_index=True
+)

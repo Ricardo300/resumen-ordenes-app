@@ -86,15 +86,31 @@ while True:
 df = pd.DataFrame(datos)
 
 # =====================================
-# FILTRO FEBRERO
+# PREPARAR FECHA
 # =====================================
 
-df["fecha"] = pd.to_datetime(df["fecha"])
+df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+df = df[df["fecha"].notna()].copy()
 
-df = df[
-    (df["fecha"].dt.year == 2026) &
-    (df["fecha"].dt.month == 2)
-]
+df["anio"] = df["fecha"].dt.year
+df["mes_num"] = df["fecha"].dt.month
+
+meses_dict = {
+    1: "Enero",
+    2: "Febrero",
+    3: "Marzo",
+    4: "Abril",
+    5: "Mayo",
+    6: "Junio",
+    7: "Julio",
+    8: "Agosto",
+    9: "Septiembre",
+    10: "Octubre",
+    11: "Noviembre",
+    12: "Diciembre"
+}
+
+df["mes"] = df["mes_num"].map(meses_dict)
 
 # =====================================
 # FILTROS
@@ -102,14 +118,31 @@ df = df[
 
 st.sidebar.title("Filtros")
 
-opciones_tec = ["Todas"] + sorted(df["tecnologia"].dropna().unique().tolist())
+anios_disponibles = sorted(df["anio"].dropna().unique().tolist(), reverse=True)
+anio = st.sidebar.selectbox("Año", anios_disponibles)
+
+df_anio = df[df["anio"] == anio]
+
+meses_orden = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+]
+
+meses_disponibles = [m for m in meses_orden if m in df_anio["mes"].dropna().unique().tolist()]
+mes = st.sidebar.selectbox("Mes", meses_disponibles)
+
+opciones_tec = ["Todas"] + sorted(
+    df_anio[df_anio["mes"] == mes]["tecnologia"].dropna().unique().tolist()
+)
 
 tec = st.sidebar.selectbox(
     "Tecnología",
     opciones_tec
 )
 
-opciones_sla = ["Todos"] + sorted(df["tipo_sla"].dropna().unique().tolist())
+opciones_sla = ["Todos"] + sorted(
+    df_anio[df_anio["mes"] == mes]["tipo_sla"].dropna().unique().tolist()
+)
 
 sla = st.sidebar.selectbox(
     "Tipo SLA",
@@ -120,7 +153,10 @@ sla = st.sidebar.selectbox(
 # APLICAR FILTROS
 # =====================================
 
-df_filtrado = df.copy()
+df_filtrado = df[
+    (df["anio"] == anio) &
+    (df["mes"] == mes)
+].copy()
 
 if tec != "Todas":
     df_filtrado = df_filtrado[df_filtrado["tecnologia"] == tec]
@@ -159,9 +195,7 @@ if len(rep) > 0:
 col1, col2, col3 = st.columns(3)
 
 col1.metric("📦 Total órdenes", total_ordenes)
-
 col2.metric("🛠 SLA Instalaciones %", sla_inst)
-
 col3.metric("🔧 SLA Reparaciones %", sla_rep)
 
 st.divider()
@@ -180,14 +214,12 @@ conteo = (
 total = conteo["Cantidad"].sum()
 
 conteo["Acumulado"] = conteo["Cantidad"].cumsum()
-
-conteo["Febrero %"] = round((conteo["Acumulado"] / total) * 100, 2)
+conteo["Febrero %"] = round((conteo["Acumulado"] / total) * 100, 2) if total > 0 else 0
 
 tabla_df = conteo.rename(columns={"dilacion_dias": "Dilación"})[
     ["Dilación", "Cantidad", "Febrero %"]
 ]
 
-# centrar tabla
 col_tabla = st.columns([1,4,1])
 
 with col_tabla[1]:

@@ -70,7 +70,7 @@ while True:
     response = (
         supabase
         .table("view_sla_operacion")
-        .select("dilacion_dias,fecha,tipo_sla,tecnologia")
+        .select("*")
         .range(inicio, inicio + limite - 1)
         .execute()
     )

@@ -1,6 +1,7 @@
 import streamlit as st
 from supabase import create_client
 import pandas as pd
+import plotly.express as px
 
 # =====================================
 # CONFIGURACIÓN
@@ -89,11 +90,23 @@ if df.empty:
     st.stop()
 
 # =====================================
-# PREPARAR FECHA
+# PREPARAR FECHA Y CAMPOS
 # =====================================
 
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 df = df[df["fecha"].notna()].copy()
+
+if "fecha_asignacion" in df.columns:
+    df["fecha_asignacion"] = pd.to_datetime(df["fecha_asignacion"], errors="coerce")
+
+if "dilacion_dias" in df.columns:
+    df["dilacion_dias"] = pd.to_numeric(df["dilacion_dias"], errors="coerce")
+
+if "tipo_sla" in df.columns:
+    df["tipo_sla"] = df["tipo_sla"].astype(str).str.strip()
+
+if "comentario_bo" in df.columns:
+    df["comentario_bo"] = df["comentario_bo"].astype(str).str.strip()
 
 df["anio"] = df["fecha"].dt.year
 df["mes_num"] = df["fecha"].dt.month
@@ -176,8 +189,8 @@ if sla != "Todos":
 
 total_ordenes = df_filtrado["orden_trabajo"].nunique() if "orden_trabajo" in df_filtrado.columns else len(df_filtrado)
 
-inst = df_filtrado[df_filtrado["tipo_sla"] == "INSTALACION"].copy()
-rep = df_filtrado[df_filtrado["tipo_sla"] == "REPARACION"].copy()
+inst = df_filtrado[df_filtrado["tipo_sla"] == "Instalación"].copy()
+rep = df_filtrado[df_filtrado["tipo_sla"] == "Reparación"].copy()
 
 sla_inst = 0
 sla_rep = 0
@@ -234,6 +247,71 @@ with col_tabla[1]:
         use_container_width=True,
         hide_index=True
     )
+
+# =====================================
+# GRAFICO COMENTARIO BO
+# =====================================
+
+df_comentario = df_filtrado.copy()
+
+df_comentario = df_comentario[
+    (
+        (df_comentario["tipo_sla"] == "Reparación") &
+        (df_comentario["dilacion_dias"] >= 2)
+    )
+    |
+    (
+        (df_comentario["tipo_sla"] != "Reparación") &
+        (df_comentario["dilacion_dias"] >= 3)
+    )
+].copy()
+
+if "comentario_bo" in df_comentario.columns:
+    df_comentario = df_comentario[
+        df_comentario["comentario_bo"].notna()
+    ].copy()
+
+    df_comentario["comentario_bo"] = df_comentario["comentario_bo"].astype(str).str.strip()
+
+    df_comentario = df_comentario[
+        (df_comentario["comentario_bo"] != "") &
+        (df_comentario["comentario_bo"].str.upper() != "NONE") &
+        (df_comentario["comentario_bo"].str.upper() != "NAN")
+    ].copy()
+
+if not df_comentario.empty:
+    resumen_comentario = (
+        df_comentario.groupby("comentario_bo")
+        .size()
+        .reset_index(name="Cantidad")
+        .sort_values("Cantidad", ascending=True)
+    )
+
+    st.divider()
+    st.subheader("Comentarios BO en órdenes con alta dilación")
+
+    fig_comentario = px.bar(
+        resumen_comentario,
+        x="Cantidad",
+        y="comentario_bo",
+        orientation="h",
+        text="Cantidad"
+    )
+
+    fig_comentario.update_traces(textposition="outside")
+    fig_comentario.update_layout(
+        height=max(400, len(resumen_comentario) * 45),
+        xaxis_title="Cantidad",
+        yaxis_title="",
+        margin=dict(l=20, r=40, t=20, b=20)
+    )
+
+    st.plotly_chart(fig_comentario, use_container_width=True)
+
+else:
+    st.divider()
+    st.subheader("Comentarios BO en órdenes con alta dilación")
+    st.info("No hay registros con comentario_bo para los criterios seleccionados.")
 
 # =====================================
 # TABLA DEL VIEW FILTRADO

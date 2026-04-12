@@ -460,42 +460,48 @@ with col2:
 
         st.plotly_chart(fig_rango, use_container_width=True)
 # =====================================
-# TABLA - TÉCNICOS / CONTRATAS QUE MÁS ORIGINAN GARANTÍAS
+# FILA - TABLA ORIGEN + GRÁFICO CÓDIGOS
 # =====================================
 
-st.subheader("Técnicos / Contratas que más originan Garantías")
+col1, col2 = st.columns(2)
 
-df_tabla_origen = df_filtrado.copy()
+with col1:
+    st.subheader("Técnicos / Contratas que más originan Garantías Internas")
 
-if df_tabla_origen.empty:
-    st.warning("No hay datos con los filtros seleccionados.")
-else:
-    df_tabla_origen["tecnico_causa_garantia"] = (
-        df_tabla_origen["tecnico_causa_garantia"]
-        .fillna("SIN TECNICO")
-        .astype(str)
-        .str.strip()
-    )
+    df_tabla_origen = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
 
-    df_tabla_origen["contrata_causa_garantia"] = (
-        df_tabla_origen["contrata_causa_garantia"]
-        .fillna("SIN CONTRATA")
-        .astype(str)
-        .str.strip()
-    )
+    if df_tabla_origen.empty:
+        st.warning("No hay garantías internas con los filtros seleccionados.")
+    else:
+        df_tabla_origen["tecnico_causa_garantia"] = (
+            df_tabla_origen["tecnico_causa_garantia"]
+            .fillna("SIN TECNICO")
+            .astype(str)
+            .str.strip()
+        )
 
-    tabla_origen = (
-        df_tabla_origen
-        .groupby(["tecnico_causa_garantia", "contrata_causa_garantia"], dropna=False)
-        .size()
-        .reset_index(name="Cantidad")
-        .sort_values("Cantidad", ascending=False)
-        .reset_index(drop=True)
-    )
+        df_tabla_origen["contrata_causa_garantia"] = (
+            df_tabla_origen["contrata_causa_garantia"]
+            .fillna("SIN CONTRATA")
+            .astype(str)
+            .str.strip()
+        )
 
-    tabla_origen.columns = ["Código Técnico", "Contrata", "Cantidad Garantías"]
+        tabla_origen = (
+            df_tabla_origen
+            .groupby(["tecnico_causa_garantia", "contrata_causa_garantia"], dropna=False)
+            .size()
+            .reset_index(name="Cantidad Garantías")
+            .sort_values("Cantidad Garantías", ascending=False)
+            .reset_index(drop=True)
+        )
 
-    st.dataframe(tabla_origen, use_container_width=True, hide_index=True)
+        tabla_origen.columns = ["Código Técnico", "Contrata", "Cantidad Garantías"]
+
+        st.dataframe(tabla_origen, use_container_width=True, hide_index=True)
+
+with col2:
+    st.subheader("Pendiente")
 # =====================================
 # DEBUG
 # =====================================

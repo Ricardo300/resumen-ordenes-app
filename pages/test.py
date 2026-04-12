@@ -504,7 +504,7 @@ with col1:
 #=============================
 
 with col2:
-    st.subheader("Códigos de Cierre - Garantías Internas")
+    st.subheader("Top 10 Códigos de Cierre - Garantías Internas")
 
     df_codigos = df_filtrado[df_filtrado["tipo_garantia"] == "INTERNA"].copy()
 
@@ -525,6 +525,8 @@ with col2:
         )
 
         df_codigos_resumen.columns = ["Código", "Cantidad"]
+
+        df_codigos_resumen = df_codigos_resumen.sort_values("Cantidad", ascending=False).head(10)
         df_codigos_resumen = df_codigos_resumen.sort_values("Cantidad", ascending=True)
 
         import plotly.express as px
@@ -542,10 +544,12 @@ with col2:
         fig_codigos.update_layout(
             yaxis_title="Código",
             xaxis_title="Cantidad",
-            height=500
+            height=600,
+            showlegend=False
         )
 
         st.plotly_chart(fig_codigos, use_container_width=True)
+        
 # =====================================
 # DEBUG
 # =====================================

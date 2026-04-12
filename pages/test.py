@@ -460,6 +460,43 @@ with col2:
 
         st.plotly_chart(fig_rango, use_container_width=True)
 # =====================================
+# TABLA - TÉCNICOS / CONTRATAS QUE MÁS ORIGINAN GARANTÍAS
+# =====================================
+
+st.subheader("Técnicos / Contratas que más originan Garantías")
+
+df_tabla_origen = df_filtrado.copy()
+
+if df_tabla_origen.empty:
+    st.warning("No hay datos con los filtros seleccionados.")
+else:
+    df_tabla_origen["tecnico_causa_garantia"] = (
+        df_tabla_origen["tecnico_causa_garantia"]
+        .fillna("SIN TECNICO")
+        .astype(str)
+        .str.strip()
+    )
+
+    df_tabla_origen["contrata_causa_garantia"] = (
+        df_tabla_origen["contrata_causa_garantia"]
+        .fillna("SIN CONTRATA")
+        .astype(str)
+        .str.strip()
+    )
+
+    tabla_origen = (
+        df_tabla_origen
+        .groupby(["tecnico_causa_garantia", "contrata_causa_garantia"], dropna=False)
+        .size()
+        .reset_index(name="Cantidad")
+        .sort_values("Cantidad", ascending=False)
+        .reset_index(drop=True)
+    )
+
+    tabla_origen.columns = ["Código Técnico", "Contrata", "Cantidad Garantías"]
+
+    st.dataframe(tabla_origen, use_container_width=True, hide_index=True)
+# =====================================
 # DEBUG
 # =====================================
 

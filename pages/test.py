@@ -502,7 +502,6 @@ with col1:
 #=============================
 #GRAFICO DE CODIGOS CIERRES
 #=============================
-
 with col2:
     st.subheader("Top 10 Códigos de Cierre - Garantías Internas")
 
@@ -544,12 +543,22 @@ with col2:
         fig_codigos.update_layout(
             yaxis_title="Código",
             xaxis_title="Cantidad",
-            height=600,
-            showlegend=False
+            height=800,
+            showlegend=False,
+            margin=dict(l=20, r=20, t=20, b=20)
+        )
+
+        st.markdown(
+            """
+            <div style="height:600px; overflow-y:auto;">
+            """,
+            unsafe_allow_html=True
         )
 
         st.plotly_chart(fig_codigos, use_container_width=True)
-        
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
 # =====================================
 # DEBUG
 # =====================================

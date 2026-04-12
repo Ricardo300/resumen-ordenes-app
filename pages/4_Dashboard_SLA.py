@@ -19,17 +19,17 @@ st.markdown("""
 <style>
 
 [data-testid="stMetricValue"]{
-font-size:38px;
-font-weight:700;
+    font-size:38px;
+    font-weight:700;
 }
 
 [data-testid="stMetricLabel"]{
-font-size:15px;
+    font-size:15px;
 }
 
 .block-container{
-padding-top:2rem;
-max-width:1100px;
+    padding-top:2rem;
+    max-width:1100px;
 }
 
 </style>
@@ -41,10 +41,10 @@ max-width:1100px;
 
 st.markdown("""
 <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-<span style="font-size:30px;">📊</span>
-<h2 style="margin:0;font-weight:600;">
-DILACIÓN DE ASIGNACIÓN
-</h2>
+    <span style="font-size:30px;">📊</span>
+    <h2 style="margin:0;font-weight:600;">
+        DILACIÓN DE ASIGNACIÓN
+    </h2>
 </div>
 """, unsafe_allow_html=True)
 
@@ -66,7 +66,6 @@ limite = 1000
 inicio = 0
 
 while True:
-
     response = (
         supabase
         .table("view_sla_operacion")
@@ -84,6 +83,10 @@ while True:
     inicio += limite
 
 df = pd.DataFrame(datos)
+
+if df.empty:
+    st.warning("No se encontraron datos en view_sla_operacion.")
+    st.stop()
 
 # =====================================
 # PREPARAR FECHA
@@ -121,18 +124,24 @@ st.sidebar.title("Filtros")
 anios_disponibles = sorted(df["anio"].dropna().unique().tolist(), reverse=True)
 anio = st.sidebar.selectbox("Año", anios_disponibles)
 
-df_anio = df[df["anio"] == anio]
+df_anio = df[df["anio"] == anio].copy()
 
 meses_orden = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
 ]
 
-meses_disponibles = [m for m in meses_orden if m in df_anio["mes"].dropna().unique().tolist()]
+meses_disponibles = [
+    m for m in meses_orden
+    if m in df_anio["mes"].dropna().unique().tolist()
+]
+
 mes = st.sidebar.selectbox("Mes", meses_disponibles)
 
+df_mes = df_anio[df_anio["mes"] == mes].copy()
+
 opciones_tec = ["Todas"] + sorted(
-    df_anio[df_anio["mes"] == mes]["tecnologia"].dropna().unique().tolist()
+    df_mes["tecnologia"].dropna().astype(str).unique().tolist()
 )
 
 tec = st.sidebar.selectbox(
@@ -141,7 +150,7 @@ tec = st.sidebar.selectbox(
 )
 
 opciones_sla = ["Todos"] + sorted(
-    df_anio[df_anio["mes"] == mes]["tipo_sla"].dropna().unique().tolist()
+    df_mes["tipo_sla"].dropna().astype(str).unique().tolist()
 )
 
 sla = st.sidebar.selectbox(
@@ -153,25 +162,22 @@ sla = st.sidebar.selectbox(
 # APLICAR FILTROS
 # =====================================
 
-df_filtrado = df[
-    (df["anio"] == anio) &
-    (df["mes"] == mes)
-].copy()
+df_filtrado = df_mes.copy()
 
 if tec != "Todas":
-    df_filtrado = df_filtrado[df_filtrado["tecnologia"] == tec]
+    df_filtrado = df_filtrado[df_filtrado["tecnologia"].astype(str) == tec]
 
 if sla != "Todos":
-    df_filtrado = df_filtrado[df_filtrado["tipo_sla"] == sla]
+    df_filtrado = df_filtrado[df_filtrado["tipo_sla"].astype(str) == sla]
 
 # =====================================
 # KPI
 # =====================================
 
-total_ordenes = len(df_filtrado)
+total_ordenes = df_filtrado["orden_trabajo"].nunique() if "orden_trabajo" in df_filtrado.columns else len(df_filtrado)
 
-inst = df_filtrado[df_filtrado["tipo_sla"] == "INSTALACION"]
-rep = df_filtrado[df_filtrado["tipo_sla"] == "REPARACION"]
+inst = df_filtrado[df_filtrado["tipo_sla"] == "INSTALACION"].copy()
+rep = df_filtrado[df_filtrado["tipo_sla"] == "REPARACION"].copy()
 
 sla_inst = 0
 sla_rep = 0
@@ -201,7 +207,7 @@ col3.metric("🔧 SLA Reparaciones %", sla_rep)
 st.divider()
 
 # =====================================
-# TABLA
+# TABLA RESUMEN
 # =====================================
 
 conteo = (
@@ -214,13 +220,13 @@ conteo = (
 total = conteo["Cantidad"].sum()
 
 conteo["Acumulado"] = conteo["Cantidad"].cumsum()
-conteo["Febrero %"] = round((conteo["Acumulado"] / total) * 100, 2) if total > 0 else 0
+conteo["% Acumulado"] = round((conteo["Acumulado"] / total) * 100, 2) if total > 0 else 0
 
 tabla_df = conteo.rename(columns={"dilacion_dias": "Dilación"})[
-    ["Dilación", "Cantidad", "Febrero %"]
+    ["Dilación", "Cantidad", "% Acumulado"]
 ]
 
-col_tabla = st.columns([1,4,1])
+col_tabla = st.columns([1, 4, 1])
 
 with col_tabla[1]:
     st.dataframe(
@@ -228,15 +234,23 @@ with col_tabla[1]:
         use_container_width=True,
         hide_index=True
     )
-#===========================
-#TABLA DEL VIEW
-#===========================
-st.divider()
 
+# =====================================
+# TABLA DEL VIEW FILTRADO
+# =====================================
+
+st.divider()
 st.subheader("Detalle del view filtrado")
 
+detalle_df = df_filtrado.copy()
+
+if "orden_trabajo" in detalle_df.columns:
+    detalle_df = detalle_df.sort_values(["fecha", "orden_trabajo"], ascending=[True, True])
+else:
+    detalle_df = detalle_df.sort_values("fecha", ascending=True)
+
 st.dataframe(
-    df_filtrado,
+    detalle_df,
     use_container_width=True,
     hide_index=True
 )

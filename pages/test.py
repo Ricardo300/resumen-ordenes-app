@@ -540,7 +540,7 @@ with col2:
         )
 
         fig_codigos.update_traces(
-            textposition="outside"
+            textposition="auto"
         )
 
         fig_codigos.update_layout(

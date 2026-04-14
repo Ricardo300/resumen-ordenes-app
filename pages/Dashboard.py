@@ -180,7 +180,7 @@ df = pd.DataFrame(data)
 # ==========================================
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
-for col in ["orden_trabajo", "contrata", "tecnologia", "tipo_actividad", "identificador_tecnico", "garantia", "provincia"]:
+for col in ["orden_trabajo", "contrata", "tecnologia", "tipo_actividad", "identificador_tecnico", "garantia", "provincia", "tipo_sla"]:
     if col in df.columns:
         df[col] = df[col].astype(str).str.strip()
 
@@ -216,10 +216,12 @@ def filtro_checkbox(label, opciones, key_prefix):
 opciones_contrata = sorted(df["contrata"].dropna().unique().tolist())
 opciones_tecnologia = sorted(df["tecnologia"].dropna().unique().tolist())
 opciones_tipo = sorted(df["tipo_actividad"].dropna().unique().tolist())
+opciones_tipo_sla = sorted(df["tipo_sla"].dropna().unique().tolist())
 
 contrata = filtro_checkbox("Contrata", opciones_contrata, "con")
 tecnologia = filtro_checkbox("Tecnología", opciones_tecnologia, "tec")
 tipo_actividad = filtro_checkbox("Tipo Actividad", opciones_tipo, "tip")
+tipo_sla = filtro_checkbox("Tipo SLA", opciones_tipo_sla, "sla")
 
 # ==========================================
 # APLICAR FILTROS
@@ -227,7 +229,8 @@ tipo_actividad = filtro_checkbox("Tipo Actividad", opciones_tipo, "tip")
 df = df[
     df["tecnologia"].isin(tecnologia) &
     df["contrata"].isin(contrata) &
-    df["tipo_actividad"].isin(tipo_actividad)
+    df["tipo_actividad"].isin(tipo_actividad) &
+    df["tipo_sla"].isin(tipo_sla)
 ]
 
 df = df[

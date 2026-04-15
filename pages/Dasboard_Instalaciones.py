@@ -338,19 +338,12 @@ def render_pantalla_2(df):
     numerador = completadas + canceladas + suspendidas
     cumplimiento = (numerador / total * 100) if total > 0 else 0
 
-    # =====================================================
-    # GAUGE BASE
-    # =====================================================
     fig = go.Figure(go.Indicator(
-        mode="gauge+number",
+        mode="gauge",
         value=cumplimiento,
-        number={
-            "suffix": "%",
-            "font": {"size": 72, "color": "white"}
-        },
         title={
-            "text": "Cumplimiento",
-            "font": {"size": 34, "color": "white"}
+            "text": f"{cumplimiento:.1f}%",
+            "font": {"size": 64, "color": "white"}
         },
         gauge={
             "shape": "angular",
@@ -361,21 +354,21 @@ def render_pantalla_2(df):
                 "ticktext": ["0", "17", "33", "50", "67", "83", "100"],
                 "tickwidth": 2,
                 "tickcolor": "white",
-                "tickfont": {"size": 18, "color": "white"}
+                "tickfont": {"size": 16, "color": "white"}
             },
             "bar": {
-                "color": "rgba(0,0,0,0)",   # quitamos barra interna
-                "thickness": 0.20
+                "color": "rgba(0,0,0,0)",
+                "thickness": 0.18
             },
             "bgcolor": "rgba(0,0,0,0)",
             "borderwidth": 0,
             "steps": [
-                {"range": [0, 16.7], "color": "#dc2626"},   # rojo intenso
-                {"range": [16.7, 33.3], "color": "#f97316"}, # naranja
-                {"range": [33.3, 50], "color": "#facc15"},   # amarillo
-                {"range": [50, 66.7], "color": "#86efac"},   # verde claro
-                {"range": [66.7, 83.3], "color": "#22c55e"}, # verde medio
-                {"range": [83.3, 100], "color": "#166534"}   # verde oscuro
+                {"range": [0, 16.7], "color": "#dc2626"},
+                {"range": [16.7, 33.3], "color": "#f97316"},
+                {"range": [33.3, 50], "color": "#facc15"},
+                {"range": [50, 66.7], "color": "#86efac"},
+                {"range": [66.7, 83.3], "color": "#22c55e"},
+                {"range": [83.3, 100], "color": "#166534"}
             ],
             "threshold": {
                 "line": {"color": "rgba(0,0,0,0)", "width": 0},
@@ -385,56 +378,51 @@ def render_pantalla_2(df):
         }
     ))
 
-    # =====================================================
-    # AGUJA TRIANGULAR MANUAL
-    # =====================================================
-    # Centro visual aproximado del gauge en coordenadas "paper"
-    cx, cy = 0.5, 0.33
+    # Centro real aproximado del semicírculo en coordenadas paper
+    cx, cy = 0.5, 0.19
 
-    # Ángulo: 180° (izquierda) a 0° (derecha)
+    # 0% = izquierda, 50% = arriba, 100% = derecha
     angle_deg = 180 - (cumplimiento * 180 / 100)
     angle = math.radians(angle_deg)
 
-    # Punta de la aguja
-    needle_len = 0.33
+    # Largo de aguja
+    needle_len = 0.34
+
+    # Punta
     tip_x = cx + needle_len * math.cos(angle)
     tip_y = cy + needle_len * math.sin(angle)
 
-    # Base de la aguja (ancho)
-    base_half_width = 0.012
-    back_len = 0.03
+    # Base triangular
+    base_radius = 0.035
+    base_half_width = 0.010
 
-    # Vector perpendicular para dar ancho
+    bx = cx + base_radius * math.cos(angle)
+    by = cy + base_radius * math.sin(angle)
+
     px = -math.sin(angle)
     py = math.cos(angle)
 
-    # Punto base un poco detrás del centro
-    bx = cx - back_len * math.cos(angle)
-    by = cy - back_len * math.sin(angle)
+    left_x = cx + base_half_width * px
+    left_y = cy + base_half_width * py
+    right_x = cx - base_half_width * px
+    right_y = cy - base_half_width * py
 
-    left_x = bx + base_half_width * px
-    left_y = by + base_half_width * py
-    right_x = bx - base_half_width * px
-    right_y = by - base_half_width * py
-
-    # Triángulo de la aguja
     path = f"M {left_x},{left_y} L {right_x},{right_y} L {tip_x},{tip_y} Z"
 
     fig.add_shape(
         type="path",
         path=path,
-        fillcolor="white",
-        line=dict(color="white", width=1),
+        fillcolor="#f8fafc",
+        line=dict(color="#f8fafc", width=1),
         xref="paper",
         yref="paper",
         layer="above"
     )
 
-    # Círculo central
     fig.add_shape(
         type="circle",
-        x0=cx - 0.022, y0=cy - 0.022,
-        x1=cx + 0.022, y1=cy + 0.022,
+        x0=cx - 0.020, y0=cy - 0.020,
+        x1=cx + 0.020, y1=cy + 0.020,
         fillcolor="#e5e7eb",
         line=dict(color="white", width=2),
         xref="paper",
@@ -442,22 +430,16 @@ def render_pantalla_2(df):
         layer="above"
     )
 
-    # =====================================================
-    # LAYOUT
-    # =====================================================
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         height=560,
-        margin=dict(l=40, r=40, t=90, b=20),
+        margin=dict(l=30, r=30, t=90, b=10),
         font={"color": "white"},
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-    # =====================================================
-    # KPIs DE APOYO
-    # =====================================================
     c1, c2, c3, c4 = st.columns(4, gap="large")
     with c1:
         render_kpi("Completadas", completadas)

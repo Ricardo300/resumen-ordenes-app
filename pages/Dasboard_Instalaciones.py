@@ -318,6 +318,7 @@ def render_pantalla_1(df, estados):
 #================================================
 def render_pantalla_2(df):
     import math
+    import streamlit.components.v1 as components
 
     st.markdown('<div class="pantalla-badge">Pantalla 2</div>', unsafe_allow_html=True)
     st.markdown('<div class="titulo-dashboard">% Cumplimiento de Ruta</div>', unsafe_allow_html=True)
@@ -338,108 +339,127 @@ def render_pantalla_2(df):
     numerador = completadas + canceladas + suspendidas
     cumplimiento = (numerador / total * 100) if total > 0 else 0
 
-    fig = go.Figure(go.Indicator(
-        mode="gauge",
-        value=cumplimiento,
-        title={
-            "text": f"{cumplimiento:.1f}%",
-            "font": {"size": 64, "color": "white"}
-        },
-        gauge={
-            "shape": "angular",
-            "axis": {
-                "range": [0, 100],
-                "tickmode": "array",
-                "tickvals": [0, 16.7, 33.3, 50, 66.7, 83.3, 100],
-                "ticktext": ["0", "17", "33", "50", "67", "83", "100"],
-                "tickwidth": 2,
-                "tickcolor": "white",
-                "tickfont": {"size": 16, "color": "white"}
-            },
-            "bar": {
-                "color": "rgba(0,0,0,0)",
-                "thickness": 0.18
-            },
-            "bgcolor": "rgba(0,0,0,0)",
-            "borderwidth": 0,
-            "steps": [
-                {"range": [0, 16.7], "color": "#dc2626"},
-                {"range": [16.7, 33.3], "color": "#f97316"},
-                {"range": [33.3, 50], "color": "#facc15"},
-                {"range": [50, 66.7], "color": "#86efac"},
-                {"range": [66.7, 83.3], "color": "#22c55e"},
-                {"range": [83.3, 100], "color": "#166534"}
-            ],
-            "threshold": {
-                "line": {"color": "rgba(0,0,0,0)", "width": 0},
-                "thickness": 0,
-                "value": cumplimiento
-            }
-        }
-    ))
+    # =====================================================
+    # FUNCIONES SVG
+    # =====================================================
+    def polar_to_cartesian(cx, cy, r, angle_deg):
+        angle_rad = math.radians(angle_deg)
+        return (
+            cx + r * math.cos(angle_rad),
+            cy - r * math.sin(angle_rad)
+        )
 
-    # Centro real aproximado del semicírculo en coordenadas paper
-    cx, cy = 0.5, 0.19
+    def donut_segment_path(cx, cy, r_outer, r_inner, start_deg, end_deg):
+        x1o, y1o = polar_to_cartesian(cx, cy, r_outer, start_deg)
+        x2o, y2o = polar_to_cartesian(cx, cy, r_outer, end_deg)
+        x2i, y2i = polar_to_cartesian(cx, cy, r_inner, end_deg)
+        x1i, y1i = polar_to_cartesian(cx, cy, r_inner, start_deg)
 
-    # 0% = izquierda, 50% = arriba, 100% = derecha
-    angle_deg = 180 - (cumplimiento * 180 / 100)
-    angle = math.radians(angle_deg)
+        large_arc = 0 if abs(end_deg - start_deg) <= 180 else 1
 
-    # Largo de aguja
-    needle_len = 0.34
+        return (
+            f"M {x1o:.2f} {y1o:.2f} "
+            f"A {r_outer} {r_outer} 0 {large_arc} 0 {x2o:.2f} {y2o:.2f} "
+            f"L {x2i:.2f} {y2i:.2f} "
+            f"A {r_inner} {r_inner} 0 {large_arc} 1 {x1i:.2f} {y1i:.2f} Z"
+        )
 
-    # Punta
-    tip_x = cx + needle_len * math.cos(angle)
-    tip_y = cy + needle_len * math.sin(angle)
+    def needle_triangle(cx, cy, value, length=220, base_width=14):
+        # 0% = 180°, 100% = 0°
+        angle = 180 - (value * 180 / 100)
+        angle_rad = math.radians(angle)
 
-    # Base triangular
-    base_radius = 0.035
-    base_half_width = 0.010
+        tip_x = cx + length * math.cos(angle_rad)
+        tip_y = cy - length * math.sin(angle_rad)
 
-    bx = cx + base_radius * math.cos(angle)
-    by = cy + base_radius * math.sin(angle)
+        # vector perpendicular
+        px = math.sin(angle_rad)
+        py = math.cos(angle_rad)
 
-    px = -math.sin(angle)
-    py = math.cos(angle)
+        left_x = cx - base_width * px
+        left_y = cy - base_width * py
+        right_x = cx + base_width * px
+        right_y = cy + base_width * py
 
-    left_x = cx + base_half_width * px
-    left_y = cy + base_half_width * py
-    right_x = cx - base_half_width * px
-    right_y = cy - base_half_width * py
+        return f"{left_x:.2f},{left_y:.2f} {right_x:.2f},{right_y:.2f} {tip_x:.2f},{tip_y:.2f}"
 
-    path = f"M {left_x},{left_y} L {right_x},{right_y} L {tip_x},{tip_y} Z"
+    # =====================================================
+    # CONFIG SVG
+    # =====================================================
+    width = 1000
+    height = 520
+    cx = width / 2
+    cy = 390
 
-    fig.add_shape(
-        type="path",
-        path=path,
-        fillcolor="#f8fafc",
-        line=dict(color="#f8fafc", width=1),
-        xref="paper",
-        yref="paper",
-        layer="above"
-    )
+    r_outer = 320
+    r_inner = 225
 
-    fig.add_shape(
-        type="circle",
-        x0=cx - 0.020, y0=cy - 0.020,
-        x1=cx + 0.020, y1=cy + 0.020,
-        fillcolor="#e5e7eb",
-        line=dict(color="white", width=2),
-        xref="paper",
-        yref="paper",
-        layer="above"
-    )
+    segmentos = [
+        (180, 150, "#dc2626"),  # rojo intenso
+        (150, 120, "#f97316"),  # naranja
+        (120, 90,  "#facc15"),  # amarillo
+        (90, 60,   "#86efac"),  # verde claro
+        (60, 30,   "#22c55e"),  # verde medio
+        (30, 0,    "#166534"),  # verde oscuro
+    ]
 
-    fig.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        height=560,
-        margin=dict(l=30, r=30, t=90, b=10),
-        font={"color": "white"},
-    )
+    segmentos_svg = ""
+    for start_deg, end_deg, color in segmentos:
+        path = donut_segment_path(cx, cy, r_outer, r_inner, start_deg, end_deg)
+        segmentos_svg += f'<path d="{path}" fill="{color}" stroke="none" />'
 
-    st.plotly_chart(fig, use_container_width=True)
+    # Marcas / labels
+    ticks = [0, 17, 33, 50, 67, 83, 100]
+    ticks_svg = ""
+    for t in ticks:
+        angle = 180 - (t * 180 / 100)
+        x1, y1 = polar_to_cartesian(cx, cy, r_outer - 4, angle)
+        x2, y2 = polar_to_cartesian(cx, cy, r_outer + 8, angle)
+        xt, yt = polar_to_cartesian(cx, cy, r_outer + 28, angle)
 
+        ticks_svg += f'''
+            <line x1="{x1:.2f}" y1="{y1:.2f}" x2="{x2:.2f}" y2="{y2:.2f}"
+                  stroke="white" stroke-width="2" />
+            <text x="{xt:.2f}" y="{yt:.2f}" fill="white" font-size="18"
+                  font-weight="700" text-anchor="middle" dominant-baseline="middle">{t}</text>
+        '''
+
+    # Aguja
+    needle_points = needle_triangle(cx, cy, cumplimiento, length=215, base_width=10)
+
+    svg_html = f"""
+    <div style="width:100%; display:flex; justify-content:center; align-items:center;">
+        <svg viewBox="0 0 {width} {height}" width="100%" height="500" style="overflow:visible;">
+            <!-- porcentaje -->
+            <text x="{cx}" y="38" fill="white" font-size="64" font-weight="800" text-anchor="middle">
+                {cumplimiento:.1f}%
+            </text>
+
+            <!-- titulo gauge -->
+            <text x="{cx}" y="90" fill="white" font-size="34" font-weight="700" text-anchor="middle">
+                Cumplimiento
+            </text>
+
+            <!-- segmentos -->
+            {segmentos_svg}
+
+            <!-- ticks -->
+            {ticks_svg}
+
+            <!-- aguja -->
+            <polygon points="{needle_points}" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" />
+
+            <!-- centro -->
+            <circle cx="{cx}" cy="{cy}" r="24" fill="#d1d5db" stroke="white" stroke-width="3" />
+        </svg>
+    </div>
+    """
+
+    components.html(svg_html, height=520, scrolling=False)
+
+    # =====================================================
+    # KPIs DE APOYO
+    # =====================================================
     c1, c2, c3, c4 = st.columns(4, gap="large")
     with c1:
         render_kpi("Completadas", completadas)

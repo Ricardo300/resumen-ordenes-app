@@ -1,9 +1,30 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
+import plotly.graph_objects as go
 from datetime import datetime
+import time
 
 st.set_page_config(page_title="Dashboard de Instalaciones", layout="wide")
+
+# =========================================================
+# CONFIGURACIÓN CARRUSEL
+# =========================================================
+SEGUNDOS_POR_PANTALLA = 12
+
+# =========================================================
+# AUTO-REFRESH
+# =========================================================
+components.html(
+    f"""
+    <script>
+        setTimeout(function() {{
+            window.parent.location.reload();
+        }}, {SEGUNDOS_POR_PANTALLA * 1000});
+    </script>
+    """,
+    height=0,
+)
 
 # =========================================================
 # ESTILO GENERAL
@@ -65,6 +86,42 @@ header, footer {
     border-radius: 18px;
     padding: 16px 22px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+}
+
+.kpi-box {
+    background: linear-gradient(180deg, #0b1a34 0%, #0a1730 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 22px;
+    padding: 22px 18px;
+    text-align: center;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.18);
+}
+
+.kpi-numero {
+    font-size: 48px;
+    font-weight: 900;
+    color: white;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+.kpi-titulo {
+    font-size: 22px;
+    font-weight: 800;
+    color: #dbe7f5;
+    line-height: 1.15;
+}
+
+.pantalla-badge {
+    display: inline-block;
+    font-size: 18px;
+    font-weight: 800;
+    color: #dbe7f5;
+    background: #183153;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 8px 14px;
+    margin-bottom: 14px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -229,6 +286,105 @@ def render_bloque(nombre, df_bloque, estados):
     components.html(html, height=580, scrolling=False)
 
 
+def render_kpi(titulo, valor):
+    st.markdown(
+        f"""
+        <div class="kpi-box">
+            <div class="kpi-numero">{valor}</div>
+            <div class="kpi-titulo">{titulo}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def render_pantalla_1(df, estados):
+    st.markdown('<div class="pantalla-badge">Pantalla 1</div>', unsafe_allow_html=True)
+    st.markdown('<div class="titulo-dashboard">Dashboard de Instalaciones</div>', unsafe_allow_html=True)
+
+    fecha = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+    st.markdown(
+        f'<div class="subtitulo-dashboard">Corte: {fecha} | Registros operativos: {len(df)}</div>',
+        unsafe_allow_html=True
+    )
+
+    col1, col2 = st.columns(2, gap="large")
+
+    with col1:
+        render_bloque("GPON", df[df["tecnologia"] == "GPON"], estados)
+
+    with col2:
+        render_bloque("DTH", df[df["tecnologia"] == "DTH"], estados)
+
+    no_clasificado = (df["tecnologia"] == "NO_CLASIFICADO").sum()
+    st.markdown(
+        f'<div class="no-clasificado">No clasificado: {no_clasificado}</div>',
+        unsafe_allow_html=True
+    )
+
+
+def render_pantalla_2(df):
+    st.markdown('<div class="pantalla-badge">Pantalla 2</div>', unsafe_allow_html=True)
+    st.markdown('<div class="titulo-dashboard">Eficiencia General</div>', unsafe_allow_html=True)
+
+    fecha = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+    st.markdown(
+        f'<div class="subtitulo-dashboard">Corte: {fecha} | Fórmula: (Completadas + Canceladas + Suspendidas) / Total</div>',
+        unsafe_allow_html=True
+    )
+
+    conteo = df["estado_visual"].value_counts()
+
+    completadas = int(conteo.get("Completado", 0))
+    canceladas = int(conteo.get("Cancelado", 0))
+    suspendidas = int(conteo.get("Suspendido", 0))
+    total = len(df)
+
+    numerador = completadas + canceladas + suspendidas
+    eficiencia = (numerador / total * 100) if total > 0 else 0
+
+    fig = go.Figure(
+        go.Indicator(
+            mode="gauge+number",
+            value=eficiencia,
+            number={"suffix": "%", "font": {"size": 64, "color": "white"}},
+            gauge={
+                "axis": {"range": [0, 100], "tickwidth": 1, "tickcolor": "white"},
+                "bar": {"color": "#22c55e"},
+                "bgcolor": "rgba(0,0,0,0)",
+                "borderwidth": 2,
+                "bordercolor": "#334155",
+                "steps": [
+                    {"range": [0, 40], "color": "#7f1d1d"},
+                    {"range": [40, 70], "color": "#854d0e"},
+                    {"range": [70, 100], "color": "#14532d"},
+                ],
+            },
+            title={"text": "Eficiencia", "font": {"size": 28, "color": "white"}},
+        )
+    )
+
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        height=520,
+        margin=dict(l=20, r=20, t=60, b=20),
+        font={"color": "white"},
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    c1, c2, c3, c4 = st.columns(4, gap="large")
+    with c1:
+        render_kpi("Completadas", completadas)
+    with c2:
+        render_kpi("Suspendidas", suspendidas)
+    with c3:
+        render_kpi("Canceladas", canceladas)
+    with c4:
+        render_kpi("Total", total)
+
+
 # =========================================================
 # CARGA ARCHIVO
 # =========================================================
@@ -303,27 +459,12 @@ if archivo is not None:
     df["estado_visual"] = df["Estado"].apply(normalizar_estado)
     estados = ordenar_estados(list(df["estado_visual"].dropna().unique()))
 
-    st.markdown(
-        '<div class="titulo-dashboard">Dashboard de Instalaciones</div>',
-        unsafe_allow_html=True
-    )
+    # =====================================================
+    # SELECCIÓN AUTOMÁTICA DE PANTALLA
+    # =====================================================
+    pantalla_actual = int(time.time() / SEGUNDOS_POR_PANTALLA) % 2 + 1
 
-    fecha = datetime.now().strftime("%d/%m/%Y %I:%M %p")
-    st.markdown(
-        f'<div class="subtitulo-dashboard">Corte: {fecha} | Registros operativos: {len(df)}</div>',
-        unsafe_allow_html=True
-    )
-
-    col1, col2 = st.columns(2, gap="large")
-
-    with col1:
-        render_bloque("GPON", df[df["tecnologia"] == "GPON"], estados)
-
-    with col2:
-        render_bloque("DTH", df[df["tecnologia"] == "DTH"], estados)
-
-    no_clasificado = (df["tecnologia"] == "NO_CLASIFICADO").sum()
-    st.markdown(
-        f'<div class="no-clasificado">No clasificado: {no_clasificado}</div>',
-        unsafe_allow_html=True
-    )
+    if pantalla_actual == 1:
+        render_pantalla_1(df, estados)
+    else:
+        render_pantalla_2(df)

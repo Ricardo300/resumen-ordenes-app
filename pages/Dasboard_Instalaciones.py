@@ -1,17 +1,20 @@
-import streamlit as st
-import streamlit.components.v1 as components
-import pandas as pd
-import plotly.graph_objects as go
-from datetime import datetime
+import os
 import time
 from io import BytesIO
+from datetime import datetime
+
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Dashboard de Instalaciones", layout="wide")
 
 # =========================================================
-# CONFIGURACIÓN CARRUSEL
+# CONFIG
 # =========================================================
 SEGUNDOS_POR_PANTALLA = 12
+RUTA_ARCHIVO_FIJO = "/tmp/dashboard_eta_actual.xlsx"
 
 # =========================================================
 # ESTILO GENERAL
@@ -19,12 +22,8 @@ SEGUNDOS_POR_PANTALLA = 12
 st.markdown("""
 <style>
 :root {
-    --bg-main: #060b16;
-    --panel-bg: #0d1b34;
-    --panel-border: rgba(255,255,255,0.08);
     --text-main: #ffffff;
     --text-soft: #cbd5e1;
-    --badge-bg: #1c3663;
 }
 
 html, body, [data-testid="stAppViewContainer"] {
@@ -380,24 +379,25 @@ def render_pantalla_2(df):
 
 
 # =========================================================
-# CARGA ARCHIVO
+# UPLOADER
 # =========================================================
 archivo = st.file_uploader("Sube archivo ETA", type=["xlsx", "xls"])
 
 if archivo is not None:
-    st.session_state["archivo_bytes"] = archivo.getvalue()
-    st.session_state["archivo_nombre"] = archivo.name
+    with open(RUTA_ARCHIVO_FIJO, "wb") as f:
+        f.write(archivo.getvalue())
+    st.success(f"Archivo guardado: {archivo.name}")
 
-if "archivo_bytes" not in st.session_state:
+if not os.path.exists(RUTA_ARCHIVO_FIJO):
     st.stop()
 
 st.markdown(
-    f'<div class="archivo-info">Archivo cargado: {st.session_state.get("archivo_nombre", "Sin nombre")}</div>',
+    f'<div class="archivo-info">Archivo activo: {os.path.basename(RUTA_ARCHIVO_FIJO)}</div>',
     unsafe_allow_html=True
 )
 
 # =========================================================
-# AUTO-REFRESH SOLO SI YA HAY ARCHIVO
+# AUTO-REFRESH
 # =========================================================
 components.html(
     f"""
@@ -411,9 +411,9 @@ components.html(
 )
 
 # =========================================================
-# LEER ARCHIVO DESDE SESSION
+# LEER ARCHIVO GUARDADO
 # =========================================================
-df = pd.read_excel(BytesIO(st.session_state["archivo_bytes"]), engine="openpyxl")
+df = pd.read_excel(RUTA_ARCHIVO_FIJO, engine="openpyxl")
 
 columnas_necesarias = ["Estado", "Tipo Actividad", "Sub Tipo de Orden"]
 faltantes = [c for c in columnas_necesarias if c not in df.columns]
@@ -422,13 +422,11 @@ if faltantes:
     st.error(f"Faltan estas columnas en el archivo: {', '.join(faltantes)}")
     st.stop()
 
-# Quitar almuerzos
 df = df[~df["Tipo Actividad"].astype(str).str.strip().isin([
     "Tiempo Almuerzo LU",
     "Tiempo de almuerzo"
 ])].copy()
 
-# Clasificar tecnología
 map_tecnologia = {
     # DTH
     "Cambio de Plan con Cambio de Equipo DTH": "DTH",
@@ -482,7 +480,7 @@ df["estado_visual"] = df["Estado"].apply(normalizar_estado)
 estados = ordenar_estados(list(df["estado_visual"].dropna().unique()))
 
 # =========================================================
-# SELECCIÓN AUTOMÁTICA DE PANTALLA
+# PANTALLA ACTUAL
 # =========================================================
 pantalla_actual = int(time.time() / SEGUNDOS_POR_PANTALLA) % 2 + 1
 

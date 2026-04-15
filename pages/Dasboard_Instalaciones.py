@@ -313,7 +313,9 @@ def render_pantalla_1(df, estados):
         f'<div class="no-clasificado">No clasificado: {no_clasificado}</div>',
         unsafe_allow_html=True
     )
-
+#================================================
+#PLANTA #"
+#================================================
 def render_pantalla_2(df):
     st.markdown('<div class="pantalla-badge">Pantalla 2</div>', unsafe_allow_html=True)
     st.markdown('<div class="titulo-dashboard">Eficiencia General</div>', unsafe_allow_html=True)
@@ -334,41 +336,45 @@ def render_pantalla_2(df):
     numerador = completadas + canceladas + suspendidas
     eficiencia = (numerador / total * 100) if total > 0 else 0
 
-    # ============================
-    # VELOCÍMETRO PROFESIONAL
-    # ============================
-
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=eficiencia,
         number={
             "suffix": "%",
-            "font": {"size": 70, "color": "white"}
+            "font": {"size": 72, "color": "white"}
         },
         title={
             "text": "Eficiencia",
-            "font": {"size": 30, "color": "white"}
+            "font": {"size": 34, "color": "white"}
         },
         gauge={
+            "shape": "angular",
             "axis": {
                 "range": [0, 100],
+                "tickmode": "array",
+                "tickvals": [0, 16.7, 33.3, 50, 66.7, 83.3, 100],
+                "ticktext": ["0", "17", "33", "50", "67", "83", "100"],
                 "tickwidth": 2,
-                "tickcolor": "white"
+                "tickcolor": "white",
+                "tickfont": {"size": 18, "color": "white"}
             },
             "bar": {
-                "color": "#22c55e",  # verde de progreso
-                "thickness": 0.25
+                "color": "rgba(0,0,0,0)",   # quitamos la barra de relleno
+                "thickness": 0.20
             },
             "bgcolor": "rgba(0,0,0,0)",
             "borderwidth": 0,
             "steps": [
-                {"range": [0, 40], "color": "#ef4444"},   # rojo
-                {"range": [40, 70], "color": "#f59e0b"},  # naranja
-                {"range": [70, 100], "color": "#22c55e"}  # verde
+                {"range": [0, 16.7], "color": "#dc2626"},   # rojo intenso
+                {"range": [16.7, 33.3], "color": "#f97316"}, # naranja
+                {"range": [33.3, 50], "color": "#facc15"},   # amarillo
+                {"range": [50, 66.7], "color": "#86efac"},   # verde claro
+                {"range": [66.7, 83.3], "color": "#22c55e"}, # verde medio
+                {"range": [83.3, 100], "color": "#166534"}   # verde oscuro
             ],
             "threshold": {
-                "line": {"color": "white", "width": 6},
-                "thickness": 0.9,
+                "line": {"color": "white", "width": 8},
+                "thickness": 0.95,
                 "value": eficiencia
             }
         }
@@ -376,18 +382,15 @@ def render_pantalla_2(df):
 
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
-        height=500,
-        margin=dict(l=40, r=40, t=80, b=20),
-        font={"color": "white"}
+        plot_bgcolor="rgba(0,0,0,0)",
+        height=540,
+        margin=dict(l=40, r=40, t=90, b=20),
+        font={"color": "white"},
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-    # ============================
-    # KPIs
-    # ============================
-    c1, c2, c3, c4 = st.columns(4)
-
+    c1, c2, c3, c4 = st.columns(4, gap="large")
     with c1:
         render_kpi("Completadas", completadas)
     with c2:

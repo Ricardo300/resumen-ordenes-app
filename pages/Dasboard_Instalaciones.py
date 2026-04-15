@@ -200,7 +200,7 @@ def render_bloque_tecnologia(nombre_bloque, df_tecnologia, estados_base):
 archivo = st.file_uploader("Sube archivo ETA", type=["xlsx", "xls"])
 
 if archivo is not None:
-    df = pd.read_excel(archivo)
+    df = pd.read_excel(archivo, engine="openpyxl")
 
     # -----------------------------------------------------
     # DETECTAR COLUMNAS NECESARIAS

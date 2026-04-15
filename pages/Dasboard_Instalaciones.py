@@ -350,29 +350,35 @@ def render_pantalla_2(df):
         )
 
     def donut_segment_path(cx, cy, r_outer, r_inner, start_deg, end_deg):
+        # Punto inicial y final arco externo
         x1o, y1o = polar_to_cartesian(cx, cy, r_outer, start_deg)
         x2o, y2o = polar_to_cartesian(cx, cy, r_outer, end_deg)
-        x2i, y2i = polar_to_cartesian(cx, cy, r_inner, end_deg)
+
+        # Punto inicial y final arco interno
         x1i, y1i = polar_to_cartesian(cx, cy, r_inner, start_deg)
+        x2i, y2i = polar_to_cartesian(cx, cy, r_inner, end_deg)
 
-        large_arc = 0 if abs(end_deg - start_deg) <= 180 else 1
+        # Como todos son segmentos menores a 180°
+        large_arc_flag = 0
 
+        # sweep-flag:
+        # externo: 0 para ir de izquierda a derecha por arriba
+        # interno: 1 para regresar
         return (
             f"M {x1o:.2f} {y1o:.2f} "
-            f"A {r_outer} {r_outer} 0 {large_arc} 0 {x2o:.2f} {y2o:.2f} "
+            f"A {r_outer} {r_outer} 0 {large_arc_flag} 0 {x2o:.2f} {y2o:.2f} "
             f"L {x2i:.2f} {y2i:.2f} "
-            f"A {r_inner} {r_inner} 0 {large_arc} 1 {x1i:.2f} {y1i:.2f} Z"
+            f"A {r_inner} {r_inner} 0 {large_arc_flag} 1 {x1i:.2f} {y1i:.2f} "
+            f"Z"
         )
 
-    def needle_triangle(cx, cy, value, length=220, base_width=14):
-        # 0% = 180°, 100% = 0°
+    def needle_triangle(cx, cy, value, length=215, base_width=10):
         angle = 180 - (value * 180 / 100)
         angle_rad = math.radians(angle)
 
         tip_x = cx + length * math.cos(angle_rad)
         tip_y = cy - length * math.sin(angle_rad)
 
-        # vector perpendicular
         px = math.sin(angle_rad)
         py = math.cos(angle_rad)
 
@@ -408,7 +414,7 @@ def render_pantalla_2(df):
         path = donut_segment_path(cx, cy, r_outer, r_inner, start_deg, end_deg)
         segmentos_svg += f'<path d="{path}" fill="{color}" stroke="none" />'
 
-    # Marcas / labels
+    # Marcas
     ticks = [0, 17, 33, 50, 67, 83, 100]
     ticks_svg = ""
     for t in ticks:
@@ -435,7 +441,7 @@ def render_pantalla_2(df):
                 {cumplimiento:.1f}%
             </text>
 
-            <!-- titulo gauge -->
+            <!-- titulo -->
             <text x="{cx}" y="90" fill="white" font-size="34" font-weight="700" text-anchor="middle">
                 Cumplimiento
             </text>

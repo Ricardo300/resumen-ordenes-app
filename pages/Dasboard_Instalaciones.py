@@ -355,7 +355,7 @@ def render_pantalla_2(df):
             pts.append(f"{x:.2f},{y:.2f}")
         return " ".join(pts)
 
-    def needle_triangle(cx, cy, value, length=210, base_width=10):
+    def needle_triangle(cx, cy, value, length=215, base_width=9):
         angle = 180 - (value * 180 / 100)
         angle_rad = math.radians(angle)
 
@@ -378,12 +378,11 @@ def render_pantalla_2(df):
     width = 1000
     height = 560
 
-    # Centro real del gauge
     cx = width / 2
     cy = 430
 
     radius = 300
-    arc_thickness = 90
+    arc_thickness = 110  # más grueso
 
     segmentos = [
         (180, 150, "#dc2626"),  # rojo intenso
@@ -394,13 +393,12 @@ def render_pantalla_2(df):
         (30, 0,    "#166534"),  # verde oscuro
     ]
 
-    # Base oscura detrás del gauge
     base_arc = arc_points(cx, cy, radius, 180, 0, steps=120)
 
     segmentos_svg = f'''
         <polyline points="{base_arc}"
                   fill="none"
-                  stroke="rgba(255,255,255,0.08)"
+                  stroke="rgba(255,255,255,0.05)"
                   stroke-width="{arc_thickness}"
                   stroke-linecap="butt"
                   stroke-linejoin="round" />
@@ -417,14 +415,16 @@ def render_pantalla_2(df):
                       stroke-linejoin="round" />
         '''
 
-    # Marcas / labels
+    # Marcas / labels solo externas
     ticks = [0, 17, 33, 50, 67, 83, 100]
     ticks_svg = ""
     for t in ticks:
         angle = 180 - (t * 180 / 100)
-        x1, y1 = polar_to_cartesian(cx, cy, radius - arc_thickness/2 - 8, angle)
-        x2, y2 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 8, angle)
-        xt, yt = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 32, angle)
+
+        # pequeñas marcas por fuera
+        x1, y1 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 2, angle)
+        x2, y2 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 14, angle)
+        xt, yt = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 34, angle)
 
         ticks_svg += f'''
             <line x1="{x1:.2f}" y1="{y1:.2f}" x2="{x2:.2f}" y2="{y2:.2f}"
@@ -433,26 +433,20 @@ def render_pantalla_2(df):
                   font-weight="700" text-anchor="middle" dominant-baseline="middle">{t}</text>
         '''
 
-    # Aguja
     needle_points = needle_triangle(cx, cy, cumplimiento, length=215, base_width=9)
 
     svg_html = f"""
     <div style="width:100%; display:flex; justify-content:center; align-items:center;">
         <svg viewBox="0 0 {width} {height}" width="100%" height="520" style="overflow:visible;">
-            <!-- porcentaje -->
+            <!-- porcentaje arriba -->
             <text x="{cx}" y="60" fill="white" font-size="68" font-weight="800" text-anchor="middle">
                 {cumplimiento:.1f}%
             </text>
 
-            <!-- titulo -->
-            <text x="{cx}" y="110" fill="white" font-size="34" font-weight="700" text-anchor="middle">
-                Cumplimiento
-            </text>
-
-            <!-- segmentos curvos -->
+            <!-- arco -->
             {segmentos_svg}
 
-            <!-- marcas -->
+            <!-- labels externos -->
             {ticks_svg}
 
             <!-- aguja -->

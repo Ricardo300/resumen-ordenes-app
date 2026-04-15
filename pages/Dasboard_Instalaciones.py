@@ -314,11 +314,13 @@ def render_pantalla_1(df, estados):
         unsafe_allow_html=True
     )
 #================================================
-#PLANTA #"
+#PLANTA 2"
 #================================================
 def render_pantalla_2(df):
+    import math
+
     st.markdown('<div class="pantalla-badge">Pantalla 2</div>', unsafe_allow_html=True)
-    st.markdown('<div class="titulo-dashboard">Eficiencia General</div>', unsafe_allow_html=True)
+    st.markdown('<div class="titulo-dashboard">% Cumplimiento de Ruta</div>', unsafe_allow_html=True)
 
     fecha = datetime.now().strftime("%d/%m/%Y %I:%M %p")
     st.markdown(
@@ -334,17 +336,20 @@ def render_pantalla_2(df):
     total = len(df)
 
     numerador = completadas + canceladas + suspendidas
-    eficiencia = (numerador / total * 100) if total > 0 else 0
+    cumplimiento = (numerador / total * 100) if total > 0 else 0
 
+    # =====================================================
+    # GAUGE BASE
+    # =====================================================
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
-        value=eficiencia,
+        value=cumplimiento,
         number={
             "suffix": "%",
             "font": {"size": 72, "color": "white"}
         },
         title={
-            "text": "Eficiencia",
+            "text": "Cumplimiento",
             "font": {"size": 34, "color": "white"}
         },
         gauge={
@@ -359,7 +364,7 @@ def render_pantalla_2(df):
                 "tickfont": {"size": 18, "color": "white"}
             },
             "bar": {
-                "color": "rgba(0,0,0,0)",   # quitamos la barra de relleno
+                "color": "rgba(0,0,0,0)",   # quitamos barra interna
                 "thickness": 0.20
             },
             "bgcolor": "rgba(0,0,0,0)",
@@ -373,23 +378,86 @@ def render_pantalla_2(df):
                 {"range": [83.3, 100], "color": "#166534"}   # verde oscuro
             ],
             "threshold": {
-                "line": {"color": "white", "width": 8},
-                "thickness": 0.95,
-                "value": eficiencia
+                "line": {"color": "rgba(0,0,0,0)", "width": 0},
+                "thickness": 0,
+                "value": cumplimiento
             }
         }
     ))
 
+    # =====================================================
+    # AGUJA TRIANGULAR MANUAL
+    # =====================================================
+    # Centro visual aproximado del gauge en coordenadas "paper"
+    cx, cy = 0.5, 0.33
+
+    # Ángulo: 180° (izquierda) a 0° (derecha)
+    angle_deg = 180 - (cumplimiento * 180 / 100)
+    angle = math.radians(angle_deg)
+
+    # Punta de la aguja
+    needle_len = 0.33
+    tip_x = cx + needle_len * math.cos(angle)
+    tip_y = cy + needle_len * math.sin(angle)
+
+    # Base de la aguja (ancho)
+    base_half_width = 0.012
+    back_len = 0.03
+
+    # Vector perpendicular para dar ancho
+    px = -math.sin(angle)
+    py = math.cos(angle)
+
+    # Punto base un poco detrás del centro
+    bx = cx - back_len * math.cos(angle)
+    by = cy - back_len * math.sin(angle)
+
+    left_x = bx + base_half_width * px
+    left_y = by + base_half_width * py
+    right_x = bx - base_half_width * px
+    right_y = by - base_half_width * py
+
+    # Triángulo de la aguja
+    path = f"M {left_x},{left_y} L {right_x},{right_y} L {tip_x},{tip_y} Z"
+
+    fig.add_shape(
+        type="path",
+        path=path,
+        fillcolor="white",
+        line=dict(color="white", width=1),
+        xref="paper",
+        yref="paper",
+        layer="above"
+    )
+
+    # Círculo central
+    fig.add_shape(
+        type="circle",
+        x0=cx - 0.022, y0=cy - 0.022,
+        x1=cx + 0.022, y1=cy + 0.022,
+        fillcolor="#e5e7eb",
+        line=dict(color="white", width=2),
+        xref="paper",
+        yref="paper",
+        layer="above"
+    )
+
+    # =====================================================
+    # LAYOUT
+    # =====================================================
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        height=540,
+        height=560,
         margin=dict(l=40, r=40, t=90, b=20),
         font={"color": "white"},
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
+    # =====================================================
+    # KPIs DE APOYO
+    # =====================================================
     c1, c2, c3, c4 = st.columns(4, gap="large")
     with c1:
         render_kpi("Completadas", completadas)
@@ -398,7 +466,7 @@ def render_pantalla_2(df):
     with c3:
         render_kpi("Canceladas", canceladas)
     with c4:
-        render_kpi("Total", total)
+        render_kpi("Total Ruta", total)
 # =========================================================
 # UPLOADER
 # =========================================================

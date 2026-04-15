@@ -313,9 +313,7 @@ def render_pantalla_1(df, estados):
         f'<div class="no-clasificado">No clasificado: {no_clasificado}</div>',
         unsafe_allow_html=True
     )
-#================================================
-#PLANTA 2"
-#================================================
+#=====================================
 def render_pantalla_2(df):
     import math
     import streamlit.components.v1 as components
@@ -349,30 +347,15 @@ def render_pantalla_2(df):
             cy - r * math.sin(angle_rad)
         )
 
-    def donut_segment_path(cx, cy, r_outer, r_inner, start_deg, end_deg):
-        # Punto inicial y final arco externo
-        x1o, y1o = polar_to_cartesian(cx, cy, r_outer, start_deg)
-        x2o, y2o = polar_to_cartesian(cx, cy, r_outer, end_deg)
+    def arc_points(cx, cy, r, start_deg, end_deg, steps=40):
+        pts = []
+        for i in range(steps + 1):
+            ang = start_deg + (end_deg - start_deg) * i / steps
+            x, y = polar_to_cartesian(cx, cy, r, ang)
+            pts.append(f"{x:.2f},{y:.2f}")
+        return " ".join(pts)
 
-        # Punto inicial y final arco interno
-        x1i, y1i = polar_to_cartesian(cx, cy, r_inner, start_deg)
-        x2i, y2i = polar_to_cartesian(cx, cy, r_inner, end_deg)
-
-        # Como todos son segmentos menores a 180°
-        large_arc_flag = 0
-
-        # sweep-flag:
-        # externo: 0 para ir de izquierda a derecha por arriba
-        # interno: 1 para regresar
-        return (
-            f"M {x1o:.2f} {y1o:.2f} "
-            f"A {r_outer} {r_outer} 0 {large_arc_flag} 0 {x2o:.2f} {y2o:.2f} "
-            f"L {x2i:.2f} {y2i:.2f} "
-            f"A {r_inner} {r_inner} 0 {large_arc_flag} 1 {x1i:.2f} {y1i:.2f} "
-            f"Z"
-        )
-
-    def needle_triangle(cx, cy, value, length=215, base_width=10):
+    def needle_triangle(cx, cy, value, length=210, base_width=10):
         angle = 180 - (value * 180 / 100)
         angle_rad = math.radians(angle)
 
@@ -393,12 +376,14 @@ def render_pantalla_2(df):
     # CONFIG SVG
     # =====================================================
     width = 1000
-    height = 520
-    cx = width / 2
-    cy = 390
+    height = 560
 
-    r_outer = 320
-    r_inner = 225
+    # Centro real del gauge
+    cx = width / 2
+    cy = 430
+
+    radius = 300
+    arc_thickness = 90
 
     segmentos = [
         (180, 150, "#dc2626"),  # rojo intenso
@@ -409,59 +394,77 @@ def render_pantalla_2(df):
         (30, 0,    "#166534"),  # verde oscuro
     ]
 
-    segmentos_svg = ""
-    for start_deg, end_deg, color in segmentos:
-        path = donut_segment_path(cx, cy, r_outer, r_inner, start_deg, end_deg)
-        segmentos_svg += f'<path d="{path}" fill="{color}" stroke="none" />'
+    # Base oscura detrás del gauge
+    base_arc = arc_points(cx, cy, radius, 180, 0, steps=120)
 
-    # Marcas
+    segmentos_svg = f'''
+        <polyline points="{base_arc}"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.08)"
+                  stroke-width="{arc_thickness}"
+                  stroke-linecap="butt"
+                  stroke-linejoin="round" />
+    '''
+
+    for start_deg, end_deg, color in segmentos:
+        pts = arc_points(cx, cy, radius, start_deg, end_deg, steps=30)
+        segmentos_svg += f'''
+            <polyline points="{pts}"
+                      fill="none"
+                      stroke="{color}"
+                      stroke-width="{arc_thickness}"
+                      stroke-linecap="butt"
+                      stroke-linejoin="round" />
+        '''
+
+    # Marcas / labels
     ticks = [0, 17, 33, 50, 67, 83, 100]
     ticks_svg = ""
     for t in ticks:
         angle = 180 - (t * 180 / 100)
-        x1, y1 = polar_to_cartesian(cx, cy, r_outer - 4, angle)
-        x2, y2 = polar_to_cartesian(cx, cy, r_outer + 8, angle)
-        xt, yt = polar_to_cartesian(cx, cy, r_outer + 28, angle)
+        x1, y1 = polar_to_cartesian(cx, cy, radius - arc_thickness/2 - 8, angle)
+        x2, y2 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 8, angle)
+        xt, yt = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 32, angle)
 
         ticks_svg += f'''
             <line x1="{x1:.2f}" y1="{y1:.2f}" x2="{x2:.2f}" y2="{y2:.2f}"
-                  stroke="white" stroke-width="2" />
+                  stroke="white" stroke-width="3" />
             <text x="{xt:.2f}" y="{yt:.2f}" fill="white" font-size="18"
                   font-weight="700" text-anchor="middle" dominant-baseline="middle">{t}</text>
         '''
 
     # Aguja
-    needle_points = needle_triangle(cx, cy, cumplimiento, length=215, base_width=10)
+    needle_points = needle_triangle(cx, cy, cumplimiento, length=215, base_width=9)
 
     svg_html = f"""
     <div style="width:100%; display:flex; justify-content:center; align-items:center;">
-        <svg viewBox="0 0 {width} {height}" width="100%" height="500" style="overflow:visible;">
+        <svg viewBox="0 0 {width} {height}" width="100%" height="520" style="overflow:visible;">
             <!-- porcentaje -->
-            <text x="{cx}" y="38" fill="white" font-size="64" font-weight="800" text-anchor="middle">
+            <text x="{cx}" y="60" fill="white" font-size="68" font-weight="800" text-anchor="middle">
                 {cumplimiento:.1f}%
             </text>
 
             <!-- titulo -->
-            <text x="{cx}" y="90" fill="white" font-size="34" font-weight="700" text-anchor="middle">
+            <text x="{cx}" y="110" fill="white" font-size="34" font-weight="700" text-anchor="middle">
                 Cumplimiento
             </text>
 
-            <!-- segmentos -->
+            <!-- segmentos curvos -->
             {segmentos_svg}
 
-            <!-- ticks -->
+            <!-- marcas -->
             {ticks_svg}
 
             <!-- aguja -->
             <polygon points="{needle_points}" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" />
 
             <!-- centro -->
-            <circle cx="{cx}" cy="{cy}" r="24" fill="#d1d5db" stroke="white" stroke-width="3" />
+            <circle cx="{cx}" cy="{cy}" r="26" fill="#d1d5db" stroke="white" stroke-width="4" />
         </svg>
     </div>
     """
 
-    components.html(svg_html, height=520, scrolling=False)
+    components.html(svg_html, height=540, scrolling=False)
 
     # =====================================================
     # KPIs DE APOYO

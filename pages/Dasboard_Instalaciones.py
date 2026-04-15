@@ -335,58 +335,50 @@ def render_pantalla_2(df):
     eficiencia = (numerador / total * 100) if total > 0 else 0
 
     # ============================
-    # VELOCÍMETRO MEJORADO
+    # VELOCÍMETRO PROFESIONAL
     # ============================
 
-    fig = go.Figure()
-
-    # semicirculo base
-    fig.add_trace(go.Pie(
-        values=[40, 30, 30],
-        rotation=180,
-        hole=0.6,
-        marker=dict(colors=["#ef4444", "#f59e0b", "#22c55e"]),
-        textinfo="none",
-        hoverinfo="skip",
-        showlegend=False
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=eficiencia,
+        number={
+            "suffix": "%",
+            "font": {"size": 70, "color": "white"}
+        },
+        title={
+            "text": "Eficiencia",
+            "font": {"size": 30, "color": "white"}
+        },
+        gauge={
+            "axis": {
+                "range": [0, 100],
+                "tickwidth": 2,
+                "tickcolor": "white"
+            },
+            "bar": {
+                "color": "#22c55e",  # verde de progreso
+                "thickness": 0.25
+            },
+            "bgcolor": "rgba(0,0,0,0)",
+            "borderwidth": 0,
+            "steps": [
+                {"range": [0, 40], "color": "#ef4444"},   # rojo
+                {"range": [40, 70], "color": "#f59e0b"},  # naranja
+                {"range": [70, 100], "color": "#22c55e"}  # verde
+            ],
+            "threshold": {
+                "line": {"color": "white", "width": 6},
+                "thickness": 0.9,
+                "value": eficiencia
+            }
+        }
     ))
-
-    # calcular ángulo de aguja
-    angulo = 180 - (eficiencia * 180 / 100)
-
-    import math
-    x = 0.5 + 0.35 * math.cos(math.radians(angulo))
-    y = 0.5 + 0.35 * math.sin(math.radians(angulo))
-
-    # aguja
-    fig.add_shape(
-        type="line",
-        x0=0.5, y0=0.5,
-        x1=x, y1=y,
-        line=dict(color="white", width=4)
-    )
-
-    # punto centro
-    fig.add_shape(
-        type="circle",
-        x0=0.48, y0=0.48,
-        x1=0.52, y1=0.52,
-        fillcolor="white",
-        line_color="white"
-    )
-
-    # texto %
-    fig.add_annotation(
-        x=0.5, y=0.25,
-        text=f"{eficiencia:.1f}%",
-        showarrow=False,
-        font=dict(size=60, color="white")
-    )
 
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=20, r=20, t=40, b=20),
-        height=500
+        height=500,
+        margin=dict(l=40, r=40, t=80, b=20),
+        font={"color": "white"}
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -404,7 +396,6 @@ def render_pantalla_2(df):
         render_kpi("Canceladas", canceladas)
     with c4:
         render_kpi("Total", total)
-
 # =========================================================
 # UPLOADER
 # =========================================================

@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime
 import time
+from io import BytesIO
 
 st.set_page_config(page_title="Dashboard de Instalaciones", layout="wide")
 
@@ -11,20 +12,6 @@ st.set_page_config(page_title="Dashboard de Instalaciones", layout="wide")
 # CONFIGURACIÓN CARRUSEL
 # =========================================================
 SEGUNDOS_POR_PANTALLA = 12
-
-# =========================================================
-# AUTO-REFRESH
-# =========================================================
-components.html(
-    f"""
-    <script>
-        setTimeout(function() {{
-            window.parent.location.reload();
-        }}, {SEGUNDOS_POR_PANTALLA * 1000});
-    </script>
-    """,
-    height=0,
-)
 
 # =========================================================
 # ESTILO GENERAL
@@ -122,6 +109,13 @@ header, footer {
     border-radius: 14px;
     padding: 8px 14px;
     margin-bottom: 14px;
+}
+
+.archivo-info {
+    font-size: 16px;
+    color: #dbe7f5;
+    margin-bottom: 10px;
+    font-weight: 700;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -391,80 +385,108 @@ def render_pantalla_2(df):
 archivo = st.file_uploader("Sube archivo ETA", type=["xlsx", "xls"])
 
 if archivo is not None:
-    df = pd.read_excel(archivo, engine="openpyxl")
+    st.session_state["archivo_bytes"] = archivo.getvalue()
+    st.session_state["archivo_nombre"] = archivo.name
 
-    columnas_necesarias = ["Estado", "Tipo Actividad", "Sub Tipo de Orden"]
-    faltantes = [c for c in columnas_necesarias if c not in df.columns]
+if "archivo_bytes" not in st.session_state:
+    st.stop()
 
-    if faltantes:
-        st.error(f"Faltan estas columnas en el archivo: {', '.join(faltantes)}")
-        st.stop()
+st.markdown(
+    f'<div class="archivo-info">Archivo cargado: {st.session_state.get("archivo_nombre", "Sin nombre")}</div>',
+    unsafe_allow_html=True
+)
 
-    # Quitar almuerzos
-    df = df[~df["Tipo Actividad"].astype(str).str.strip().isin([
-        "Tiempo Almuerzo LU",
-        "Tiempo de almuerzo"
-    ])].copy()
+# =========================================================
+# AUTO-REFRESH SOLO SI YA HAY ARCHIVO
+# =========================================================
+components.html(
+    f"""
+    <script>
+        setTimeout(function() {{
+            window.parent.location.reload();
+        }}, {SEGUNDOS_POR_PANTALLA * 1000});
+    </script>
+    """,
+    height=0,
+)
 
-    # Clasificar tecnología
-    map_tecnologia = {
-        # DTH
-        "Cambio de Plan con Cambio de Equipo DTH": "DTH",
-        "Equipo Adicional TV": "DTH",
-        "Instalación de Cajas Adicionales DTH": "DTH",
-        "Instalación de servicio televisión DTH": "DTH",
-        "Instalación de TV (DTH)": "DTH",
-        "Cambio de Equipo TV": "DTH",
-        "Reparacion DTH": "DTH",
-        "Reparacion Linea Fija LFI": "DTH",
-        "Reparación servicio DTH": "DTH",
-        "Traslado Externo de TV (DTH)": "DTH",
-        "Traslado Interno de Servicio de DTH": "DTH",
-        "Traslado Interno de TV (DTH)": "DTH",
-        "Traslado TV (DTH)": "DTH",
+# =========================================================
+# LEER ARCHIVO DESDE SESSION
+# =========================================================
+df = pd.read_excel(BytesIO(st.session_state["archivo_bytes"]), engine="openpyxl")
 
-        # GPON
-        "Cambio de Plan con Cambio de Equipo Datos y TV": "GPON",
-        "Cambio de Plan con Cambio de Equipo Triple Play": "GPON",
-        "Equipo Adicional Datos": "GPON",
-        "Equipo Adicional Datos y TV": "GPON",
-        "Equipo Adicional Triple Play": "GPON",
-        "Equipo Adicional Vos y Datos": "GPON",
-        "Instalacion Internet (DGPON)+TV (GPON)": "GPON",
-        "Instalacion Internet (GPON)": "GPON",
-        "Instalacion Línea fija (VGPON) + Internet (DGPON)": "GPON",
-        "Instalacion Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
-        "Reparación Internet (DGPON) + TV (GPON)": "GPON",
-        "Reparación Internet (GPON)": "GPON",
-        "Reparación Línea fija (VGPON) + Internet (DGPON)": "GPON",
-        "Reparación Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
-        "Traslado Externo Internet (DGPON) + TV (GPON)": "GPON",
-        "Traslado Externo Internet (GPON)": "GPON",
-        "Traslado Externo Línea fija (VGPON) + Internet (DGPON)": "GPON",
-        "Traslado Externo Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
-        "Traslado Interno de Internet (GPON) + TV (GPON)": "GPON",
-        "Traslado Interno Internet (GPON)": "GPON",
-        "Traslado Interno Linea fIja (GPON) + Internet (GPON)": "GPON",
-        "Traslado Interno Linea fIja (GPON) + Internet (GPON) + TV (GPON)": "GPON",
-    }
+columnas_necesarias = ["Estado", "Tipo Actividad", "Sub Tipo de Orden"]
+faltantes = [c for c in columnas_necesarias if c not in df.columns]
 
-    df["tecnologia"] = (
-        df["Sub Tipo de Orden"]
-        .astype(str)
-        .str.strip()
-        .map(map_tecnologia)
-        .fillna("NO_CLASIFICADO")
-    )
+if faltantes:
+    st.error(f"Faltan estas columnas en el archivo: {', '.join(faltantes)}")
+    st.stop()
 
-    df["estado_visual"] = df["Estado"].apply(normalizar_estado)
-    estados = ordenar_estados(list(df["estado_visual"].dropna().unique()))
+# Quitar almuerzos
+df = df[~df["Tipo Actividad"].astype(str).str.strip().isin([
+    "Tiempo Almuerzo LU",
+    "Tiempo de almuerzo"
+])].copy()
 
-    # =====================================================
-    # SELECCIÓN AUTOMÁTICA DE PANTALLA
-    # =====================================================
-    pantalla_actual = int(time.time() / SEGUNDOS_POR_PANTALLA) % 2 + 1
+# Clasificar tecnología
+map_tecnologia = {
+    # DTH
+    "Cambio de Plan con Cambio de Equipo DTH": "DTH",
+    "Equipo Adicional TV": "DTH",
+    "Instalación de Cajas Adicionales DTH": "DTH",
+    "Instalación de servicio televisión DTH": "DTH",
+    "Instalación de TV (DTH)": "DTH",
+    "Cambio de Equipo TV": "DTH",
+    "Reparacion DTH": "DTH",
+    "Reparacion Linea Fija LFI": "DTH",
+    "Reparación servicio DTH": "DTH",
+    "Traslado Externo de TV (DTH)": "DTH",
+    "Traslado Interno de Servicio de DTH": "DTH",
+    "Traslado Interno de TV (DTH)": "DTH",
+    "Traslado TV (DTH)": "DTH",
 
-    if pantalla_actual == 1:
-        render_pantalla_1(df, estados)
-    else:
-        render_pantalla_2(df)
+    # GPON
+    "Cambio de Plan con Cambio de Equipo Datos y TV": "GPON",
+    "Cambio de Plan con Cambio de Equipo Triple Play": "GPON",
+    "Equipo Adicional Datos": "GPON",
+    "Equipo Adicional Datos y TV": "GPON",
+    "Equipo Adicional Triple Play": "GPON",
+    "Equipo Adicional Vos y Datos": "GPON",
+    "Instalacion Internet (DGPON)+TV (GPON)": "GPON",
+    "Instalacion Internet (GPON)": "GPON",
+    "Instalacion Línea fija (VGPON) + Internet (DGPON)": "GPON",
+    "Instalacion Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
+    "Reparación Internet (DGPON) + TV (GPON)": "GPON",
+    "Reparación Internet (GPON)": "GPON",
+    "Reparación Línea fija (VGPON) + Internet (DGPON)": "GPON",
+    "Reparación Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
+    "Traslado Externo Internet (DGPON) + TV (GPON)": "GPON",
+    "Traslado Externo Internet (GPON)": "GPON",
+    "Traslado Externo Línea fija (VGPON) + Internet (DGPON)": "GPON",
+    "Traslado Externo Línea fija (VGPON) + Internet (DGPON)+TV (GPON)": "GPON",
+    "Traslado Interno de Internet (GPON) + TV (GPON)": "GPON",
+    "Traslado Interno Internet (GPON)": "GPON",
+    "Traslado Interno Linea fIja (GPON) + Internet (GPON)": "GPON",
+    "Traslado Interno Linea fIja (GPON) + Internet (GPON) + TV (GPON)": "GPON",
+}
+
+df["tecnologia"] = (
+    df["Sub Tipo de Orden"]
+    .astype(str)
+    .str.strip()
+    .map(map_tecnologia)
+    .fillna("NO_CLASIFICADO")
+)
+
+df["estado_visual"] = df["Estado"].apply(normalizar_estado)
+estados = ordenar_estados(list(df["estado_visual"].dropna().unique()))
+
+# =========================================================
+# SELECCIÓN AUTOMÁTICA DE PANTALLA
+# =========================================================
+pantalla_actual = int(time.time() / SEGUNDOS_POR_PANTALLA) % 2 + 1
+
+if pantalla_actual == 1:
+    render_pantalla_1(df, estados)
+else:
+    render_pantalla_2(df)

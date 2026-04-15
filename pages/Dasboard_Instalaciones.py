@@ -10,41 +10,61 @@ st.set_page_config(page_title="Dashboard de Instalaciones", layout="wide")
 # =========================================================
 st.markdown("""
 <style>
+:root {
+    --bg-main: #060b16;
+    --panel-bg: #0d1b34;
+    --panel-border: rgba(255,255,255,0.08);
+    --text-main: #ffffff;
+    --text-soft: #cbd5e1;
+    --badge-bg: #1c3663;
+}
+
+html, body, [data-testid="stAppViewContainer"] {
+    background: linear-gradient(180deg, #050913 0%, #08101d 100%);
+}
+
 .main {
-    background-color: #0b1220;
+    background: transparent;
 }
 
 .block-container {
-    padding-top: 1.2rem;
+    padding-top: 1rem;
     padding-bottom: 1rem;
     max-width: 98%;
 }
 
+header, footer {
+    visibility: hidden;
+}
+
 .titulo-dashboard {
-    font-size: 52px;
+    font-size: 56px;
     font-weight: 900;
-    color: white;
-    line-height: 1.1;
+    color: var(--text-main);
+    line-height: 1.05;
     margin-bottom: 8px;
+    letter-spacing: 0.3px;
 }
 
 .subtitulo-dashboard {
     font-size: 22px;
-    color: #cbd5e1;
-    margin-bottom: 18px;
+    color: var(--text-soft);
+    margin-bottom: 20px;
     font-weight: 600;
 }
 
 .no-clasificado {
     text-align: center;
-    color: #e2e8f0;
+    color: #e5edf8;
     font-size: 24px;
-    font-weight: 700;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    background: #1e293b;
-    border-radius: 16px;
-    padding: 14px 20px;
+    font-weight: 800;
+    margin-top: 12px;
+    margin-bottom: 8px;
+    background: linear-gradient(180deg, #1a2b49 0%, #14233d 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 16px 22px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -78,12 +98,12 @@ def ordenar_estados(estados):
 
 def color_estado(estado):
     colores = {
-        "Pendiente": "#f59e0b",   # naranja
-        "Iniciado": "#eab308",    # amarillo
-        "En ruta": "#3b82f6",     # azul
-        "Suspendido": "#ef4444",  # rojo
-        "Completado": "#22c55e",  # verde
-        "Cancelado": "#6b7280",   # gris
+        "Pendiente": "#f4a300",
+        "Iniciado": "#d9ad00",
+        "En ruta": "#3f83f8",
+        "Suspendido": "#ef4444",
+        "Completado": "#22c55e",
+        "Cancelado": "#7b8496",
     }
     return colores.get(estado, "#64748b")
 
@@ -115,12 +135,15 @@ def render_bloque(nombre, df_bloque, estados):
             }}
 
             .bloque-tec {{
-                background: #0f1b33;
-                border-radius: 24px;
-                padding: 26px;
-                min-height: 520px;
+                background: linear-gradient(180deg, #0b1a34 0%, #0a1730 100%);
+                border-radius: 26px;
+                padding: 28px;
+                min-height: 540px;
                 box-sizing: border-box;
-                border: 1px solid rgba(255,255,255,0.05);
+                border: 1px solid rgba(255,255,255,0.07);
+                box-shadow:
+                    0 14px 28px rgba(0,0,0,0.22),
+                    inset 0 1px 0 rgba(255,255,255,0.03);
             }}
 
             .bloque-header {{
@@ -131,19 +154,22 @@ def render_bloque(nombre, df_bloque, estados):
             }}
 
             .bloque-titulo {{
-                font-size: 42px;
+                font-size: 44px;
                 font-weight: 900;
                 color: white;
-                line-height: 1.1;
+                line-height: 1.05;
+                letter-spacing: 0.4px;
             }}
 
             .bloque-total {{
-                font-size: 26px;
-                color: #e2e8f0;
-                background: #1e3358;
-                padding: 14px 20px;
+                font-size: 28px;
+                color: #f1f5f9;
+                background: linear-gradient(180deg, #23457d 0%, #1d3968 100%);
+                padding: 14px 22px;
                 border-radius: 18px;
-                font-weight: 800;
+                font-weight: 900;
+                border: 1px solid rgba(255,255,255,0.07);
+                box-shadow: 0 6px 16px rgba(0,0,0,0.18);
             }}
 
             .cards-row {{
@@ -153,24 +179,28 @@ def render_bloque(nombre, df_bloque, estados):
             }}
 
             .card-estado {{
-                border-radius: 20px;
+                border-radius: 22px;
                 padding: 20px 14px;
-                min-height: 150px;
+                min-height: 152px;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 text-align: center;
                 box-sizing: border-box;
-                box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+                box-shadow:
+                    0 10px 18px rgba(0,0,0,0.20),
+                    inset 0 1px 0 rgba(255,255,255,0.12);
+                border: 1px solid rgba(255,255,255,0.10);
             }}
 
             .card-numero {{
-                font-size: 56px;
+                font-size: 60px;
                 font-weight: 900;
                 color: white;
                 line-height: 1;
                 margin-bottom: 10px;
+                text-shadow: 0 2px 6px rgba(0,0,0,0.12);
             }}
 
             .card-estado-nombre {{
@@ -178,6 +208,7 @@ def render_bloque(nombre, df_bloque, estados):
                 color: white;
                 font-weight: 800;
                 line-height: 1.15;
+                text-shadow: 0 1px 3px rgba(0,0,0,0.10);
             }}
         </style>
     </head>
@@ -195,7 +226,7 @@ def render_bloque(nombre, df_bloque, estados):
     </html>
     """
 
-    components.html(html, height=560, scrolling=False)
+    components.html(html, height=580, scrolling=False)
 
 
 # =========================================================
@@ -206,9 +237,6 @@ archivo = st.file_uploader("Sube archivo ETA", type=["xlsx", "xls"])
 if archivo is not None:
     df = pd.read_excel(archivo, engine="openpyxl")
 
-    # =====================================================
-    # VALIDACIÓN BÁSICA DE COLUMNAS
-    # =====================================================
     columnas_necesarias = ["Estado", "Tipo Actividad", "Sub Tipo de Orden"]
     faltantes = [c for c in columnas_necesarias if c not in df.columns]
 
@@ -216,17 +244,13 @@ if archivo is not None:
         st.error(f"Faltan estas columnas en el archivo: {', '.join(faltantes)}")
         st.stop()
 
-    # =====================================================
-    # LIMPIEZA: QUITAR ALMUERZOS
-    # =====================================================
+    # Quitar almuerzos
     df = df[~df["Tipo Actividad"].astype(str).str.strip().isin([
         "Tiempo Almuerzo LU",
         "Tiempo de almuerzo"
     ])].copy()
 
-    # =====================================================
-    # CLASIFICAR TECNOLOGÍA
-    # =====================================================
+    # Clasificar tecnología
     map_tecnologia = {
         # DTH
         "Cambio de Plan con Cambio de Equipo DTH": "DTH",
@@ -276,15 +300,9 @@ if archivo is not None:
         .fillna("NO_CLASIFICADO")
     )
 
-    # =====================================================
-    # ESTADOS
-    # =====================================================
     df["estado_visual"] = df["Estado"].apply(normalizar_estado)
     estados = ordenar_estados(list(df["estado_visual"].dropna().unique()))
 
-    # =====================================================
-    # ENCABEZADO
-    # =====================================================
     st.markdown(
         '<div class="titulo-dashboard">Dashboard de Instalaciones</div>',
         unsafe_allow_html=True
@@ -296,9 +314,6 @@ if archivo is not None:
         unsafe_allow_html=True
     )
 
-    # =====================================================
-    # BLOQUES PRINCIPALES
-    # =====================================================
     col1, col2 = st.columns(2, gap="large")
 
     with col1:
@@ -307,11 +322,7 @@ if archivo is not None:
     with col2:
         render_bloque("DTH", df[df["tecnologia"] == "DTH"], estados)
 
-    # =====================================================
-    # NO CLASIFICADO
-    # =====================================================
     no_clasificado = (df["tecnologia"] == "NO_CLASIFICADO").sum()
-
     st.markdown(
         f'<div class="no-clasificado">No clasificado: {no_clasificado}</div>',
         unsafe_allow_html=True

@@ -12,7 +12,7 @@ st.set_page_config(page_title="TV Instalaciones", layout="wide")
 # =========================================================
 # CONFIG
 # =========================================================
-SEGUNDOS_POR_PANTALLA = 12
+SEGUNDOS_POR_PANTALLA = 20
 RUTA_ARCHIVO_FIJO = "/tmp/dashboard_eta_actual.xlsx"
 
 # =========================================================

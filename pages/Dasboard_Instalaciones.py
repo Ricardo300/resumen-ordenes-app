@@ -1,10 +1,9 @@
 import os
 import time
-from io import BytesIO
+import math
 from datetime import datetime
 
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -21,11 +20,6 @@ RUTA_ARCHIVO_FIJO = "/tmp/dashboard_eta_actual.xlsx"
 # =========================================================
 st.markdown("""
 <style>
-:root {
-    --text-main: #ffffff;
-    --text-soft: #cbd5e1;
-}
-
 html, body, [data-testid="stAppViewContainer"] {
     background: linear-gradient(180deg, #050913 0%, #08101d 100%);
 }
@@ -35,7 +29,7 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 
 .block-container {
-    padding-top: 1rem;
+    padding-top: 0.8rem;
     padding-bottom: 1rem;
     max-width: 98%;
 }
@@ -45,57 +39,18 @@ header, footer {
 }
 
 .titulo-dashboard {
-    font-size: 56px;
+    font-size: 52px;
     font-weight: 900;
-    color: var(--text-main);
+    color: white;
     line-height: 1.05;
-    margin-bottom: 8px;
-    letter-spacing: 0.3px;
+    margin-bottom: 6px;
 }
 
 .subtitulo-dashboard {
-    font-size: 22px;
-    color: var(--text-soft);
-    margin-bottom: 20px;
+    font-size: 20px;
+    color: #cbd5e1;
+    margin-bottom: 16px;
     font-weight: 600;
-}
-
-.no-clasificado {
-    text-align: center;
-    color: #e5edf8;
-    font-size: 24px;
-    font-weight: 800;
-    margin-top: 12px;
-    margin-bottom: 8px;
-    background: linear-gradient(180deg, #1a2b49 0%, #14233d 100%);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 18px;
-    padding: 16px 22px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
-}
-
-.kpi-box {
-    background: linear-gradient(180deg, #0b1a34 0%, #0a1730 100%);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 22px;
-    padding: 22px 18px;
-    text-align: center;
-    box-shadow: 0 12px 24px rgba(0,0,0,0.18);
-}
-
-.kpi-numero {
-    font-size: 48px;
-    font-weight: 900;
-    color: white;
-    line-height: 1;
-    margin-bottom: 10px;
-}
-
-.kpi-titulo {
-    font-size: 22px;
-    font-weight: 800;
-    color: #dbe7f5;
-    line-height: 1.15;
 }
 
 .pantalla-badge {
@@ -107,27 +62,49 @@ header, footer {
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 14px;
     padding: 8px 14px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
 }
 
 .archivo-info {
-    font-size: 16px;
+    font-size: 15px;
     color: #dbe7f5;
     margin-bottom: 10px;
     font-weight: 700;
+}
+
+.kpi-box {
+    background: linear-gradient(180deg, #0b1a34 0%, #0a1730 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 22px;
+    padding: 20px 16px;
+    text-align: center;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.18);
+}
+
+.kpi-numero {
+    font-size: 42px;
+    font-weight: 900;
+    color: white;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+.kpi-titulo {
+    font-size: 20px;
+    font-weight: 800;
+    color: #dbe7f5;
+    line-height: 1.15;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# FUNCIONES
+# FUNCIONES BASE
 # =========================================================
 def normalizar_estado(valor):
     if pd.isna(valor):
         return "Sin Estado"
-
     txt = str(valor).strip().lower()
-
     mapa = {
         "pendiente": "Pendiente",
         "iniciado": "Iniciado",
@@ -136,7 +113,6 @@ def normalizar_estado(valor):
         "cancelado": "Cancelado",
         "en ruta": "En ruta",
     }
-
     return mapa.get(txt, txt.title())
 
 
@@ -158,7 +134,10 @@ def color_estado(estado):
     return colores.get(estado, "#64748b")
 
 
-def render_bloque(nombre, df_bloque, estados):
+# =========================================================
+# BLOQUE ESTADOS IZQUIERDA
+# =========================================================
+def render_bloque_estados(nombre, df_bloque, estados):
     total = len(df_bloque)
     conteo = df_bloque["estado_visual"].value_counts().to_dict()
 
@@ -166,7 +145,6 @@ def render_bloque(nombre, df_bloque, estados):
     for estado in estados:
         valor = conteo.get(estado, 0)
         color = color_estado(estado)
-
         cards_html += f"""
         <div class="card-estado" style="background:{color};">
             <div class="card-numero">{valor}</div>
@@ -183,82 +161,63 @@ def render_bloque(nombre, df_bloque, estados):
                 background: transparent;
                 font-family: Arial, sans-serif;
             }}
-
             .bloque-tec {{
                 background: linear-gradient(180deg, #0b1a34 0%, #0a1730 100%);
                 border-radius: 26px;
-                padding: 28px;
-                min-height: 540px;
+                padding: 26px;
+                min-height: 560px;
                 box-sizing: border-box;
                 border: 1px solid rgba(255,255,255,0.07);
-                box-shadow:
-                    0 14px 28px rgba(0,0,0,0.22),
-                    inset 0 1px 0 rgba(255,255,255,0.03);
+                box-shadow: 0 14px 28px rgba(0,0,0,0.22);
             }}
-
             .bloque-header {{
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 24px;
+                margin-bottom: 22px;
             }}
-
             .bloque-titulo {{
-                font-size: 44px;
+                font-size: 42px;
                 font-weight: 900;
                 color: white;
-                line-height: 1.05;
-                letter-spacing: 0.4px;
             }}
-
             .bloque-total {{
-                font-size: 28px;
+                font-size: 24px;
                 color: #f1f5f9;
                 background: linear-gradient(180deg, #23457d 0%, #1d3968 100%);
-                padding: 14px 22px;
+                padding: 12px 20px;
                 border-radius: 18px;
                 font-weight: 900;
-                border: 1px solid rgba(255,255,255,0.07);
-                box-shadow: 0 6px 16px rgba(0,0,0,0.18);
             }}
-
             .cards-row {{
                 display: grid;
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(2, 1fr);
                 gap: 18px;
             }}
-
             .card-estado {{
                 border-radius: 22px;
                 padding: 20px 14px;
-                min-height: 152px;
+                min-height: 150px;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 text-align: center;
                 box-sizing: border-box;
-                box-shadow:
-                    0 10px 18px rgba(0,0,0,0.20),
-                    inset 0 1px 0 rgba(255,255,255,0.12);
-                border: 1px solid rgba(255,255,255,0.10);
+                box-shadow: 0 10px 18px rgba(0,0,0,0.20);
             }}
-
             .card-numero {{
                 font-size: 60px;
                 font-weight: 900;
                 color: white;
                 line-height: 1;
                 margin-bottom: 10px;
-                text-shadow: 0 2px 6px rgba(0,0,0,0.12);
             }}
-
             .card-estado-nombre {{
                 font-size: 22px;
                 color: white;
                 font-weight: 800;
                 line-height: 1.15;
-                text-shadow: 0 1px 3px rgba(0,0,0,0.10);
             }}
         </style>
     </head>
@@ -275,122 +234,69 @@ def render_bloque(nombre, df_bloque, estados):
     </body>
     </html>
     """
+    components.html(html, height=590, scrolling=False)
 
-    components.html(html, height=580, scrolling=False)
+
+# =========================================================
+# GAUGE DERECHA
+# =========================================================
+def polar_to_cartesian(cx, cy, r, angle_deg):
+    angle_rad = math.radians(angle_deg)
+    return (cx + r * math.cos(angle_rad), cy - r * math.sin(angle_rad))
 
 
-def render_kpi(titulo, valor):
-    st.markdown(
-        f"""
-        <div class="kpi-box">
-            <div class="kpi-numero">{valor}</div>
-            <div class="kpi-titulo">{titulo}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+def arc_points(cx, cy, r, start_deg, end_deg, steps=40):
+    pts = []
+    for i in range(steps + 1):
+        ang = start_deg + (end_deg - start_deg) * i / steps
+        x, y = polar_to_cartesian(cx, cy, r, ang)
+        pts.append(f"{x:.2f},{y:.2f}")
+    return " ".join(pts)
 
-def render_pantalla_1(df, estados):
-    st.markdown('<div class="pantalla-badge">Pantalla 1</div>', unsafe_allow_html=True)
-    st.markdown('<div class="titulo-dashboard">Dashboard de Instalaciones</div>', unsafe_allow_html=True)
 
-    fecha = datetime.now().strftime("%d/%m/%Y %I:%M %p")
-    st.markdown(
-        f'<div class="subtitulo-dashboard">Corte: {fecha} | Registros operativos: {len(df)}</div>',
-        unsafe_allow_html=True
-    )
+def needle_triangle(cx, cy, value, length=210, base_width=9):
+    angle = 180 - (value * 180 / 100)
+    angle_rad = math.radians(angle)
 
-    col1, col2 = st.columns(2, gap="large")
+    tip_x = cx + length * math.cos(angle_rad)
+    tip_y = cy - length * math.sin(angle_rad)
 
-    with col1:
-        render_bloque("GPON", df[df["tecnologia"] == "GPON"], estados)
+    px = math.sin(angle_rad)
+    py = math.cos(angle_rad)
 
-    with col2:
-        render_bloque("DTH", df[df["tecnologia"] == "DTH"], estados)
+    left_x = cx - base_width * px
+    left_y = cy - base_width * py
+    right_x = cx + base_width * px
+    right_y = cy + base_width * py
 
-    no_clasificado = (df["tecnologia"] == "NO_CLASIFICADO").sum()
-    st.markdown(
-        f'<div class="no-clasificado">No clasificado: {no_clasificado}</div>',
-        unsafe_allow_html=True
-    )
-#=====================================
-def render_pantalla_2(df):
-    import math
-    import streamlit.components.v1 as components
+    return f"{left_x:.2f},{left_y:.2f} {right_x:.2f},{right_y:.2f} {tip_x:.2f},{tip_y:.2f}"
 
-    st.markdown('<div class="pantalla-badge">Pantalla 2</div>', unsafe_allow_html=True)
-    st.markdown('<div class="titulo-dashboard">% Cumplimiento de Ruta</div>', unsafe_allow_html=True)
 
-    fecha = datetime.now().strftime("%d/%m/%Y %I:%M %p")
-    st.markdown(
-        f'<div class="subtitulo-dashboard">Corte: {fecha}</div>',
-        unsafe_allow_html=True
-    )
-
-    conteo = df["estado_visual"].value_counts()
+def render_gauge_tecnologia(df_bloque, nombre):
+    conteo = df_bloque["estado_visual"].value_counts()
 
     completadas = int(conteo.get("Completado", 0))
     canceladas = int(conteo.get("Cancelado", 0))
     suspendidas = int(conteo.get("Suspendido", 0))
-    total = len(df)
+    total = len(df_bloque)
 
     numerador = completadas + canceladas + suspendidas
     cumplimiento = (numerador / total * 100) if total > 0 else 0
 
-    # =====================================================
-    # FUNCIONES SVG
-    # =====================================================
-    def polar_to_cartesian(cx, cy, r, angle_deg):
-        angle_rad = math.radians(angle_deg)
-        return (
-            cx + r * math.cos(angle_rad),
-            cy - r * math.sin(angle_rad)
-        )
-
-    def arc_points(cx, cy, r, start_deg, end_deg, steps=40):
-        pts = []
-        for i in range(steps + 1):
-            ang = start_deg + (end_deg - start_deg) * i / steps
-            x, y = polar_to_cartesian(cx, cy, r, ang)
-            pts.append(f"{x:.2f},{y:.2f}")
-        return " ".join(pts)
-
-    def needle_triangle(cx, cy, value, length=215, base_width=9):
-        angle = 180 - (value * 180 / 100)
-        angle_rad = math.radians(angle)
-
-        tip_x = cx + length * math.cos(angle_rad)
-        tip_y = cy - length * math.sin(angle_rad)
-
-        px = math.sin(angle_rad)
-        py = math.cos(angle_rad)
-
-        left_x = cx - base_width * px
-        left_y = cy - base_width * py
-        right_x = cx + base_width * px
-        right_y = cy + base_width * py
-
-        return f"{left_x:.2f},{left_y:.2f} {right_x:.2f},{right_y:.2f} {tip_x:.2f},{tip_y:.2f}"
-
-    # =====================================================
-    # CONFIG SVG
-    # =====================================================
-    width = 1000
+    width = 920
     height = 560
-
     cx = width / 2
     cy = 430
-
-    radius = 300
-    arc_thickness = 110  # más grueso
+    radius = 270
+    arc_thickness = 105
 
     segmentos = [
-        (180, 150, "#dc2626"),  # rojo intenso
-        (150, 120, "#f97316"),  # naranja
-        (120, 90,  "#facc15"),  # amarillo
-        (90, 60,   "#86efac"),  # verde claro
-        (60, 30,   "#22c55e"),  # verde medio
-        (30, 0,    "#166534"),  # verde oscuro
+        (180, 150, "#dc2626"),
+        (150, 120, "#f97316"),
+        (120, 90,  "#facc15"),
+        (90, 60,   "#86efac"),
+        (60, 30,   "#22c55e"),
+        (30, 0,    "#166534"),
     ]
 
     base_arc = arc_points(cx, cy, radius, 180, 0, steps=120)
@@ -415,13 +321,10 @@ def render_pantalla_2(df):
                       stroke-linejoin="round" />
         '''
 
-    # Marcas / labels solo externas
     ticks = [0, 17, 33, 50, 67, 83, 100]
     ticks_svg = ""
     for t in ticks:
         angle = 180 - (t * 180 / 100)
-
-        # pequeñas marcas por fuera
         x1, y1 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 2, angle)
         x2, y2 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 14, angle)
         xt, yt = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 34, angle)
@@ -433,37 +336,26 @@ def render_pantalla_2(df):
                   font-weight="700" text-anchor="middle" dominant-baseline="middle">{t}</text>
         '''
 
-    needle_points = needle_triangle(cx, cy, cumplimiento, length=215, base_width=9)
+    needle_points = needle_triangle(cx, cy, cumplimiento, length=195, base_width=8)
 
     svg_html = f"""
     <div style="width:100%; display:flex; justify-content:center; align-items:center;">
         <svg viewBox="0 0 {width} {height}" width="100%" height="520" style="overflow:visible;">
-            <!-- porcentaje arriba -->
-            <text x="{cx}" y="60" fill="white" font-size="68" font-weight="800" text-anchor="middle">
+            <text x="{cx}" y="62" fill="white" font-size="66" font-weight="800" text-anchor="middle">
                 {cumplimiento:.1f}%
             </text>
 
-            <!-- arco -->
             {segmentos_svg}
-
-            <!-- labels externos -->
             {ticks_svg}
 
-            <!-- aguja -->
             <polygon points="{needle_points}" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" />
-
-            <!-- centro -->
-            <circle cx="{cx}" cy="{cy}" r="26" fill="#d1d5db" stroke="white" stroke-width="4" />
+            <circle cx="{cx}" cy="{cy}" r="24" fill="#d1d5db" stroke="white" stroke-width="4" />
         </svg>
     </div>
     """
-
     components.html(svg_html, height=540, scrolling=False)
 
-    # =====================================================
-    # KPIs DE APOYO
-    # =====================================================
-    c1, c2, c3, c4 = st.columns(4, gap="large")
+    c1, c2, c3, c4 = st.columns(4, gap="medium")
     with c1:
         render_kpi("Completadas", completadas)
     with c2:
@@ -472,6 +364,45 @@ def render_pantalla_2(df):
         render_kpi("Canceladas", canceladas)
     with c4:
         render_kpi("Total Ruta", total)
+
+
+def render_kpi(titulo, valor):
+    st.markdown(
+        f"""
+        <div class="kpi-box">
+            <div class="kpi-numero">{valor}</div>
+            <div class="kpi-titulo">{titulo}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# =========================================================
+# PANTALLA TECNOLOGÍA
+# =========================================================
+def render_pantalla_tecnologia(df_bloque, nombre_pantalla, estados):
+    st.markdown(f'<div class="pantalla-badge">{nombre_pantalla}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="titulo-dashboard">{nombre_pantalla} - % Cumplimiento de Ruta</div>',
+        unsafe_allow_html=True
+    )
+
+    fecha = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+    st.markdown(
+        f'<div class="subtitulo-dashboard">Corte: {fecha}</div>',
+        unsafe_allow_html=True
+    )
+
+    col1, col2 = st.columns([1.05, 1.25], gap="large")
+
+    with col1:
+        render_bloque_estados(nombre_pantalla, df_bloque, estados)
+
+    with col2:
+        render_gauge_tecnologia(df_bloque, nombre_pantalla)
+
+
 # =========================================================
 # UPLOADER
 # =========================================================
@@ -505,13 +436,12 @@ components.html(
 )
 
 # =========================================================
-# LEER ARCHIVO GUARDADO
+# LEER ARCHIVO
 # =========================================================
 df = pd.read_excel(RUTA_ARCHIVO_FIJO, engine="openpyxl")
 
 columnas_necesarias = ["Estado", "Tipo Actividad", "Sub Tipo de Orden"]
 faltantes = [c for c in columnas_necesarias if c not in df.columns]
-
 if faltantes:
     st.error(f"Faltan estas columnas en el archivo: {', '.join(faltantes)}")
     st.stop()
@@ -573,12 +503,18 @@ df["tecnologia"] = (
 df["estado_visual"] = df["Estado"].apply(normalizar_estado)
 estados = ordenar_estados(list(df["estado_visual"].dropna().unique()))
 
+# mismos estados que ya estás usando
+estados_visibles = [e for e in estados if e in ["Pendiente", "Iniciado", "En ruta", "Suspendido", "Completado", "Cancelado"]]
+
+df_gpon = df[df["tecnologia"] == "GPON"].copy()
+df_dth = df[df["tecnologia"] == "DTH"].copy()
+
 # =========================================================
-# PANTALLA ACTUAL
+# ROTACIÓN
 # =========================================================
 pantalla_actual = int(time.time() / SEGUNDOS_POR_PANTALLA) % 2 + 1
 
 if pantalla_actual == 1:
-    render_pantalla_1(df, estados)
+    render_pantalla_tecnologia(df_gpon, "GPON", estados_visibles)
 else:
-    render_pantalla_2(df)
+    render_pantalla_tecnologia(df_dth, "DTH", estados_visibles)

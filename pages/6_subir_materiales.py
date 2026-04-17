@@ -175,9 +175,13 @@ if archivo is not None:
                 .select("*", count="exact") \
                 .execute().count
 
-            registros_archivo = len(df_sin_duplicados)
+            df_guardar = df_sin_duplicados[
+                ["numero_orden", "material", "modelo", "serie", "cantidad"]
+            ].copy()
 
-            datos = df_sin_duplicados.to_dict(orient="records")
+            registros_archivo = len(df_guardar)
+
+            datos = df_guardar.to_dict(orient="records")
 
             supabase.table("materiales_ordenes").upsert(
                 datos,

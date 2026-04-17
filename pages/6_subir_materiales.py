@@ -89,40 +89,40 @@ if archivo is not None:
     df["cantidad"] = pd.to_numeric(df["cantidad"], errors="coerce").fillna(0)
 
     # ==========================================
-    # TABLA DE SOLICITUDES DUPLICADAS
+    # DUPLICADOS SEGÚN LLAVE REAL
     # ==========================================
 
-    solicitudes_duplicadas = (
-        df.groupby("numero_orden")
+    llave_cols = ["numero_orden", "material", "modelo", "serie", "cantidad"]
+
+    duplicados_resumen = (
+        df.groupby(llave_cols)
         .size()
-        .reset_index(name="cantidad_filas")
+        .reset_index(name="conteo")
     )
-    solicitudes_duplicadas = solicitudes_duplicadas[
-        solicitudes_duplicadas["cantidad_filas"] > 1
-    ].sort_values(by="cantidad_filas", ascending=False)
+
+    duplicados_resumen = duplicados_resumen[
+        duplicados_resumen["conteo"] > 1
+    ].sort_values(by="conteo", ascending=False)
+
+    # detalle completo de filas duplicadas
+    duplicados_detalle = df[
+        df.duplicated(subset=llave_cols, keep=False)
+    ].sort_values(by=llave_cols)
 
     # ==========================================
-    # CONTROL DE DUPLICADOS EXACTOS
+    # CONTROL DE DUPLICADOS
     # ==========================================
 
     filas_originales = len(df)
 
-    df_check = df.groupby(
-        ["numero_orden", "material", "modelo", "serie", "cantidad"]
-    ).size().reset_index(name="conteo")
-
-    duplicados_df = df_check[df_check["conteo"] > 1]
-
     cantidad_duplicados = (
-        duplicados_df["conteo"].sum() - len(duplicados_df)
-        if not duplicados_df.empty else 0
+        duplicados_resumen["conteo"].sum() - len(duplicados_resumen)
+        if not duplicados_resumen.empty else 0
     )
 
-    df = df.drop_duplicates(
-        subset=["numero_orden", "material", "modelo", "serie", "cantidad"]
-    )
+    df_sin_duplicados = df.drop_duplicates(subset=llave_cols)
 
-    filas_finales = len(df)
+    filas_finales = len(df_sin_duplicados)
 
     # ==========================================
     # MOSTRAR RESULTADOS
@@ -139,13 +139,19 @@ if archivo is not None:
         st.warning("Se detectaron duplicados en el archivo. Fueron eliminados automáticamente.")
 
     st.subheader("Vista previa completa")
-    st.dataframe(df, use_container_width=True, height=500)
+    st.dataframe(df_sin_duplicados, use_container_width=True, height=500)
 
-    st.subheader("Solicitudes duplicadas")
-    if not solicitudes_duplicadas.empty:
-        st.dataframe(solicitudes_duplicadas, use_container_width=True, height=300)
+    st.subheader("Resumen de duplicados según llave")
+    if not duplicados_resumen.empty:
+        st.dataframe(duplicados_resumen, use_container_width=True, height=300)
     else:
-        st.success("No se detectaron números de solicitud duplicados.")
+        st.success("No se detectaron duplicados según la llave definida.")
+
+    st.subheader("Detalle de filas duplicadas")
+    if not duplicados_detalle.empty:
+        st.dataframe(duplicados_detalle, use_container_width=True, height=300)
+    else:
+        st.info("No hay filas duplicadas para mostrar.")
 
     # ==========================================
     # GUARDAR EN BASE DE DATOS
@@ -159,9 +165,9 @@ if archivo is not None:
                 .select("*", count="exact") \
                 .execute().count
 
-            registros_archivo = len(df)
+            registros_archivo = len(df_sin_duplicados)
 
-            datos = df.to_dict(orient="records")
+            datos = df_sin_duplicados.to_dict(orient="records")
 
             supabase.table("materiales_ordenes").upsert(
                 datos,

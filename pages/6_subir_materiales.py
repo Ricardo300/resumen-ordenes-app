@@ -29,11 +29,13 @@ if archivo is not None:
         "número de orden": "numero_orden",
         "orden": "numero_orden",
         "solicitud": "numero_orden",
-        "serie equipo": "serie"
+        "serie equipo": "serie",
+        "tipo de orden": "tipo_orden"
     })
 
     columnas_necesarias = [
         "numero_orden",
+        "tipo_orden",
         "material",
         "modelo",
         "serie",
@@ -60,6 +62,14 @@ if archivo is not None:
         .str.upper()
     )
 
+    df["tipo_orden"] = (
+        df["tipo_orden"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
     df["material"] = (
         df["material"]
         .fillna("")
@@ -79,7 +89,7 @@ if archivo is not None:
     df.loc[df["serie"] == "NAN", "serie"] = "SIN_SERIE"
     df.loc[df["serie"] == "NONE", "serie"] = "SIN_SERIE"
 
-    # NORMALIZACIÓN DEL MODELO
+    # modelo
     df["modelo"] = pd.to_numeric(df["modelo"], errors="coerce")
     df["modelo"] = df["modelo"].apply(
         lambda x: "SIN_MODELO" if pd.isna(x) else str(int(x))
@@ -89,10 +99,10 @@ if archivo is not None:
     df["cantidad"] = pd.to_numeric(df["cantidad"], errors="coerce").fillna(0)
 
     # ==========================================
-    # DUPLICADOS SEGÚN LLAVE REAL
+    # DUPLICADOS SEGÚN NUEVA LLAVE DE PRUEBA
     # ==========================================
 
-    llave_cols = ["numero_orden", "material", "modelo", "serie", "cantidad"]
+    llave_cols = ["numero_orden", "tipo_orden", "material", "modelo", "serie"]
 
     duplicados_resumen = (
         df.groupby(llave_cols)
@@ -104,7 +114,6 @@ if archivo is not None:
         duplicados_resumen["conteo"] > 1
     ].sort_values(by="conteo", ascending=False)
 
-    # detalle completo de filas duplicadas
     duplicados_detalle = df[
         df.duplicated(subset=llave_cols, keep=False)
     ].sort_values(by=llave_cols)
@@ -130,22 +139,23 @@ if archivo is not None:
 
     st.subheader("Control de calidad de datos")
 
+    st.write("Llave usada para duplicados:", llave_cols)
     st.write("Filas en archivo:", filas_originales)
     st.write("Duplicados detectados:", cantidad_duplicados)
     st.write("Duplicados eliminados:", filas_originales - filas_finales)
     st.write("Filas finales a insertar:", filas_finales)
 
     if cantidad_duplicados > 0:
-        st.warning("Se detectaron duplicados en el archivo. Fueron eliminados automáticamente.")
+        st.warning("Se detectaron duplicados en el archivo según la nueva llave de prueba.")
 
     st.subheader("Vista previa completa")
     st.dataframe(df_sin_duplicados, use_container_width=True, height=500)
 
-    st.subheader("Resumen de duplicados según llave")
+    st.subheader("Resumen de duplicados según llave de prueba")
     if not duplicados_resumen.empty:
         st.dataframe(duplicados_resumen, use_container_width=True, height=300)
     else:
-        st.success("No se detectaron duplicados según la llave definida.")
+        st.success("No se detectaron duplicados según la nueva llave definida.")
 
     st.subheader("Detalle de filas duplicadas")
     if not duplicados_detalle.empty:

@@ -79,17 +79,30 @@ if archivo is not None:
     df.loc[df["serie"] == "NAN", "serie"] = "SIN_SERIE"
     df.loc[df["serie"] == "NONE", "serie"] = "SIN_SERIE"
 
-    # 🔥 NORMALIZACIÓN CRÍTICA DEL MODELO
+    # NORMALIZACIÓN DEL MODELO
     df["modelo"] = pd.to_numeric(df["modelo"], errors="coerce")
     df["modelo"] = df["modelo"].apply(
         lambda x: "SIN_MODELO" if pd.isna(x) else str(int(x))
     )
 
-    # cantidad (sin eliminar registros)
+    # cantidad
     df["cantidad"] = pd.to_numeric(df["cantidad"], errors="coerce").fillna(0)
 
     # ==========================================
-    # CONTROL DE DUPLICADOS
+    # TABLA DE SOLICITUDES DUPLICADAS
+    # ==========================================
+
+    solicitudes_duplicadas = (
+        df.groupby("numero_orden")
+        .size()
+        .reset_index(name="cantidad_filas")
+    )
+    solicitudes_duplicadas = solicitudes_duplicadas[
+        solicitudes_duplicadas["cantidad_filas"] > 1
+    ].sort_values(by="cantidad_filas", ascending=False)
+
+    # ==========================================
+    # CONTROL DE DUPLICADOS EXACTOS
     # ==========================================
 
     filas_originales = len(df)
@@ -106,7 +119,7 @@ if archivo is not None:
     )
 
     df = df.drop_duplicates(
-        subset=["numero_orden","material","modelo","serie","cantidad"]
+        subset=["numero_orden", "material", "modelo", "serie", "cantidad"]
     )
 
     filas_finales = len(df)
@@ -125,8 +138,14 @@ if archivo is not None:
     if cantidad_duplicados > 0:
         st.warning("Se detectaron duplicados en el archivo. Fueron eliminados automáticamente.")
 
-    st.subheader("Vista previa")
-    st.dataframe(df.head(20), use_container_width=True)
+    st.subheader("Vista previa completa")
+    st.dataframe(df, use_container_width=True, height=500)
+
+    st.subheader("Solicitudes duplicadas")
+    if not solicitudes_duplicadas.empty:
+        st.dataframe(solicitudes_duplicadas, use_container_width=True, height=300)
+    else:
+        st.success("No se detectaron números de solicitud duplicados.")
 
     # ==========================================
     # GUARDAR EN BASE DE DATOS

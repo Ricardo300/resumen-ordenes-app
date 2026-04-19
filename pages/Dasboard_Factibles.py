@@ -232,6 +232,47 @@ if archivo is not None:
         )
 
         st.plotly_chart(fig_stack, use_container_width=True)
+    # =========================
+    # FILA 4 - MOTIVOS DE CANCELACIÓN
+    # =========================
+    st.subheader("Motivos de Cancelación (según ANALISIS)")
+
+    df_canceladas = df_filtrado[
+        df_filtrado["Clasificación General"].astype(str).str.strip().str.upper() == "CANCELADAS"
+    ].copy()
+
+    if df_canceladas.empty:
+        st.info("No hay órdenes canceladas con los filtros seleccionados.")
+    else:
+        resumen_canceladas = (
+            df_canceladas["ANALISIS"]
+            .fillna("SIN DETALLE")
+            .astype(str)
+            .str.strip()
+            .replace("", "SIN DETALLE")
+            .value_counts()
+            .reset_index()
+        )
+        resumen_canceladas.columns = ["ANALISIS", "Cantidad"]
+
+        fig_cancel = px.bar(
+            resumen_canceladas,
+            x="Cantidad",
+            y="ANALISIS",
+            orientation="h",
+            text="Cantidad"
+        )
+
+        fig_cancel.update_traces(textposition="outside")
+
+        fig_cancel.update_layout(
+            yaxis=dict(categoryorder="total ascending"),
+            xaxis_title="Cantidad",
+            yaxis_title="",
+            margin=dict(l=10, r=30, t=40, b=10)
+        )
+
+        st.plotly_chart(fig_cancel, use_container_width=True)
 
 else:
     st.info("Sube el archivo Excel para mostrar el dashboard.")

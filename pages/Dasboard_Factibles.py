@@ -13,61 +13,95 @@ archivo = st.file_uploader("Sube el archivo Excel", type=["xlsx"])
 
 if archivo is not None:
     df = pd.read_excel(archivo, sheet_name="Hoja1")
-
-    # -------------------------
-    # LIMPIEZA BÁSICA
-    # -------------------------
     df.columns = df.columns.str.strip()
 
-    # Normalizar ANALISIS
-    if "ANALISIS" not in df.columns:
-        st.error("No se encontró la columna 'ANALISIS' en el archivo.")
+    # =========================
+    # VALIDAR COLUMNAS NECESARIAS
+    # =========================
+    columnas_requeridas = ["Factibilidad", "Clasificación General"]
+    faltantes = [col for col in columnas_requeridas if col not in df.columns]
+
+    if faltantes:
+        st.error(f"Faltan estas columnas en el archivo: {', '.join(faltantes)}")
         st.stop()
 
-    df["ANALISIS"] = df["ANALISIS"].astype(str).str.strip()
+    # =========================
+    # LIMPIEZA BÁSICA
+    # =========================
+    df["Factibilidad"] = df["Factibilidad"].astype(str).str.strip()
+    df["Clasificación General"] = df["Clasificación General"].astype(str).str.strip()
 
-    # Crear clasificación principal
-    df["Factibilidad"] = df["ANALISIS"].apply(
-        lambda x: "Factible" if x.upper() == "COMPLETADO" else "No Factible"
-    )
+    # Buscar columna de tecnología
+    col_tecnologia = None
+    for col in df.columns:
+        if col.strip().lower() == "tecnología" or col.strip().lower() == "tecnologia":
+            col_tecnologia = col
+            break
+
+    if col_tecnologia is None:
+        st.warning("No se encontró la columna de Tecnología. El filtro no se mostrará.")
+        df["Tecnología_tmp"] = "SIN DATO"
+        col_tecnologia = "Tecnología_tmp"
+
+    df[col_tecnologia] = df[col_tecnologia].astype(str).str.strip()
+
+    # Buscar columna de fecha para días operativos
+    posibles_fechas = ["Fecha Atención", "Fecha", "fecha", "FECHA ATENCION"]
+    col_fecha = None
+    for col in posibles_fechas:
+        if col in df.columns:
+            col_fecha = col
+            break
+
+    if col_fecha is not None:
+        df[col_fecha] = pd.to_datetime(df[col_fecha], errors="coerce")
+    else:
+        st.warning("No se encontró columna de fecha para calcular días operativos.")
 
     # =========================
-    # FILTRO OPCIONAL
+    # FILTROS
     # =========================
     with st.sidebar:
         st.header("Filtros")
 
-        lista_analisis = sorted(df["ANALISIS"].dropna().unique().tolist())
-        seleccion_analisis = st.multiselect(
-            "ANALISIS",
-            options=lista_analisis,
-            default=lista_analisis
+        tecnologias = sorted(df[col_tecnologia].dropna().unique().tolist())
+        tecnologia_sel = st.multiselect(
+            "Tecnología",
+            options=tecnologias,
+            default=tecnologias
         )
 
-    df_filtrado = df[df["ANALISIS"].isin(seleccion_analisis)].copy()
+    df_filtrado = df[df[col_tecnologia].isin(tecnologia_sel)].copy()
 
     # =========================
-    # MÉTRICAS
+    # KPIs
     # =========================
     total_ordenes = len(df_filtrado)
-    factibles = (df_filtrado["Factibilidad"] == "Factible").sum()
-    no_factibles = (df_filtrado["Factibilidad"] == "No Factible").sum()
+
+    factibles = df_filtrado["Factibilidad"].str.upper().eq("FACTIBLE").sum()
+    no_factibles = df_filtrado["Factibilidad"].str.upper().eq("NO FACTIBLE").sum()
 
     pct_factibles = (factibles / total_ordenes * 100) if total_ordenes > 0 else 0
     pct_no_factibles = (no_factibles / total_ordenes * 100) if total_ordenes > 0 else 0
+
+    if col_fecha is not None:
+        dias_operativos = df_filtrado[col_fecha].dropna().dt.date.nunique()
+    else:
+        dias_operativos = 0
 
     # =========================
     # FILA 1 - KPIs
     # =========================
     st.subheader("Resumen General")
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
 
     c1.metric("Total Órdenes", f"{total_ordenes:,}")
     c2.metric("Factibles", f"{factibles:,}")
     c3.metric("No Factibles", f"{no_factibles:,}")
     c4.metric("% Factibilidad", f"{pct_factibles:.1f}%")
     c5.metric("% No Factibilidad", f"{pct_no_factibles:.1f}%")
+    c6.metric("Días Operativos", f"{dias_operativos:,}")
 
     # =========================
     # FILA 2
@@ -107,24 +141,28 @@ if archivo is not None:
         st.plotly_chart(fig_dona, use_container_width=True)
 
     # -------------------------
-    # GRAFICO 2: NO FACTIBLES POR ANALISIS
+    # GRAFICO 2: NO FACTIBLES POR CLASIFICACIÓN GENERAL
     # -------------------------
-    no_fact_df = df_filtrado[df_filtrado["Factibilidad"] == "No Factible"].copy()
+    no_fact_df = df_filtrado[
+        df_filtrado["Factibilidad"].str.upper() == "NO FACTIBLE"
+    ].copy()
 
-    resumen_no_fact = (
-        no_fact_df["ANALISIS"]
+    resumen_clasif = (
+        no_fact_df["Clasificación General"]
+        .fillna("SIN CLASIFICAR")
+        .replace("", "SIN CLASIFICAR")
         .value_counts()
         .reset_index()
     )
-    resumen_no_fact.columns = ["ANALISIS", "Cantidad"]
+    resumen_clasif.columns = ["Clasificación General", "Cantidad"]
 
     with col2:
-        st.subheader("No Factibles por ANALISIS")
+        st.subheader("No Factibles por Clasificación General")
 
         fig_bar = px.bar(
-            resumen_no_fact,
+            resumen_clasif,
             x="Cantidad",
-            y="ANALISIS",
+            y="Clasificación General",
             orientation="h",
             text="Cantidad"
         )

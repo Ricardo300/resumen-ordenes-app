@@ -272,7 +272,8 @@ if archivo is not None:
             yaxis=dict(categoryorder="total ascending"),
             xaxis_title="Cantidad",
             yaxis_title="",
-            margin=dict(l=10, r=30, t=40, b=10)
+            margin=dict(l=10, r=30, t=40, b=10),
+            height=600
         )
     
         st.plotly_chart(fig_cancel, use_container_width=True)

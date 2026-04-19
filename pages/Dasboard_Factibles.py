@@ -34,7 +34,7 @@ if archivo is not None:
     # Buscar columna de tecnología
     col_tecnologia = None
     for col in df.columns:
-        if col.strip().lower() == "tecnología" or col.strip().lower() == "tecnologia":
+        if col.strip().lower() in ["tecnología", "tecnologia"]:
             col_tecnologia = col
             break
 
@@ -45,7 +45,7 @@ if archivo is not None:
 
     df[col_tecnologia] = df[col_tecnologia].astype(str).str.strip()
 
-    # Buscar columna de fecha para días operativos
+    # Buscar columna de fecha para días operativos y gráfico por día
     posibles_fechas = ["Fecha Atención", "Fecha", "fecha", "FECHA ATENCION"]
     col_fecha = None
     for col in posibles_fechas:
@@ -65,11 +65,29 @@ if archivo is not None:
         st.header("Filtros")
 
         tecnologias = sorted(df[col_tecnologia].dropna().unique().tolist())
-        tecnologia_sel = st.multiselect(
-            "Tecnología",
-            options=tecnologias,
-            default=tecnologias
-        )
+
+        if "tecnologia_sel" not in st.session_state:
+            st.session_state.tecnologia_sel = tecnologias
+
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("✓ Todo", use_container_width=True):
+                st.session_state.tecnologia_sel = tecnologias
+        with c2:
+            if st.button("✕ Ninguno", use_container_width=True):
+                st.session_state.tecnologia_sel = []
+
+        tecnologia_sel = []
+        for tech in tecnologias:
+            checked = st.checkbox(
+                tech,
+                value=tech in st.session_state.tecnologia_sel,
+                key=f"tech_{tech}"
+            )
+            if checked:
+                tecnologia_sel.append(tech)
+
+        st.session_state.tecnologia_sel = tecnologia_sel
 
     df_filtrado = df[df[col_tecnologia].isin(tecnologia_sel)].copy()
 
@@ -77,7 +95,6 @@ if archivo is not None:
     # KPIs
     # =========================
     total_ordenes = len(df_filtrado)
-
     factibles = df_filtrado["Factibilidad"].str.upper().eq("FACTIBLE").sum()
     no_factibles = df_filtrado["Factibilidad"].str.upper().eq("NO FACTIBLE").sum()
 
@@ -95,7 +112,6 @@ if archivo is not None:
     st.subheader("Resumen General")
 
     c1, c2, c3, c4, c5, c6 = st.columns(6)
-
     c1.metric("Total Órdenes", f"{total_ordenes:,}")
     c2.metric("Factibles", f"{factibles:,}")
     c3.metric("No Factibles", f"{no_factibles:,}")
@@ -175,52 +191,47 @@ if archivo is not None:
             xaxis_title="Cantidad",
             yaxis_title=""
         )
-# =========================
-# FILA 3 - FACTIBLE VS NO FACTIBLE POR DÍA
-# =========================
-st.subheader("Factibilidad por Día")
 
-# Validar columna de fecha
-if col_fecha is None:
-    st.warning("No hay columna de fecha para graficar por día.")
-else:
-    df_temp = df_filtrado.copy()
-
-    # Asegurar formato fecha y quitar hora
-    df_temp[col_fecha] = pd.to_datetime(df_temp[col_fecha], errors="coerce")
-    df_temp["Fecha_dia"] = df_temp[col_fecha].dt.date
-
-    # Agrupar
-    df_group = (
-        df_temp
-        .groupby(["Fecha_dia", "Factibilidad"])
-        .size()
-        .reset_index(name="Cantidad")
-    )
-
-    # Ordenar fechas
-    df_group = df_group.sort_values("Fecha_dia")
-
-    # Gráfico
-    fig_stack = px.bar(
-        df_group,
-        x="Fecha_dia",
-        y="Cantidad",
-        color="Factibilidad",
-        text="Cantidad"
-    )
-
-    fig_stack.update_traces(textposition="inside")
-
-    fig_stack.update_layout(
-        barmode="stack",
-        xaxis_title="Fecha",
-        yaxis_title="Cantidad de Órdenes",
-        margin=dict(l=10, r=10, t=40, b=10)
-    )
-
-    st.plotly_chart(fig_stack, use_container_width=True)
         st.plotly_chart(fig_bar, use_container_width=True)
+
+    # =========================
+    # FILA 3 - FACTIBLE VS NO FACTIBLE POR DÍA
+    # =========================
+    st.subheader("Factibilidad por Día")
+
+    if col_fecha is None:
+        st.warning("No hay columna de fecha para graficar por día.")
+    else:
+        df_temp = df_filtrado.copy()
+        df_temp[col_fecha] = pd.to_datetime(df_temp[col_fecha], errors="coerce")
+        df_temp["Fecha_dia"] = df_temp[col_fecha].dt.date
+
+        df_group = (
+            df_temp.dropna(subset=["Fecha_dia"])
+            .groupby(["Fecha_dia", "Factibilidad"])
+            .size()
+            .reset_index(name="Cantidad")
+            .sort_values("Fecha_dia")
+        )
+
+        fig_stack = px.bar(
+            df_group,
+            x="Fecha_dia",
+            y="Cantidad",
+            color="Factibilidad",
+            text="Cantidad"
+        )
+
+        fig_stack.update_traces(textposition="inside")
+
+        fig_stack.update_layout(
+            barmode="stack",
+            xaxis_title="Fecha",
+            yaxis_title="Cantidad de Órdenes",
+            margin=dict(l=10, r=10, t=40, b=10)
+        )
+
+        st.plotly_chart(fig_stack, use_container_width=True)
 
 else:
     st.info("Sube el archivo Excel para mostrar el dashboard.")

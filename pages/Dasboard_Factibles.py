@@ -175,7 +175,51 @@ if archivo is not None:
             xaxis_title="Cantidad",
             yaxis_title=""
         )
+# =========================
+# FILA 3 - FACTIBLE VS NO FACTIBLE POR DÍA
+# =========================
+st.subheader("Factibilidad por Día")
 
+# Validar columna de fecha
+if col_fecha is None:
+    st.warning("No hay columna de fecha para graficar por día.")
+else:
+    df_temp = df_filtrado.copy()
+
+    # Asegurar formato fecha y quitar hora
+    df_temp[col_fecha] = pd.to_datetime(df_temp[col_fecha], errors="coerce")
+    df_temp["Fecha_dia"] = df_temp[col_fecha].dt.date
+
+    # Agrupar
+    df_group = (
+        df_temp
+        .groupby(["Fecha_dia", "Factibilidad"])
+        .size()
+        .reset_index(name="Cantidad")
+    )
+
+    # Ordenar fechas
+    df_group = df_group.sort_values("Fecha_dia")
+
+    # Gráfico
+    fig_stack = px.bar(
+        df_group,
+        x="Fecha_dia",
+        y="Cantidad",
+        color="Factibilidad",
+        text="Cantidad"
+    )
+
+    fig_stack.update_traces(textposition="inside")
+
+    fig_stack.update_layout(
+        barmode="stack",
+        xaxis_title="Fecha",
+        yaxis_title="Cantidad de Órdenes",
+        margin=dict(l=10, r=10, t=40, b=10)
+    )
+
+    st.plotly_chart(fig_stack, use_container_width=True)
         st.plotly_chart(fig_bar, use_container_width=True)
 
 else:

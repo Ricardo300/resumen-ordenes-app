@@ -283,14 +283,17 @@ productividad_diaria["productividad"] = (
 )
 
 productividad_promedio = round(productividad_diaria["productividad"].mean(), 2) if not productividad_diaria.empty else 0
+productividad_mediana = round(productividad_diaria["productividad"].median(), 2) if not productividad_diaria.empty else 0
 
-c1, c2, c3, c4, c5, c6 = st.columns(6)
+
+c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
 c1.metric("Órdenes", f"{total_ordenes:,}")
 c2.metric("Técnicos", total_tecnicos)
-c3.metric("Productividad", productividad_promedio)
-c4.metric("Días Operativos", dias_operativos)
-c5.metric("Promedio Día", promedio_diario)
-c6.metric("Garantías", total_garantias)
+c3.metric("Prod. Promedio", productividad_promedio)
+c4.metric("Prod. Mediana", productividad_mediana)
+c5.metric("Días Operativos", dias_operativos)
+c6.metric("Promedio Día", promedio_diario)
+c7.metric("Garantías", total_garantias)
 
 with st.expander("Validación de carga", expanded=False):
     st.write("Registros después de filtros:", registros_filtrados)

@@ -269,6 +269,9 @@ dias_operativos = df["fecha"].dt.date.nunique()
 promedio_diario = round(total_ordenes / dias_operativos, 2) if dias_operativos else 0
 total_garantias = len(df[df["garantia"].astype(str).str.strip().str.upper() == "SI"])
 
+# ------------------------------------------
+# PRODUCTIVIDAD PROMEDIO DIARIA (SE MANTIENE IGUAL)
+# ------------------------------------------
 productividad_diaria = (
     df.groupby(df["fecha"].dt.date)
     .agg(
@@ -283,23 +286,36 @@ productividad_diaria["productividad"] = (
 )
 
 productividad_promedio = round(productividad_diaria["productividad"].mean(), 2) if not productividad_diaria.empty else 0
+
+# ------------------------------------------
+# PRODUCTIVIDAD MEDIANA POR TÉCNICO
+# ------------------------------------------
+productividad_tecnico = (
+    df.groupby("identificador_tecnico")
+    .agg(
+        produccion=("orden_trabajo", "nunique"),
+        dias_trabajados=("fecha", lambda x: x.dt.date.nunique())
+    )
+    .reset_index()
+)
+
+productividad_tecnico["productividad"] = (
+    productividad_tecnico["produccion"] / productividad_tecnico["dias_trabajados"]
+)
+
 productividad_mediana = round(productividad_tecnico["productividad"].median(), 2) if not productividad_tecnico.empty else 0
 
-
+# ------------------------------------------
+# KPIs
+# ------------------------------------------
 c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
 c1.metric("Órdenes", f"{total_ordenes:,}")
 c2.metric("Técnicos", total_tecnicos)
-c3.metric("Prod. Promedio", productividad_promedio)
+c3.metric("Productividad", productividad_promedio)
 c4.metric("Prod. Mediana", productividad_mediana)
 c5.metric("Días Operativos", dias_operativos)
 c6.metric("Promedio Día", promedio_diario)
 c7.metric("Garantías", total_garantias)
-
-with st.expander("Validación de carga", expanded=False):
-    st.write("Registros después de filtros:", registros_filtrados)
-    st.write("Órdenes únicas finales:", ordenes_unicas_final)
-    st.write("Duplicados removidos por seguridad:", registros_filtrados - ordenes_unicas_final)
-
 # ==========================================
 # POPUP TÉCNICOS
 # ==========================================

@@ -270,25 +270,7 @@ promedio_diario = round(total_ordenes / dias_operativos, 2) if dias_operativos e
 total_garantias = len(df[df["garantia"].astype(str).str.strip().str.upper() == "SI"])
 
 # ------------------------------------------
-# PRODUCTIVIDAD PROMEDIO DIARIA (SE MANTIENE IGUAL)
-# ------------------------------------------
-productividad_diaria = (
-    df.groupby(df["fecha"].dt.date)
-    .agg(
-        ordenes=("orden_trabajo", "nunique"),
-        tecnicos=("identificador_tecnico", "nunique")
-    )
-    .reset_index()
-)
-
-productividad_diaria["productividad"] = (
-    productividad_diaria["ordenes"] / productividad_diaria["tecnicos"]
-)
-
-productividad_promedio = round(productividad_diaria["productividad"].mean(), 2) if not productividad_diaria.empty else 0
-
-# ------------------------------------------
-# PRODUCTIVIDAD MEDIANA POR TÉCNICO
+# PRODUCTIVIDAD POR TÉCNICO
 # ------------------------------------------
 productividad_tecnico = (
     df.groupby("identificador_tecnico")
@@ -303,7 +285,15 @@ productividad_tecnico["productividad"] = (
     productividad_tecnico["produccion"] / productividad_tecnico["dias_trabajados"]
 )
 
-productividad_mediana = round(productividad_tecnico["productividad"].median(), 2) if not productividad_tecnico.empty else 0
+# KPI principal: promedio por técnico
+productividad_promedio = round(
+    productividad_tecnico["productividad"].mean(), 2
+) if not productividad_tecnico.empty else 0
+
+# KPI nuevo: mediana por técnico
+productividad_mediana = round(
+    productividad_tecnico["productividad"].median(), 2
+) if not productividad_tecnico.empty else 0
 
 # ------------------------------------------
 # KPIs
@@ -311,7 +301,7 @@ productividad_mediana = round(productividad_tecnico["productividad"].median(), 2
 c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
 c1.metric("Órdenes", f"{total_ordenes:,}")
 c2.metric("Técnicos", total_tecnicos)
-c3.metric("Productividad", productividad_promedio)
+c3.metric("Prod. Promedio", productividad_promedio)
 c4.metric("Prod. Mediana", productividad_mediana)
 c5.metric("Días Operativos", dias_operativos)
 c6.metric("Promedio Día", promedio_diario)

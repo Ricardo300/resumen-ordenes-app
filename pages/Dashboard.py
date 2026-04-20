@@ -283,7 +283,7 @@ productividad_diaria["productividad"] = (
 )
 
 productividad_promedio = round(productividad_diaria["productividad"].mean(), 2) if not productividad_diaria.empty else 0
-productividad_mediana = round(productividad_diaria["productividad"].median(), 2) if not productividad_diaria.empty else 0
+productividad_mediana = round(productividad_tecnico["productividad"].median(), 2) if not productividad_tecnico.empty else 0
 
 
 c1, c2, c3, c4, c5, c6, c7 = st.columns(7)

@@ -139,7 +139,6 @@ def color_alerta_pendiente(p):
     else:
         return "#22c55e"
 
-
 # =========================================================
 # BLOQUE ESTADOS
 # =========================================================
@@ -493,20 +492,20 @@ def render_pantalla_backoffice(df):
         "GCAR1027": "Harold Castillo",
     }
 
-    if "identificador_tecnico" not in df.columns:
-        st.error("No existe la columna 'identificador_tecnico' en el archivo.")
+    if "Identificador Tecnico" not in df.columns:
+        st.error("No existe la columna 'Identificador Tecnico' en el archivo.")
         return
 
     df_bo = df.copy()
 
-    df_bo["identificador_tecnico"] = (
-        df_bo["identificador_tecnico"]
+    df_bo["Identificador Tecnico"] = (
+        df_bo["Identificador Tecnico"]
         .astype(str)
         .str.strip()
         .str.upper()
     )
 
-    df_bo["backoffice"] = df_bo["identificador_tecnico"].map(mapa_bo).fillna("Sin-Asignar")
+    df_bo["backoffice"] = df_bo["Identificador Tecnico"].map(mapa_bo).fillna("Sin-Asignar")
 
     estados_pendientes = ["Pendiente", "Iniciado", "En ruta"]
     df_bo["es_pendiente"] = df_bo["estado_visual"].isin(estados_pendientes).astype(int)
@@ -677,7 +676,7 @@ components.html(
 df = pd.read_excel(RUTA_ARCHIVO_FIJO, engine="openpyxl")
 df.columns = df.columns.str.strip()
 
-columnas_necesarias = ["Estado", "Tipo Actividad", "Sub Tipo de Orden", "identificador_tecnico"]
+columnas_necesarias = ["Estado", "Tipo Actividad", "Sub Tipo de Orden", "Identificador Tecnico"]
 faltantes = [c for c in columnas_necesarias if c not in df.columns]
 if faltantes:
     st.error(f"Faltan estas columnas en el archivo: {', '.join(faltantes)}")

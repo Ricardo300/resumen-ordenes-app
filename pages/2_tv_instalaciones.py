@@ -378,17 +378,6 @@ def render_pantalla_tecnologia(df_bloque, nombre_pantalla, estados):
 # PANTALLA 3 = BACKOFFICE
 # =========================================================
 def render_pantalla_backoffice(df):
-    st.markdown(
-        '<div class="titulo-dashboard">BackOffice</div>',
-        unsafe_allow_html=True
-    )
-
-    fecha = datetime.now().strftime("%d/%m/%Y %I:%M %p")
-    st.markdown(
-        f'<div class="subtitulo-dashboard">Corte: {fecha}</div>',
-        unsafe_allow_html=True
-    )
-
     mapa_bo = {
         # Andres Corea
         "CAR567": "Andres Corea",

@@ -412,362 +412,149 @@ def render_pantalla_tecnologia(df_bloque, nombre_pantalla, estados):
 # PANTALLA 3 = BACKOFFICE
 # =========================================================
 def render_pantalla_backoffice(df):
+
     mapa_bo = {
-        # Andres Corea
-        "CAR567": "Andres Corea",
-        "CAR566": "Andres Corea",
-        "CAR453": "Andres Corea",
-        "CAR396": "Andres Corea",
-        "CAR397": "Andres Corea",
-        "CAR439": "Andres Corea",
-        "CAR508": "Andres Corea",
-        "GCAR513": "Andres Corea",
-        "GCAR603": "Andres Corea",
-        "GCAR968": "Andres Corea",
-        "GCAR351": "Andres Corea",
-        "GCAR627": "Andres Corea",
-        "GCAR1001": "Andres Corea",
-        "GCAR1008": "Andres Corea",
-        "GCAR1016": "Andres Corea",
-        "GCAR1019": "Andres Corea",
-        "GCAR1020": "Andres Corea",
-        "GCAR1035": "Andres Corea",
-        "GCAR1037": "Andres Corea",
+        "CAR567": "Andres Corea", "CAR566": "Andres Corea", "CAR453": "Andres Corea",
+        "CAR396": "Andres Corea", "CAR397": "Andres Corea", "CAR439": "Andres Corea",
 
-        # Adriana Rojas
-        "CAR270": "Adriana Rojas",
-        "CAR1002": "Adriana Rojas",
-        "CAR040": "Adriana Rojas",
-        "CAR455": "Adriana Rojas",
-        "CAR285": "Adriana Rojas",
-        "GCAR780": "Adriana Rojas",
-        "GCAR606": "Adriana Rojas",
-        "GCAR593": "Adriana Rojas",
-        "GCAR554": "Adriana Rojas",
-        "GCAR551": "Adriana Rojas",
-        "GCAR506": "Adriana Rojas",
-        "GCAR860": "Adriana Rojas",
-        "GCAR953": "Adriana Rojas",
-        "GCAR951": "Adriana Rojas",
-        "GCAR840": "Adriana Rojas",
-        "GCAR670": "Adriana Rojas",
-        "GCAR964": "Adriana Rojas",
-        "GCAR103": "Adriana Rojas",
-        "GCAR869": "Adriana Rojas",
-        "GCAR105": "Adriana Rojas",
-        "GCAR184": "Adriana Rojas",
-        "GCAR1033": "Adriana Rojas",
-        "GCAR1048": "Adriana Rojas",
+        "CAR270": "Adriana Rojas", "CAR1002": "Adriana Rojas", "CAR040": "Adriana Rojas",
+        "CAR455": "Adriana Rojas", "CAR285": "Adriana Rojas",
 
-        # Sofia Alvarez
-        "CAR261": "Sofia Alvarez",
-        "CAR395": "Sofia Alvarez",
-        "CAR259": "Sofia Alvarez",
-        "CAR365": "Sofia Alvarez",
-        "CAR321": "Sofia Alvarez",
-        "CAR507": "Sofia Alvarez",
-        "GCAR1001": "Sofia Alvarez",
-        "GCAR923": "Sofia Alvarez",
-        "GCAR822": "Sofia Alvarez",
-        "GCAR798": "Sofia Alvarez",
-        "GCAR608": "Sofia Alvarez",
-        "GCAR604": "Sofia Alvarez",
-        "GCAR570": "Sofia Alvarez",
-        "GCAR491": "Sofia Alvarez",
-        "GCAR935": "Sofia Alvarez",
-        "GCAR880": "Sofia Alvarez",
-        "GCAR946": "Sofia Alvarez",
-        "GCAR956": "Sofia Alvarez",
-        "GCAR990": "Sofia Alvarez",
-        "GCAR986": "Sofia Alvarez",
-        "GCAR978": "Sofia Alvarez",
-        "GCAR1003": "Sofia Alvarez",
-        "GCAR1024": "Sofia Alvarez",
-        "GCAR996": "Sofia Alvarez",
-        "GCAR789": "Sofia Alvarez",
+        "CAR261": "Sofia Alvarez", "CAR395": "Sofia Alvarez", "CAR259": "Sofia Alvarez",
+        "CAR365": "Sofia Alvarez", "CAR321": "Sofia Alvarez", "CAR507": "Sofia Alvarez",
 
-        # Harold Castillo
-        "GCAR906": "Harold Castillo",
-        "GCAR796": "Harold Castillo",
-        "GCAR585": "Harold Castillo",
-        "GCAR583": "Harold Castillo",
-        "GCAR955": "Harold Castillo",
-        "GCAR817": "Harold Castillo",
-        "GCAR991": "Harold Castillo",
-        "GCAR883": "Harold Castillo",
-        "GCAR887": "Harold Castillo",
-        "GCAR0345": "Harold Castillo",
-        "GCAR886": "Harold Castillo",
-        "GCAR2378": "Harold Castillo",
-        "GCAR349": "Harold Castillo",
-        "GCAR253": "Harold Castillo",
-        "GCAR329": "Harold Castillo",
-        "GCAR1006": "Harold Castillo",
-        "GCAR1010": "Harold Castillo",
-        "GCAR1015": "Harold Castillo",
-        "GCAR963": "Harold Castillo",
-        "GCAR781": "Harold Castillo",
-        "GCAR1029": "Harold Castillo",
-        "GCAR1028": "Harold Castillo",
-        "GCAR1034": "Harold Castillo",
-        "GCAR1025": "Harold Castillo",
-        "GCAR1043": "Harold Castillo",
-        "GCAR1022": "Harold Castillo",
-        "GCAR1039": "Harold Castillo",
-        "GCAR1027": "Harold Castillo",
+        "GCAR906": "Harold Castillo", "GCAR796": "Harold Castillo",
     }
 
     if "Identificador Tecnico" not in df.columns:
-        st.error("No existe la columna 'Identificador Tecnico' en el archivo.")
+        st.error("No existe la columna 'Identificador Tecnico'")
         return
 
     df_bo = df.copy()
-
-    df_bo["Identificador Tecnico"] = (
-        df_bo["Identificador Tecnico"]
-        .astype(str)
-        .str.strip()
-        .str.upper()
-    )
-
+    df_bo["Identificador Tecnico"] = df_bo["Identificador Tecnico"].astype(str).str.strip().str.upper()
     df_bo["backoffice"] = df_bo["Identificador Tecnico"].map(mapa_bo).fillna("Sin-Asignar")
 
-    # -----------------------------------------
-    # ESTATUS DE LA BOLSA
-    # -----------------------------------------
-    conteo_estados = df_bo["estado_visual"].value_counts()
+    conteo = df_bo["estado_visual"].value_counts()
 
-    pendientes = int(conteo_estados.get("Pendiente", 0))
-    iniciados = int(conteo_estados.get("Iniciado", 0))
-    en_ruta = int(conteo_estados.get("En ruta", 0))
-    suspendidos = int(conteo_estados.get("Suspendido", 0))
-    completados = int(conteo_estados.get("Completado", 0))
-    cancelados = int(conteo_estados.get("Cancelado", 0))
+    pendientes = int(conteo.get("Pendiente", 0))
+    iniciados = int(conteo.get("Iniciado", 0))
+    en_ruta = int(conteo.get("En ruta", 0))
+    suspendidos = int(conteo.get("Suspendido", 0))
+    completados = int(conteo.get("Completado", 0))
+    cancelados = int(conteo.get("Cancelado", 0))
 
-    c1, c2, c3, c4, c5, c6 = st.columns(6, gap="medium")
-    with c1:
-        render_kpi_bo("Pendiente", pendientes, "#f4a300")
-    with c2:
-        render_kpi_bo("Iniciado", iniciados, "#d9ad00")
-    with c3:
-        render_kpi_bo("En ruta", en_ruta, "#3f83f8")
-    with c4:
-        render_kpi_bo("Suspendido", suspendidos, "#ef4444")
-    with c5:
-        render_kpi_bo("Completado", completados, "#22c55e")
-    with c6:
-        render_kpi_bo("Cancelado", cancelados, "#7b8496")
+    # KPIs
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    with c1: render_kpi_bo("Pendiente", pendientes, "#f4a300")
+    with c2: render_kpi_bo("Iniciado", iniciados, "#d9ad00")
+    with c3: render_kpi_bo("En ruta", en_ruta, "#3f83f8")
+    with c4: render_kpi_bo("Suspendido", suspendidos, "#ef4444")
+    with c5: render_kpi_bo("Completado", completados, "#22c55e")
+    with c6: render_kpi_bo("Cancelado", cancelados, "#7b8496")
 
-    # -----------------------------------------
-    # ALERTA SIN ASIGNAR (SEPARADA)
-    # -----------------------------------------
-    sin_asignar_total = int((df_bo["backoffice"] == "Sin-Asignar").sum())
-
-    color_alerta = "#dc2626" if sin_asignar_total > 0 else "#16a34a"
-    icono_alerta = "🚨" if sin_asignar_total > 0 else "✅"
-
-    st.markdown(
-        f"""
+    # ALERTA
+    sin_asignar = (df_bo["backoffice"] == "Sin-Asignar").sum()
+    st.markdown(f"""
         <div style="
-            margin-top: 14px;
-            margin-bottom: 18px;
-            width: 380px;
-            margin-left: auto;
-            margin-right: auto;
-            background: {color_alerta};
-            color: white;
-            border-radius: 18px;
-            padding: 14px 18px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: 900;
-            box-shadow: 0 12px 24px rgba(0,0,0,0.20);
-        ">
-            {icono_alerta} Sin asignar: {sin_asignar_total}
+            margin:20px auto;
+            width:350px;
+            background:#dc2626;
+            color:white;
+            border-radius:18px;
+            padding:14px;
+            text-align:center;
+            font-size:22px;
+            font-weight:900;">
+            🚨 Sin asignar: {sin_asignar}
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+    """, unsafe_allow_html=True)
 
-    # -----------------------------------------
-    # RANKING POR BACKOFFICE (CUMPLIMIENTO)
-    # -----------------------------------------
-    estados_pendientes = ["Pendiente", "Iniciado", "En ruta"]
+    # AGRUPACIÓN
+    estados_pend = ["Pendiente", "Iniciado", "En ruta"]
 
-    df_bo["es_pendiente"] = df_bo["estado_visual"].isin(estados_pendientes).astype(int)
-    df_bo["es_completada"] = (df_bo["estado_visual"] == "Completado").astype(int)
-    df_bo["es_suspendida"] = (df_bo["estado_visual"] == "Suspendido").astype(int)
-    df_bo["es_cancelada"] = (df_bo["estado_visual"] == "Cancelado").astype(int)
+    df_bo["pend"] = df_bo["estado_visual"].isin(estados_pend).astype(int)
+    df_bo["comp"] = (df_bo["estado_visual"] == "Completado").astype(int)
+    df_bo["sus"] = (df_bo["estado_visual"] == "Suspendido").astype(int)
+    df_bo["can"] = (df_bo["estado_visual"] == "Cancelado").astype(int)
 
-    df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"].copy()
+    df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"]
 
-    if df_rank.empty:
-        st.warning("No hay órdenes con BackOffice asignado para mostrar.")
-        return
+    resumen = df_rank.groupby("backoffice").agg(
+        total=("estado_visual", "count"),
+        completadas=("comp", "sum"),
+        pendientes=("pend", "sum"),
+        suspendidas=("sus", "sum"),
+        canceladas=("can", "sum"),
+    ).reset_index()
 
-    resumen = (
-        df_rank.groupby("backoffice", as_index=False)
-        .agg(
-            total_ordenes=("estado_visual", "count"),
-            completadas=("es_completada", "sum"),
-            pendientes=("es_pendiente", "sum"),
-            suspendidas=("es_suspendida", "sum"),
-            canceladas=("es_cancelada", "sum"),
-        )
-    )
+    resumen["gestionadas"] = resumen["completadas"] + resumen["suspendidas"] + resumen["canceladas"]
+    resumen["pct"] = resumen["gestionadas"] / resumen["total"]
 
-    resumen["gestionadas"] = (
-        resumen["completadas"]
-        + resumen["suspendidas"]
-        + resumen["canceladas"]
-    )
+    resumen = resumen.sort_values("pct", ascending=False)
 
-    resumen["pct_cumplimiento"] = resumen.apply(
-        lambda x: x["gestionadas"] / x["total_ordenes"] if x["total_ordenes"] > 0 else 0,
-        axis=1
-    )
+    filas = ""
 
-    resumen = resumen.sort_values(
-        ["pct_cumplimiento", "pendientes"],
-        ascending=[False, True]
-    ).reset_index(drop=True)
+    for i, r in resumen.iterrows():
+        p = r["pct"] * 100
 
-    filas_html = ""
-    for idx, row in resumen.iterrows():
-        porcentaje = row["pct_cumplimiento"] * 100
+        # degradado bonito
+        color = "linear-gradient(90deg,#22c55e,#4ade80)" if p >= 75 else \
+                "linear-gradient(90deg,#f59e0b,#f97316)" if p >= 50 else \
+                "linear-gradient(90deg,#ef4444,#dc2626)"
 
-        if porcentaje >= 90:
-            color_barra = "linear-gradient(90deg, #fde047 0%, #4ade80 100%)"
-        elif porcentaje >= 75:
-            color_barra = "linear-gradient(90deg, #facc15 0%, #f59e0b 100%)"
-        else:
-            color_barra = "linear-gradient(90deg, #f97316 0%, #ef4444 100%)"
+        filas += f"""
+        <div class="fila">
+            <div>{i+1}</div>
+            <div>{r['backoffice']}</div>
+            <div style="color:#22c55e">{int(r['completadas'])}</div>
+            <div style="color:#f59e0b">{int(r['pendientes'])}</div>
 
-        ancho_barra = max(8, min(100, porcentaje))
-        marcador = max(10, min(96, porcentaje))
-
-        filas_html += f"""
-        <div class="fila-bo">
-            <div class="bo-pos">{idx + 1}</div>
-            <div class="bo-nombre">{row['backoffice']}</div>
-            <div class="bo-completadas">{int(row['completadas'])} completadas</div>
-            <div class="bo-pendientes">{int(row['pendientes'])} pendientes</div>
-            <div class="barra-wrap">
-                <div class="barra-fondo">
-                    <div class="barra-fill" style="width:{ancho_barra}%; background:{color_barra};"></div>
-                    <div class="barra-marker" style="left:{marcador}%;"></div>
-                </div>
+            <div class="barra">
+                <div class="fill" style="width:{p}%; background:{color}"></div>
             </div>
-            <div class="bo-pct">{porcentaje:.1f}%</div>
+
+            <div>{p:.1f}%</div>
         </div>
         """
 
     html = f"""
-    <html>
-    <head>
-        <style>
-            body {{
-                margin: 0;
-                background: transparent;
-                font-family: Arial, sans-serif;
-            }}
-            .contenedor {{
-                background: linear-gradient(180deg, #0b1a34 0%, #0a1730 100%);
-                border-radius: 24px;
-                padding: 22px;
-                min-height: 500px;
-                border: 1px solid rgba(255,255,255,0.07);
-                box-shadow: 0 14px 28px rgba(0,0,0,0.22);
-            }}
-            .titulo-tabla {{
-                color: white;
-                font-size: 28px;
-                font-weight: 900;
-                margin-bottom: 16px;
-            }}
-            .fila-bo {{
-                display: grid;
-                grid-template-columns: 60px 1.3fr 1fr 1fr 1.4fr 110px;
-                align-items: center;
-                gap: 12px;
-                background: #12264d;
-                border-radius: 18px;
-                padding: 16px 18px;
-                margin-bottom: 12px;
-            }}
-            .bo-pos {{
-                font-size: 28px;
-                font-weight: 900;
-                color: white;
-                text-align: center;
-            }}
-            .bo-nombre {{
-                font-size: 24px;
-                font-weight: 900;
-                color: white;
-            }}
-            .bo-completadas {{
-                font-size: 20px;
-                font-weight: 800;
-                color: #22c55e;
-                text-align: center;
-            }}
-            .bo-pendientes {{
-                font-size: 20px;
-                font-weight: 800;
-                color: #f59e0b;
-                text-align: center;
-            }}
-                        .barra-wrap {
-                width: 100%;
-            }
-            .barra-fondo {
-                position: relative;
-                width: 100%;
-                height: 30px;
-                background: linear-gradient(180deg, #20355c 0%, #16284b 100%);
-                border-radius: 999px;
-                overflow: hidden;
-                border: 1px solid rgba(255,255,255,0.08);
-                box-shadow:
-                    inset 0 3px 8px rgba(0,0,0,0.35),
-                    0 2px 10px rgba(0,0,0,0.18);
-            }
-            .barra-fill {
-                height: 100%;
-                border-radius: 999px;
-                box-shadow:
-                    0 0 12px rgba(255,255,255,0.12),
-                    inset 0 -2px 4px rgba(0,0,0,0.18);
-            }
-            .barra-marker {
-                position: absolute;
-                top: 3px;
-                width: 4px;
-                height: 24px;
-                border-radius: 999px;
-                background: rgba(15, 23, 42, 0.55);
-                box-shadow: 0 0 0 1px rgba(255,255,255,0.18);
-                transform: translateX(-50%);
-            }
-            .bo-pct {{
-                font-size: 28px;
-                font-weight: 900;
-                color: white;
-                text-align: right;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="contenedor">
-            <div class="titulo-tabla">Cumplimiento por BackOffice</div>
-            {filas_html}
-        </div>
-    </body>
-    </html>
+    <style>
+    .cont {{
+        background:#0b1a34;
+        padding:20px;
+        border-radius:20px;
+    }}
+    .fila {{
+        display:grid;
+        grid-template-columns:50px 1fr 120px 120px 1fr 100px;
+        align-items:center;
+        gap:10px;
+        padding:12px;
+        margin-bottom:10px;
+        background:#12264d;
+        border-radius:16px;
+        color:white;
+        font-weight:700;
+    }}
+    .barra {{
+        height:22px;
+        background:#1e3a5f;
+        border-radius:20px;
+        overflow:hidden;
+    }}
+    .fill {{
+        height:100%;
+        border-radius:20px;
+    }}
+    </style>
+
+    <div class="cont">
+        <h2 style="color:white;">Cumplimiento por BackOffice</h2>
+        {filas}
+    </div>
     """
 
-    components.html(html, height=560, scrolling=False)
+    components.html(html, height=520)
 
     # =========================================
     # DEBUG - TABLA DE VALIDACIÓN

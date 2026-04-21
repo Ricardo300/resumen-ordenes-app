@@ -537,6 +537,12 @@ def render_pantalla_backoffice(df):
     )
 
     df_bo["backoffice"] = df_bo["Identificador Tecnico"].map(mapa_bo).fillna("Sin-Asignar")
+    
+    fecha_carga = obtener_fecha_carga()
+    st.markdown(
+        f'<div class="subtitulo-dashboard">Carga: {fecha_carga}</div>',
+        unsafe_allow_html=True
+    )
 
     # -----------------------------------------
     # ESTATUS DE LA BOLSA
@@ -756,22 +762,6 @@ def render_pantalla_backoffice(df):
 
     components.html(html, height=560, scrolling=False)
     
-    fecha_carga = obtener_fecha_carga()
-    st.markdown(
-        f"""
-        <div style="
-            text-align:center;
-            color:#cbd5e1;
-            font-size:18px;
-            font-weight:700;
-            margin-top:10px;
-            margin-bottom:8px;
-        ">
-            Carga: {fecha_carga}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
     # =========================================
     # DEBUG - TABLA DE VALIDACIÓN
     # =========================================

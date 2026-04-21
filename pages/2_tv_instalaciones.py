@@ -543,19 +543,19 @@ def render_pantalla_backoffice(df):
     cancelados = int(conteo_estados.get("Cancelado", 0))
 
     # Fila de estatus
-    c1, c2, c3, c4, c5, c6 = st.columns(6, gap="medium")
-    with c1:
-    render_kpi_bo("Pendiente", pendientes, "#f4a300")
-    with c2:
-        render_kpi_bo("Iniciado", iniciados, "#d9ad00")
-    with c3:
-        render_kpi_bo("En ruta", en_ruta, "#3f83f8")
-    with c4:
-        render_kpi_bo("Suspendido", suspendidos, "#ef4444")
-    with c5:
-        render_kpi_bo("Completado", completados, "#22c55e")
-    with c6:
-        render_kpi_bo("Cancelado", cancelados, "#7b8496")
+        c1, c2, c3, c4, c5, c6 = st.columns(6, gap="medium")
+        with c1:
+            render_kpi_bo("Pendiente", pendientes, "#f4a300")
+        with c2:
+            render_kpi_bo("Iniciado", iniciados, "#d9ad00")
+        with c3:
+            render_kpi_bo("En ruta", en_ruta, "#3f83f8")
+        with c4:
+            render_kpi_bo("Suspendido", suspendidos, "#ef4444")
+        with c5:
+            render_kpi_bo("Completado", completados, "#22c55e")
+        with c6:
+            render_kpi_bo("Cancelado", cancelados, "#7b8496")
 
     # -----------------------------------------
     # ALERTA SIN ASIGNAR (SEPARADA)

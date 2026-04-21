@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="TV Instalaciones", layout="wide")
 
 # =========================================================
-# CONFIG
+# CONFIG GENERAL
 # =========================================================
 SEGUNDOS_POR_PANTALLA = 20
 RUTA_ARCHIVO_FIJO = "/tmp/dashboard_eta_actual.xlsx"
@@ -58,7 +58,6 @@ header, footer {
 }
 
 .kpi-box {
-    background: linear-gradient(180deg, #0b1a34 0%, #0a1730 100%);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 22px;
     padding: 18px 14px;
@@ -119,10 +118,10 @@ def color_estado(estado):
     return colores.get(estado, "#64748b")
 
 
-def render_kpi(titulo, valor):
+def render_kpi(titulo, valor, color_fondo="#0b1a34"):
     st.markdown(
         f"""
-        <div class="kpi-box">
+        <div class="kpi-box" style="background:{color_fondo};">
             <div class="kpi-numero">{valor}</div>
             <div class="kpi-titulo">{titulo}</div>
         </div>
@@ -130,17 +129,8 @@ def render_kpi(titulo, valor):
         unsafe_allow_html=True
     )
 
-
-def color_alerta_pendiente(p):
-    if p >= 0.25:
-        return "#ef4444"
-    elif p >= 0.15:
-        return "#f59e0b"
-    else:
-        return "#22c55e"
-
 # =========================================================
-# BLOQUE ESTADOS
+# BLOQUE ESTADOS (PANTALLAS 1 Y 2)
 # =========================================================
 def render_bloque_estados(nombre, df_bloque, estados):
     total = len(df_bloque)
@@ -242,7 +232,7 @@ def render_bloque_estados(nombre, df_bloque, estados):
     components.html(html, height=560, scrolling=False)
 
 # =========================================================
-# GAUGE
+# GAUGE (PANTALLAS 1 Y 2)
 # =========================================================
 def polar_to_cartesian(cx, cy, r, angle_deg):
     angle_rad = math.radians(angle_deg)
@@ -361,16 +351,18 @@ def render_gauge_tecnologia(df_bloque):
 
     c1, c2, c3, c4 = st.columns(4, gap="medium")
     with c1:
-        render_kpi("Completadas", completadas)
+        render_kpi("Completadas", completadas, "#16a34a")
     with c2:
-        render_kpi("Suspendidas", suspendidas)
+        render_kpi("Suspendidas", suspendidas, "#dc2626")
     with c3:
-        render_kpi("Canceladas", canceladas)
+        render_kpi("Canceladas", canceladas, "#7b8496")
     with c4:
-        render_kpi("Total Ruta", total)
+        render_kpi("Total Ruta", total, "#1d4ed8")
 
 # =========================================================
-# PANTALLA TECNOLOGÍA
+# PANTALLA 1 Y PANTALLA 2
+# PANTALLA 1 = GPON
+# PANTALLA 2 = DTH
 # =========================================================
 def render_pantalla_tecnologia(df_bloque, nombre_pantalla, estados):
     st.markdown(
@@ -393,7 +385,7 @@ def render_pantalla_tecnologia(df_bloque, nombre_pantalla, estados):
         render_gauge_tecnologia(df_bloque)
 
 # =========================================================
-# PANTALLA BACKOFFICE
+# PANTALLA 3 = BACKOFFICE
 # =========================================================
 def render_pantalla_backoffice(df):
     st.markdown(
@@ -408,6 +400,7 @@ def render_pantalla_backoffice(df):
     )
 
     mapa_bo = {
+        # Andres Corea
         "CAR567": "Andres Corea",
         "CAR566": "Andres Corea",
         "CAR453": "Andres Corea",
@@ -415,6 +408,7 @@ def render_pantalla_backoffice(df):
         "CAR397": "Andres Corea",
         "CAR439": "Andres Corea",
 
+        # Adriana Rojas
         "CAR270": "Adriana Rojas",
         "CAR1002": "Adriana Rojas",
         "CAR040": "Adriana Rojas",
@@ -437,6 +431,7 @@ def render_pantalla_backoffice(df):
         "GCAR1033": "Adriana Rojas",
         "GCAR1048": "Adriana Rojas",
 
+        # Sofia Alvarez
         "CAR261": "Sofia Alvarez",
         "CAR395": "Sofia Alvarez",
         "CAR259": "Sofia Alvarez",
@@ -461,6 +456,7 @@ def render_pantalla_backoffice(df):
         "GCAR996": "Sofia Alvarez",
         "GCAR789": "Sofia Alvarez",
 
+        # Harold Castillo
         "GCAR906": "Harold Castillo",
         "GCAR796": "Harold Castillo",
         "GCAR585": "Harold Castillo",
@@ -516,17 +512,20 @@ def render_pantalla_backoffice(df):
     pendientes_total = int(df_bo["es_pendiente"].sum())
     sin_asignar_total = int((df_bo["backoffice"] == "Sin-Asignar").sum())
 
+    # KPIs superiores con colores intensos
     k1, k2, k3, k4 = st.columns(4, gap="medium")
     with k1:
-        render_kpi("Total Órdenes", total_ordenes)
+        render_kpi("Total Órdenes", total_ordenes, "#1d4ed8")
     with k2:
-        render_kpi("Completadas", completadas_total)
+        render_kpi("Completadas", completadas_total, "#16a34a")
     with k3:
-        render_kpi("Pendientes", pendientes_total)
+        render_kpi("Pendientes", pendientes_total, "#f59e0b")
     with k4:
         icono = "🚨" if sin_asignar_total > 0 else "✅"
-        render_kpi(f"{icono} Sin Asignar", sin_asignar_total)
+        color_sin_asignar = "#dc2626" if sin_asignar_total > 0 else "#16a34a"
+        render_kpi(f"{icono} Sin Asignar", sin_asignar_total, color_sin_asignar)
 
+    # Ranking solo con BO asignado
     df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"].copy()
 
     if df_rank.empty:
@@ -662,15 +661,16 @@ def render_pantalla_backoffice(df):
     """
 
     components.html(html, height=560, scrolling=False)
+
 # =========================================================
-# VERIFICAR ARCHIVO
+# VALIDAR ARCHIVO
 # =========================================================
 if not os.path.exists(RUTA_ARCHIVO_FIJO):
     st.warning("No hay archivo cargado. Ve a la página 'Cargar Archivo' y sube el Excel.")
     st.stop()
 
 # =========================================================
-# AUTO-REFRESH
+# AUTO REFRESH
 # =========================================================
 components.html(
     f"""
@@ -684,7 +684,7 @@ components.html(
 )
 
 # =========================================================
-# LEER ARCHIVO
+# LEER EXCEL
 # =========================================================
 df = pd.read_excel(RUTA_ARCHIVO_FIJO, engine="openpyxl")
 df.columns = df.columns.str.strip()
@@ -700,6 +700,9 @@ df = df[~df["Tipo Actividad"].astype(str).str.strip().isin([
     "Tiempo de almuerzo"
 ])].copy()
 
+# =========================================================
+# MAPEO TECNOLOGÍA
+# =========================================================
 map_tecnologia = {
     # DTH
     "Cambio de Plan con Cambio de Equipo DTH": "DTH",
@@ -751,19 +754,30 @@ df["tecnologia"] = (
 
 df["estado_visual"] = df["Estado"].apply(normalizar_estado)
 estados = ordenar_estados(list(df["estado_visual"].dropna().unique()))
-estados_visibles = [e for e in estados if e in ["Pendiente", "Iniciado", "En ruta", "Suspendido", "Completado", "Cancelado"]]
+estados_visibles = [
+    e for e in estados
+    if e in ["Pendiente", "Iniciado", "En ruta", "Suspendido", "Completado", "Cancelado"]
+]
 
+# =========================================================
+# DATA POR PANTALLA
+# =========================================================
 df_gpon = df[df["tecnologia"] == "GPON"].copy()
 df_dth = df[df["tecnologia"] == "DTH"].copy()
 
 # =========================================================
-# ROTACIÓN
+# ROTACIÓN DE PANTALLAS
+# PANTALLA 1 = GPON
+# PANTALLA 2 = DTH
+# PANTALLA 3 = BACKOFFICE
 # =========================================================
 pantalla_actual = int(time.time() / SEGUNDOS_POR_PANTALLA) % 3 + 1
 
 if pantalla_actual == 1:
     render_pantalla_tecnologia(df_gpon, "GPON", estados_visibles)
+
 elif pantalla_actual == 2:
     render_pantalla_tecnologia(df_dth, "DTH", estados_visibles)
+
 else:
     render_pantalla_backoffice(df)

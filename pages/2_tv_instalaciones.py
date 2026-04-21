@@ -744,6 +744,31 @@ def render_pantalla_backoffice(df):
         df_debug.head(1000),
         use_container_width=True
     )
+    # =========================================
+    # DEBUG - VALIDACIÓN DIRECTA CON ESTADO
+    # =========================================
+    st.markdown("### 🔎 Validación por BackOffice usando columna Estado")
+    
+    tabla_bo_estado = (
+        df_bo.groupby(["backoffice", "Estado"], as_index=False)
+        .size()
+        .rename(columns={"size": "cantidad"})
+        .sort_values(["backoffice", "Estado"])
+    )
+    
+    st.dataframe(tabla_bo_estado, use_container_width=True)
+    
+    st.markdown("### 🔎 Pendientes por BackOffice (Pendiente + Iniciado + En ruta)")
+    
+    tabla_pendientes_bo = (
+        df_bo[df_bo["Estado"].isin(["Pendiente", "Iniciado", "En ruta"])]
+        .groupby(["backoffice", "Estado"], as_index=False)
+        .size()
+        .rename(columns={"size": "cantidad"})
+        .sort_values(["backoffice", "Estado"])
+    )
+    
+    st.dataframe(tabla_pendientes_bo, use_container_width=True)
 # =========================================================
 # VALIDAR ARCHIVO
 # =========================================================

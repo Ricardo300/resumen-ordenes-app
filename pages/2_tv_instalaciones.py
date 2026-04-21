@@ -509,9 +509,9 @@ def render_pantalla_backoffice(df):
 
     df_bo["backoffice"] = df_bo["Identificador Tecnico"].map(mapa_bo).fillna("Sin-Asignar")
 
-    # -----------------------------------------
-    # ESTATUS DE LA BOLSA
-    # -----------------------------------------
+    # =====================================================
+    # RESUMEN DE ESTATUS (2 FILAS DE 3)
+    # =====================================================
     conteo_estados = df_bo["estado_visual"].value_counts()
 
     pendientes = int(conteo_estados.get("Pendiente", 0))
@@ -521,24 +521,25 @@ def render_pantalla_backoffice(df):
     completados = int(conteo_estados.get("Completado", 0))
     cancelados = int(conteo_estados.get("Cancelado", 0))
 
-    # Fila de estatus
-    c1, c2, c3, c4, c5, c6 = st.columns(6, gap="medium")
-    with c1:
+    r1c1, r1c2, r1c3 = st.columns(3, gap="large")
+    with r1c1:
         render_kpi("Pendiente", pendientes, "#f4a300")
-    with c2:
+    with r1c2:
         render_kpi("Iniciado", iniciados, "#d9ad00")
-    with c3:
+    with r1c3:
         render_kpi("En ruta", en_ruta, "#3f83f8")
-    with c4:
+
+    r2c1, r2c2, r2c3 = st.columns(3, gap="large")
+    with r2c1:
         render_kpi("Suspendido", suspendidos, "#ef4444")
-    with c5:
+    with r2c2:
         render_kpi("Completado", completados, "#22c55e")
-    with c6:
+    with r2c3:
         render_kpi("Cancelado", cancelados, "#7b8496")
 
-    # -----------------------------------------
+    # =====================================================
     # ALERTA SIN ASIGNAR (SEPARADA)
-    # -----------------------------------------
+    # =====================================================
     sin_asignar_total = int((df_bo["backoffice"] == "Sin-Asignar").sum())
 
     color_alerta = "#dc2626" if sin_asignar_total > 0 else "#16a34a"
@@ -547,19 +548,19 @@ def render_pantalla_backoffice(df):
     st.markdown(
         f"""
         <div style="
-            margin-top: 14px;
-            margin-bottom: 18px;
-            width: 380px;
+            margin-top: 20px;
+            margin-bottom: 24px;
+            width: 480px;
             margin-left: auto;
             margin-right: auto;
             background: {color_alerta};
             color: white;
-            border-radius: 18px;
-            padding: 14px 18px;
+            border-radius: 20px;
+            padding: 18px 22px;
             text-align: center;
-            font-size: 24px;
+            font-size: 30px;
             font-weight: 900;
-            box-shadow: 0 12px 24px rgba(0,0,0,0.20);
+            box-shadow: 0 14px 28px rgba(0,0,0,0.22);
         ">
             {icono_alerta} Sin asignar: {sin_asignar_total}
         </div>
@@ -567,25 +568,22 @@ def render_pantalla_backoffice(df):
         unsafe_allow_html=True
     )
 
-    # -----------------------------------------
+    # =====================================================
     # RANKING POR BACKOFFICE (CUMPLIMIENTO)
-    # -----------------------------------------
+    # =====================================================
     estados_pendientes = ["Pendiente", "Iniciado", "En ruta"]
-    
+
     df_bo["es_pendiente"] = df_bo["estado_visual"].isin(estados_pendientes).astype(int)
     df_bo["es_completada"] = (df_bo["estado_visual"] == "Completado").astype(int)
     df_bo["es_suspendida"] = (df_bo["estado_visual"] == "Suspendido").astype(int)
     df_bo["es_cancelada"] = (df_bo["estado_visual"] == "Cancelado").astype(int)
-    
+
     df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"].copy()
-    
+
     if df_rank.empty:
         st.warning("No hay órdenes con BackOffice asignado para mostrar.")
         return
-    
-    # -----------------------------
-    # AGRUPACIÓN
-    # -----------------------------
+
     resumen = (
         df_rank.groupby("backoffice", as_index=False)
         .agg(
@@ -596,44 +594,36 @@ def render_pantalla_backoffice(df):
             canceladas=("es_cancelada", "sum"),
         )
     )
-    
-    # -----------------------------
-    # CALCULO CUMPLIMIENTO
-    # -----------------------------
+
     resumen["gestionadas"] = (
         resumen["completadas"]
         + resumen["suspendidas"]
         + resumen["canceladas"]
     )
-    
+
     resumen["pct_cumplimiento"] = resumen.apply(
         lambda x: x["gestionadas"] / x["total_ordenes"] if x["total_ordenes"] > 0 else 0,
         axis=1
     )
-    
-    # ordenar (mejor primero)
+
     resumen = resumen.sort_values(
         ["pct_cumplimiento", "pendientes"],
         ascending=[False, True]
     ).reset_index(drop=True)
-    
-    # -----------------------------
-    # HTML RENDER
-    # -----------------------------
+
     filas_html = ""
     for idx, row in resumen.iterrows():
         porcentaje = row["pct_cumplimiento"] * 100
-    
-        # colores según cumplimiento
+
         if porcentaje >= 90:
-            color_barra = "#22c55e"  # verde
+            color_barra = "#22c55e"
         elif porcentaje >= 75:
-            color_barra = "#f59e0b"  # naranja
+            color_barra = "#f59e0b"
         else:
-            color_barra = "#ef4444"  # rojo
-    
+            color_barra = "#ef4444"
+
         ancho_barra = max(6, min(100, porcentaje))
-    
+
         filas_html += f"""
         <div class="fila-bo">
             <div class="bo-pos">{idx + 1}</div>
@@ -648,7 +638,7 @@ def render_pantalla_backoffice(df):
             <div class="bo-pct">{porcentaje:.1f}%</div>
         </div>
         """
-    
+
     html = f"""
     <html>
     <head>
@@ -662,45 +652,45 @@ def render_pantalla_backoffice(df):
                 background: linear-gradient(180deg, #0b1a34 0%, #0a1730 100%);
                 border-radius: 24px;
                 padding: 22px;
-                min-height: 500px;
+                min-height: 640px;
                 border: 1px solid rgba(255,255,255,0.07);
                 box-shadow: 0 14px 28px rgba(0,0,0,0.22);
             }}
             .titulo-tabla {{
                 color: white;
-                font-size: 28px;
+                font-size: 34px;
                 font-weight: 900;
-                margin-bottom: 16px;
+                margin-bottom: 20px;
             }}
             .fila-bo {{
                 display: grid;
-                grid-template-columns: 60px 1.3fr 1fr 1fr 1.4fr 110px;
+                grid-template-columns: 80px 1.5fr 1.1fr 1.1fr 1.6fr 140px;
                 align-items: center;
-                gap: 12px;
+                gap: 18px;
                 background: #12264d;
-                border-radius: 18px;
-                padding: 16px 18px;
-                margin-bottom: 12px;
+                border-radius: 22px;
+                padding: 22px 24px;
+                margin-bottom: 16px;
             }}
             .bo-pos {{
-                font-size: 28px;
+                font-size: 36px;
                 font-weight: 900;
                 color: white;
                 text-align: center;
             }}
             .bo-nombre {{
-                font-size: 24px;
+                font-size: 32px;
                 font-weight: 900;
                 color: white;
             }}
             .bo-completadas {{
-                font-size: 20px;
+                font-size: 24px;
                 font-weight: 800;
                 color: #22c55e;
                 text-align: center;
             }}
             .bo-pendientes {{
-                font-size: 20px;
+                font-size: 24px;
                 font-weight: 800;
                 color: #f59e0b;
                 text-align: center;
@@ -710,7 +700,7 @@ def render_pantalla_backoffice(df):
             }}
             .barra-fondo {{
                 width: 100%;
-                height: 26px;
+                height: 34px;
                 background: #243b63;
                 border-radius: 999px;
                 overflow: hidden;
@@ -721,7 +711,7 @@ def render_pantalla_backoffice(df):
                 border-radius: 999px;
             }}
             .bo-pct {{
-                font-size: 28px;
+                font-size: 36px;
                 font-weight: 900;
                 color: white;
                 text-align: right;
@@ -736,8 +726,8 @@ def render_pantalla_backoffice(df):
     </body>
     </html>
     """
-    
-    components.html(html, height=560, scrolling=False)
+
+    components.html(html, height=700, scrolling=False)
     # =========================================
     # DEBUG - TABLA DE VALIDACIÓN
     # =========================================

@@ -637,13 +637,14 @@ def render_pantalla_backoffice(df):
         porcentaje = row["pct_cumplimiento"] * 100
 
         if porcentaje >= 90:
-            color_barra = "#22c55e"
+            color_barra = "linear-gradient(90deg, #fde047 0%, #4ade80 100%)"
         elif porcentaje >= 75:
-            color_barra = "#f59e0b"
+            color_barra = "linear-gradient(90deg, #facc15 0%, #f59e0b 100%)"
         else:
-            color_barra = "#ef4444"
+            color_barra = "linear-gradient(90deg, #f97316 0%, #ef4444 100%)"
 
-        ancho_barra = max(6, min(100, porcentaje))
+        ancho_barra = max(8, min(100, porcentaje))
+        marcador = max(10, min(96, porcentaje))
 
         filas_html += f"""
         <div class="fila-bo">
@@ -654,6 +655,7 @@ def render_pantalla_backoffice(df):
             <div class="barra-wrap">
                 <div class="barra-fondo">
                     <div class="barra-fill" style="width:{ancho_barra}%; background:{color_barra};"></div>
+                    <div class="barra-marker" style="left:{marcador}%;"></div>
                 </div>
             </div>
             <div class="bo-pct">{porcentaje:.1f}%</div>
@@ -716,21 +718,38 @@ def render_pantalla_backoffice(df):
                 color: #f59e0b;
                 text-align: center;
             }}
-            .barra-wrap {{
+                        .barra-wrap {
                 width: 100%;
-            }}
-            .barra-fondo {{
+            }
+            .barra-fondo {
+                position: relative;
                 width: 100%;
-                height: 26px;
-                background: #243b63;
+                height: 30px;
+                background: linear-gradient(180deg, #20355c 0%, #16284b 100%);
                 border-radius: 999px;
                 overflow: hidden;
-                box-shadow: inset 0 2px 6px rgba(0,0,0,0.35);
-            }}
-            .barra-fill {{
+                border: 1px solid rgba(255,255,255,0.08);
+                box-shadow:
+                    inset 0 3px 8px rgba(0,0,0,0.35),
+                    0 2px 10px rgba(0,0,0,0.18);
+            }
+            .barra-fill {
                 height: 100%;
                 border-radius: 999px;
-            }}
+                box-shadow:
+                    0 0 12px rgba(255,255,255,0.12),
+                    inset 0 -2px 4px rgba(0,0,0,0.18);
+            }
+            .barra-marker {
+                position: absolute;
+                top: 3px;
+                width: 4px;
+                height: 24px;
+                border-radius: 999px;
+                background: rgba(15, 23, 42, 0.55);
+                box-shadow: 0 0 0 1px rgba(255,255,255,0.18);
+                transform: translateX(-50%);
+            }
             .bo-pct {{
                 font-size: 28px;
                 font-weight: 900;

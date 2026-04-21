@@ -693,6 +693,41 @@ def render_pantalla_backoffice(df):
     """
 
     components.html(html, height=560, scrolling=False)
+# =========================================
+# DEBUG - TABLA DE VALIDACIÓN
+# =========================================
+st.markdown("### 🔍 Validación de clasificación (debug)")
+
+df_debug = df_bo.copy()
+
+# Opcional: si tienes columna de orden, inclúyela
+columnas_debug = []
+
+if "Orden de Trabajo" in df_debug.columns:
+    columnas_debug.append("Orden de Trabajo")
+
+columnas_debug += [
+    "Identificador Tecnico",
+    "backoffice",
+    "Estado",
+    "estado_visual"
+]
+
+df_debug = df_debug[columnas_debug].copy()
+
+# Mostrar solo los que están sin asignar primero (para enfocarnos)
+st.markdown("#### 🚨 Registros SIN ASIGNAR")
+st.dataframe(
+    df_debug[df_debug["backoffice"] == "Sin-Asignar"].head(50),
+    use_container_width=True
+)
+
+# Mostrar muestra general
+st.markdown("#### 📊 Muestra general")
+st.dataframe(
+    df_debug.head(50),
+    use_container_width=True
+)
 # =========================================================
 # VALIDAR ARCHIVO
 # =========================================================

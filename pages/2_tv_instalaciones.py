@@ -397,6 +397,7 @@ def render_pantalla_backoffice(df):
         "CAR396": "Andres Corea",
         "CAR397": "Andres Corea",
         "CAR439": "Andres Corea",
+        "CAR508": "Andres Corea",
         "GCAR513": "Andres Corea",
         "GCAR603": "Andres Corea",
         "GCAR968": "Andres Corea",

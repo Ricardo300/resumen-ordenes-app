@@ -493,26 +493,70 @@ def render_pantalla_backoffice(df):
 
     df_bo["backoffice"] = df_bo["Identificador Tecnico"].map(mapa_bo).fillna("Sin-Asignar")
 
+    # -----------------------------------------
+    # ESTATUS DE LA BOLSA
+    # -----------------------------------------
+    conteo_estados = df_bo["estado_visual"].value_counts()
+
+    pendientes = int(conteo_estados.get("Pendiente", 0))
+    iniciados = int(conteo_estados.get("Iniciado", 0))
+    en_ruta = int(conteo_estados.get("En ruta", 0))
+    suspendidos = int(conteo_estados.get("Suspendido", 0))
+    completados = int(conteo_estados.get("Completado", 0))
+    cancelados = int(conteo_estados.get("Cancelado", 0))
+
+    # Fila de estatus
+    c1, c2, c3, c4, c5, c6 = st.columns(6, gap="medium")
+    with c1:
+        render_kpi("Pendiente", pendientes, "#f4a300")
+    with c2:
+        render_kpi("Iniciado", iniciados, "#d9ad00")
+    with c3:
+        render_kpi("En ruta", en_ruta, "#3f83f8")
+    with c4:
+        render_kpi("Suspendido", suspendidos, "#ef4444")
+    with c5:
+        render_kpi("Completado", completados, "#22c55e")
+    with c6:
+        render_kpi("Cancelado", cancelados, "#7b8496")
+
+    # -----------------------------------------
+    # ALERTA SIN ASIGNAR (SEPARADA)
+    # -----------------------------------------
+    sin_asignar_total = int((df_bo["backoffice"] == "Sin-Asignar").sum())
+
+    color_alerta = "#dc2626" if sin_asignar_total > 0 else "#16a34a"
+    icono_alerta = "🚨" if sin_asignar_total > 0 else "✅"
+
+    st.markdown(
+        f"""
+        <div style="
+            margin-top: 14px;
+            margin-bottom: 18px;
+            width: 380px;
+            margin-left: auto;
+            margin-right: auto;
+            background: {color_alerta};
+            color: white;
+            border-radius: 18px;
+            padding: 14px 18px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 900;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.20);
+        ">
+            {icono_alerta} Sin asignar: {sin_asignar_total}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # -----------------------------------------
+    # RANKING POR BACKOFFICE
+    # -----------------------------------------
     estados_pendientes = ["Pendiente", "Iniciado", "En ruta"]
     df_bo["es_pendiente"] = df_bo["estado_visual"].isin(estados_pendientes).astype(int)
     df_bo["es_completada"] = (df_bo["estado_visual"] == "Completado").astype(int)
-
-    total_ordenes = len(df_bo)
-    completadas_total = int(df_bo["es_completada"].sum())
-    pendientes_total = int(df_bo["es_pendiente"].sum())
-    sin_asignar_total = int((df_bo["backoffice"] == "Sin-Asignar").sum())
-
-    k1, k2, k3, k4 = st.columns(4, gap="medium")
-    with k1:
-        render_kpi("Total Órdenes", total_ordenes, "#1d4ed8")
-    with k2:
-        render_kpi("Completadas", completadas_total, "#16a34a")
-    with k3:
-        render_kpi("Pendientes", pendientes_total, "#f59e0b")
-    with k4:
-        icono = "🚨" if sin_asignar_total > 0 else "✅"
-        color_sin_asignar = "#dc2626" if sin_asignar_total > 0 else "#16a34a"
-        render_kpi(f"{icono} Sin Asignar", sin_asignar_total, color_sin_asignar)
 
     df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"].copy()
 
@@ -649,7 +693,6 @@ def render_pantalla_backoffice(df):
     """
 
     components.html(html, height=560, scrolling=False)
-
 # =========================================================
 # VALIDAR ARCHIVO
 # =========================================================

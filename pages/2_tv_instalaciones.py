@@ -515,7 +515,6 @@ def render_pantalla_backoffice(df):
     completadas_total = int(df_bo["es_completada"].sum())
     pendientes_total = int(df_bo["es_pendiente"].sum())
     sin_asignar_total = int((df_bo["backoffice"] == "Sin-Asignar").sum())
-    pct_pendiente_total = (pendientes_total / total_ordenes * 100) if total_ordenes > 0 else 0
 
     k1, k2, k3, k4 = st.columns(4, gap="medium")
     with k1:
@@ -525,30 +524,8 @@ def render_pantalla_backoffice(df):
     with k3:
         render_kpi("Pendientes", pendientes_total)
     with k4:
-        render_kpi("% Pendiente", f"{pct_pendiente_total:.1f}%")
-
-    alerta_color = "#ef4444" if sin_asignar_total > 0 else "#22c55e"
-    alerta_texto = f"🚨 ÓRDENES SIN ASIGNAR: {sin_asignar_total}" if sin_asignar_total > 0 else "✅ ÓRDENES SIN ASIGNAR: 0"
-
-    st.markdown(
-        f"""
-        <div style="
-            margin-top: 14px;
-            margin-bottom: 18px;
-            background: {alerta_color};
-            color: white;
-            border-radius: 22px;
-            padding: 20px 24px;
-            text-align: center;
-            font-size: 34px;
-            font-weight: 900;
-            box-shadow: 0 14px 28px rgba(0,0,0,0.22);
-        ">
-            {alerta_texto}
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        icono = "🚨" if sin_asignar_total > 0 else "✅"
+        render_kpi(f"{icono} Sin Asignar", sin_asignar_total)
 
     df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"].copy()
 
@@ -570,14 +547,29 @@ def render_pantalla_backoffice(df):
 
     filas_html = ""
     for idx, row in resumen.iterrows():
-        color_pct = color_alerta_pendiente(row["pct_pendiente"])
+        porcentaje = row["pct_pendiente"] * 100
+
+        if porcentaje >= 25:
+            color_barra = "#ef4444"
+        elif porcentaje >= 15:
+            color_barra = "#f59e0b"
+        else:
+            color_barra = "#22c55e"
+
+        ancho_barra = max(6, min(100, porcentaje))
+
         filas_html += f"""
         <div class="fila-bo">
             <div class="bo-pos">{idx + 1}</div>
             <div class="bo-nombre">{row['backoffice']}</div>
             <div class="bo-completadas">{int(row['completadas'])} completadas</div>
             <div class="bo-pendientes">{int(row['pendientes'])} pendientes</div>
-            <div class="bo-pct" style="color:{color_pct};">{row['pct_pendiente']*100:.1f}%</div>
+            <div class="barra-wrap">
+                <div class="barra-fondo">
+                    <div class="barra-fill" style="width:{ancho_barra}%; background:{color_barra};"></div>
+                </div>
+            </div>
+            <div class="bo-pct">{porcentaje:.1f}%</div>
         </div>
         """
 
@@ -606,7 +598,7 @@ def render_pantalla_backoffice(df):
             }}
             .fila-bo {{
                 display: grid;
-                grid-template-columns: 70px 1.5fr 1fr 1fr 140px;
+                grid-template-columns: 60px 1.3fr 1fr 1fr 1.4fr 110px;
                 align-items: center;
                 gap: 12px;
                 background: #12264d;
@@ -621,19 +613,41 @@ def render_pantalla_backoffice(df):
                 text-align: center;
             }}
             .bo-nombre {{
-                font-size: 26px;
+                font-size: 24px;
                 font-weight: 900;
                 color: white;
             }}
-            .bo-completadas, .bo-pendientes {{
+            .bo-completadas {{
                 font-size: 20px;
                 font-weight: 800;
-                color: #dbe7f5;
+                color: #22c55e;
                 text-align: center;
             }}
+            .bo-pendientes {{
+                font-size: 20px;
+                font-weight: 800;
+                color: #f59e0b;
+                text-align: center;
+            }}
+            .barra-wrap {{
+                width: 100%;
+            }}
+            .barra-fondo {{
+                width: 100%;
+                height: 26px;
+                background: #243b63;
+                border-radius: 999px;
+                overflow: hidden;
+                box-shadow: inset 0 2px 6px rgba(0,0,0,0.35);
+            }}
+            .barra-fill {{
+                height: 100%;
+                border-radius: 999px;
+            }}
             .bo-pct {{
-                font-size: 30px;
+                font-size: 28px;
                 font-weight: 900;
+                color: white;
                 text-align: right;
             }}
         </style>
@@ -648,7 +662,6 @@ def render_pantalla_backoffice(df):
     """
 
     components.html(html, height=560, scrolling=False)
-
 # =========================================================
 # VERIFICAR ARCHIVO
 # =========================================================

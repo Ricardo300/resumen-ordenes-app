@@ -129,6 +129,7 @@ def render_kpi(titulo, valor, color_fondo="#0b1a34"):
         unsafe_allow_html=True
     )
 
+
 def render_kpi_bo(titulo, valor, color_fondo="#0b1a34"):
     st.markdown(
         f"""
@@ -161,6 +162,7 @@ def render_kpi_bo(titulo, valor, color_fondo="#0b1a34"):
         """,
         unsafe_allow_html=True
     )
+
 # =========================================================
 # BLOQUE ESTADOS (PANTALLA 1 Y 2)
 # =========================================================
@@ -542,20 +544,19 @@ def render_pantalla_backoffice(df):
     completados = int(conteo_estados.get("Completado", 0))
     cancelados = int(conteo_estados.get("Cancelado", 0))
 
-    # Fila de estatus
-        c1, c2, c3, c4, c5, c6 = st.columns(6, gap="medium")
-        with c1:
-            render_kpi_bo("Pendiente", pendientes, "#f4a300")
-        with c2:
-            render_kpi_bo("Iniciado", iniciados, "#d9ad00")
-        with c3:
-            render_kpi_bo("En ruta", en_ruta, "#3f83f8")
-        with c4:
-            render_kpi_bo("Suspendido", suspendidos, "#ef4444")
-        with c5:
-            render_kpi_bo("Completado", completados, "#22c55e")
-        with c6:
-            render_kpi_bo("Cancelado", cancelados, "#7b8496")
+    c1, c2, c3, c4, c5, c6 = st.columns(6, gap="medium")
+    with c1:
+        render_kpi_bo("Pendiente", pendientes, "#f4a300")
+    with c2:
+        render_kpi_bo("Iniciado", iniciados, "#d9ad00")
+    with c3:
+        render_kpi_bo("En ruta", en_ruta, "#3f83f8")
+    with c4:
+        render_kpi_bo("Suspendido", suspendidos, "#ef4444")
+    with c5:
+        render_kpi_bo("Completado", completados, "#22c55e")
+    with c6:
+        render_kpi_bo("Cancelado", cancelados, "#7b8496")
 
     # -----------------------------------------
     # ALERTA SIN ASIGNAR (SEPARADA)
@@ -592,21 +593,18 @@ def render_pantalla_backoffice(df):
     # RANKING POR BACKOFFICE (CUMPLIMIENTO)
     # -----------------------------------------
     estados_pendientes = ["Pendiente", "Iniciado", "En ruta"]
-    
+
     df_bo["es_pendiente"] = df_bo["estado_visual"].isin(estados_pendientes).astype(int)
     df_bo["es_completada"] = (df_bo["estado_visual"] == "Completado").astype(int)
     df_bo["es_suspendida"] = (df_bo["estado_visual"] == "Suspendido").astype(int)
     df_bo["es_cancelada"] = (df_bo["estado_visual"] == "Cancelado").astype(int)
-    
+
     df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"].copy()
-    
+
     if df_rank.empty:
         st.warning("No hay órdenes con BackOffice asignado para mostrar.")
         return
-    
-    # -----------------------------
-    # AGRUPACIÓN
-    # -----------------------------
+
     resumen = (
         df_rank.groupby("backoffice", as_index=False)
         .agg(
@@ -617,44 +615,36 @@ def render_pantalla_backoffice(df):
             canceladas=("es_cancelada", "sum"),
         )
     )
-    
-    # -----------------------------
-    # CALCULO CUMPLIMIENTO
-    # -----------------------------
+
     resumen["gestionadas"] = (
         resumen["completadas"]
         + resumen["suspendidas"]
         + resumen["canceladas"]
     )
-    
+
     resumen["pct_cumplimiento"] = resumen.apply(
         lambda x: x["gestionadas"] / x["total_ordenes"] if x["total_ordenes"] > 0 else 0,
         axis=1
     )
-    
-    # ordenar (mejor primero)
+
     resumen = resumen.sort_values(
         ["pct_cumplimiento", "pendientes"],
         ascending=[False, True]
     ).reset_index(drop=True)
-    
-    # -----------------------------
-    # HTML RENDER
-    # -----------------------------
+
     filas_html = ""
     for idx, row in resumen.iterrows():
         porcentaje = row["pct_cumplimiento"] * 100
-    
-        # colores según cumplimiento
+
         if porcentaje >= 90:
-            color_barra = "#22c55e"  # verde
+            color_barra = "#22c55e"
         elif porcentaje >= 75:
-            color_barra = "#f59e0b"  # naranja
+            color_barra = "#f59e0b"
         else:
-            color_barra = "#ef4444"  # rojo
-    
+            color_barra = "#ef4444"
+
         ancho_barra = max(6, min(100, porcentaje))
-    
+
         filas_html += f"""
         <div class="fila-bo">
             <div class="bo-pos">{idx + 1}</div>
@@ -669,7 +659,7 @@ def render_pantalla_backoffice(df):
             <div class="bo-pct">{porcentaje:.1f}%</div>
         </div>
         """
-    
+
     html = f"""
     <html>
     <head>
@@ -757,59 +747,57 @@ def render_pantalla_backoffice(df):
     </body>
     </html>
     """
-    
+
     components.html(html, height=560, scrolling=False)
+
     # =========================================
     # DEBUG - TABLA DE VALIDACIÓN
     # =========================================
     st.markdown("### 🔍 Validación de clasificación (debug)")
-    
+
     df_debug = df_bo.copy()
-    
-    # Opcional: si tienes columna de orden, inclúyela
+
     columnas_debug = []
-    
     if "Orden de Trabajo" in df_debug.columns:
         columnas_debug.append("Orden de Trabajo")
-    
+
     columnas_debug += [
         "Identificador Tecnico",
         "backoffice",
         "Estado",
         "estado_visual"
     ]
-    
+
     df_debug = df_debug[columnas_debug].copy()
-    
-    # Mostrar solo los que están sin asignar primero (para enfocarnos)
+
     st.markdown("#### 🚨 Registros SIN ASIGNAR")
     st.dataframe(
         df_debug[df_debug["backoffice"] == "Sin-Asignar"].head(1000),
         use_container_width=True
     )
-    
-    # Mostrar muestra general
+
     st.markdown("#### 📊 Muestra general")
     st.dataframe(
         df_debug.head(1000),
         use_container_width=True
     )
+
     # =========================================
     # DEBUG - VALIDACIÓN DIRECTA CON ESTADO
     # =========================================
     st.markdown("### 🔎 Validación por BackOffice usando columna Estado")
-    
+
     tabla_bo_estado = (
         df_bo.groupby(["backoffice", "Estado"], as_index=False)
         .size()
         .rename(columns={"size": "cantidad"})
         .sort_values(["backoffice", "Estado"])
     )
-    
+
     st.dataframe(tabla_bo_estado, use_container_width=True)
-    
+
     st.markdown("### 🔎 Pendientes por BackOffice (Pendiente + Iniciado + En ruta)")
-    
+
     tabla_pendientes_bo = (
         df_bo[df_bo["Estado"].isin(["Pendiente", "Iniciado", "En ruta"])]
         .groupby(["backoffice", "Estado"], as_index=False)
@@ -817,8 +805,9 @@ def render_pantalla_backoffice(df):
         .rename(columns={"size": "cantidad"})
         .sort_values(["backoffice", "Estado"])
     )
-    
+
     st.dataframe(tabla_pendientes_bo, use_container_width=True)
+
 # =========================================================
 # VALIDAR ARCHIVO
 # =========================================================

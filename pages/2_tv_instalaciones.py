@@ -718,14 +718,14 @@ def render_pantalla_backoffice(df):
     # Mostrar solo los que están sin asignar primero (para enfocarnos)
     st.markdown("#### 🚨 Registros SIN ASIGNAR")
     st.dataframe(
-        df_debug[df_debug["backoffice"] == "Sin-Asignar"].head(50),
+        df_debug[df_debug["backoffice"] == "Sin-Asignar"].head(1000),
         use_container_width=True
     )
     
     # Mostrar muestra general
     st.markdown("#### 📊 Muestra general")
     st.dataframe(
-        df_debug.head(50),
+        df_debug.head(1000),
         use_container_width=True
     )
 # =========================================================

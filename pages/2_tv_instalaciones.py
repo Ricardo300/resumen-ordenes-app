@@ -128,7 +128,12 @@ def render_kpi(titulo, valor, color_fondo="#0b1a34"):
         """,
         unsafe_allow_html=True
     )
-
+    
+def obtener_fecha_carga():
+    if os.path.exists(RUTA_ARCHIVO_FIJO):
+        ts = os.path.getmtime(RUTA_ARCHIVO_FIJO)
+        return datetime.fromtimestamp(ts).strftime("%d/%m/%Y %I:%M %p")
+    return "Sin archivo"
 
 def render_kpi_bo(titulo, valor, color_fondo="#0b1a34"):
     st.markdown(
@@ -394,12 +399,12 @@ def render_pantalla_tecnologia(df_bloque, nombre_pantalla, estados):
         unsafe_allow_html=True
     )
 
-    fecha = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+    fecha_carga = obtener_fecha_carga()
     st.markdown(
-        f'<div class="subtitulo-dashboard">Corte: {fecha}</div>',
+        f'<div class="subtitulo-dashboard">Carga: {fecha_carga}</div>',
         unsafe_allow_html=True
     )
-
+    
     col1, col2 = st.columns([1.0, 1.35], gap="large")
 
     with col1:
@@ -749,7 +754,23 @@ def render_pantalla_backoffice(df):
     """
 
     components.html(html, height=560, scrolling=False)
-
+    
+    fecha_carga = obtener_fecha_carga()
+    st.markdown(
+        f"""
+        <div style="
+            text-align:center;
+            color:#cbd5e1;
+            font-size:18px;
+            font-weight:700;
+            margin-top:10px;
+            margin-bottom:8px;
+        ">
+            Carga: {fecha_carga}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     # =========================================
     # DEBUG - TABLA DE VALIDACIÓN
     # =========================================

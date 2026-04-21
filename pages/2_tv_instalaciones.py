@@ -129,6 +129,38 @@ def render_kpi(titulo, valor, color_fondo="#0b1a34"):
         unsafe_allow_html=True
     )
 
+def render_kpi_bo(titulo, valor, color_fondo="#0b1a34"):
+    st.markdown(
+        f"""
+        <div style="
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 24px;
+            padding: 26px 18px;
+            min-height: 170px;
+            text-align: center;
+            background:{color_fondo};
+            box-shadow: 0 14px 28px rgba(0,0,0,0.22);
+        ">
+            <div style="
+                font-size: 64px;
+                font-weight: 900;
+                color: white;
+                line-height: 1;
+                margin-bottom: 12px;
+            ">
+                {valor}
+            </div>
+            <div style="
+                font-size: 28px;
+                font-weight: 800;
+                color: #dbe7f5;
+            ">
+                {titulo}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 # =========================================================
 # BLOQUE ESTADOS (PANTALLA 1 Y 2)
 # =========================================================
@@ -513,17 +545,17 @@ def render_pantalla_backoffice(df):
     # Fila de estatus
     c1, c2, c3, c4, c5, c6 = st.columns(6, gap="medium")
     with c1:
-        render_kpi("Pendiente", pendientes, "#f4a300")
+    render_kpi_bo("Pendiente", pendientes, "#f4a300")
     with c2:
-        render_kpi("Iniciado", iniciados, "#d9ad00")
+        render_kpi_bo("Iniciado", iniciados, "#d9ad00")
     with c3:
-        render_kpi("En ruta", en_ruta, "#3f83f8")
+        render_kpi_bo("En ruta", en_ruta, "#3f83f8")
     with c4:
-        render_kpi("Suspendido", suspendidos, "#ef4444")
+        render_kpi_bo("Suspendido", suspendidos, "#ef4444")
     with c5:
-        render_kpi("Completado", completados, "#22c55e")
+        render_kpi_bo("Completado", completados, "#22c55e")
     with c6:
-        render_kpi("Cancelado", cancelados, "#7b8496")
+        render_kpi_bo("Cancelado", cancelados, "#7b8496")
 
     # -----------------------------------------
     # ALERTA SIN ASIGNAR (SEPARADA)

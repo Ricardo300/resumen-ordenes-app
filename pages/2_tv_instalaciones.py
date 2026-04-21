@@ -1,7 +1,7 @@
 import os
 import time
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 import streamlit as st
@@ -132,7 +132,8 @@ def render_kpi(titulo, valor, color_fondo="#0b1a34"):
 def obtener_fecha_carga():
     if os.path.exists(RUTA_ARCHIVO_FIJO):
         ts = os.path.getmtime(RUTA_ARCHIVO_FIJO)
-        return datetime.fromtimestamp(ts).strftime("%d/%m/%Y %I:%M %p")
+        fecha = datetime.fromtimestamp(ts) - timedelta(hours=6)
+        return fecha.strftime("%d/%m/%Y %I:%M %p")
     return "Sin archivo"
 
 def render_kpi_bo(titulo, valor, color_fondo="#0b1a34"):

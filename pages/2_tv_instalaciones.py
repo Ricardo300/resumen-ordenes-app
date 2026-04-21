@@ -611,10 +611,10 @@ def render_pantalla_backoffice(df):
         axis=1
     )
     
-    # ordenar (peor primero)
+    # ordenar (mejor primero)
     resumen = resumen.sort_values(
         ["pct_cumplimiento", "pendientes"],
-        ascending=[True, False]
+        ascending=[False, True]
     ).reset_index(drop=True)
     
     # -----------------------------

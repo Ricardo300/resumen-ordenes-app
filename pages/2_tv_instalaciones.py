@@ -130,7 +130,7 @@ def render_kpi(titulo, valor, color_fondo="#0b1a34"):
     )
 
 # =========================================================
-# BLOQUE ESTADOS (PANTALLAS 1 Y 2)
+# BLOQUE ESTADOS (PANTALLA 1 Y 2)
 # =========================================================
 def render_bloque_estados(nombre, df_bloque, estados):
     total = len(df_bloque)
@@ -232,7 +232,7 @@ def render_bloque_estados(nombre, df_bloque, estados):
     components.html(html, height=560, scrolling=False)
 
 # =========================================================
-# GAUGE (PANTALLAS 1 Y 2)
+# GAUGE GRANDE (PANTALLA 1 Y 2)
 # =========================================================
 def polar_to_cartesian(cx, cy, r, angle_deg):
     angle_rad = math.radians(angle_deg)
@@ -248,7 +248,7 @@ def arc_points(cx, cy, r, start_deg, end_deg, steps=40):
     return " ".join(pts)
 
 
-def needle_triangle(cx, cy, value, length=210, base_width=9):
+def needle_triangle(cx, cy, value, length=240, base_width=10):
     angle = 180 - (value * 180 / 100)
     angle_rad = math.radians(angle)
 
@@ -277,12 +277,12 @@ def render_gauge_tecnologia(df_bloque):
     numerador = completadas + canceladas + suspendidas
     cumplimiento = (numerador / total * 100) if total > 0 else 0
 
-    width = 920
-    height = 560
+    width = 980
+    height = 700
     cx = width / 2
-    cy = 430
-    radius = 270
-    arc_thickness = 105
+    cy = 560
+    radius = 340
+    arc_thickness = 130
 
     segmentos = [
         (180, 150, "#dc2626"),
@@ -319,45 +319,35 @@ def render_gauge_tecnologia(df_bloque):
     ticks_svg = ""
     for t in ticks:
         angle = 180 - (t * 180 / 100)
-        x1, y1 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 2, angle)
-        x2, y2 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 14, angle)
-        xt, yt = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 34, angle)
+        x1, y1 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 4, angle)
+        x2, y2 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 20, angle)
+        xt, yt = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 46, angle)
 
         ticks_svg += f'''
             <line x1="{x1:.2f}" y1="{y1:.2f}" x2="{x2:.2f}" y2="{y2:.2f}"
                   stroke="white" stroke-width="3" />
-            <text x="{xt:.2f}" y="{yt:.2f}" fill="white" font-size="18"
+            <text x="{xt:.2f}" y="{yt:.2f}" fill="white" font-size="22"
                   font-weight="700" text-anchor="middle" dominant-baseline="middle">{t}</text>
         '''
 
-    needle_points = needle_triangle(cx, cy, cumplimiento, length=195, base_width=8)
+    needle_points = needle_triangle(cx, cy, cumplimiento, length=245, base_width=10)
 
     svg_html = f"""
     <div style="width:100%; display:flex; justify-content:center; align-items:center;">
-        <svg viewBox="0 0 {width} {height}" width="100%" height="500" style="overflow:visible;">
-            <text x="{cx}" y="62" fill="white" font-size="64" font-weight="800" text-anchor="middle">
+        <svg viewBox="0 0 {width} {height}" width="100%" height="640" style="overflow:visible;">
+            <text x="{cx}" y="92" fill="white" font-size="72" font-weight="800" text-anchor="middle">
                 {cumplimiento:.1f}%
             </text>
 
             {segmentos_svg}
             {ticks_svg}
 
-            <polygon points="{needle_points}" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" />
-            <circle cx="{cx}" cy="{cy}" r="24" fill="#d1d5db" stroke="white" stroke-width="4" />
+            <polygon points="{needle_points}" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" />
+            <circle cx="{cx}" cy="{cy}" r="28" fill="#d1d5db" stroke="white" stroke-width="5" />
         </svg>
     </div>
     """
-    components.html(svg_html, height=510, scrolling=False)
-
-    c1, c2, c3, c4 = st.columns(4, gap="medium")
-    with c1:
-        render_kpi("Completadas", completadas, "#16a34a")
-    with c2:
-        render_kpi("Suspendidas", suspendidas, "#dc2626")
-    with c3:
-        render_kpi("Canceladas", canceladas, "#7b8496")
-    with c4:
-        render_kpi("Total Ruta", total, "#1d4ed8")
+    components.html(svg_html, height=650, scrolling=False)
 
 # =========================================================
 # PANTALLA 1 Y PANTALLA 2
@@ -376,7 +366,7 @@ def render_pantalla_tecnologia(df_bloque, nombre_pantalla, estados):
         unsafe_allow_html=True
     )
 
-    col1, col2 = st.columns([1.0, 1.2], gap="large")
+    col1, col2 = st.columns([1.0, 1.35], gap="large")
 
     with col1:
         render_bloque_estados(nombre_pantalla, df_bloque, estados)
@@ -512,7 +502,6 @@ def render_pantalla_backoffice(df):
     pendientes_total = int(df_bo["es_pendiente"].sum())
     sin_asignar_total = int((df_bo["backoffice"] == "Sin-Asignar").sum())
 
-    # KPIs superiores con colores intensos
     k1, k2, k3, k4 = st.columns(4, gap="medium")
     with k1:
         render_kpi("Total Órdenes", total_ordenes, "#1d4ed8")
@@ -525,7 +514,6 @@ def render_pantalla_backoffice(df):
         color_sin_asignar = "#dc2626" if sin_asignar_total > 0 else "#16a34a"
         render_kpi(f"{icono} Sin Asignar", sin_asignar_total, color_sin_asignar)
 
-    # Ranking solo con BO asignado
     df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"].copy()
 
     if df_rank.empty:

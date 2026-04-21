@@ -568,43 +568,72 @@ def render_pantalla_backoffice(df):
     )
 
     # -----------------------------------------
-    # RANKING POR BACKOFFICE
+    # RANKING POR BACKOFFICE (CUMPLIMIENTO)
     # -----------------------------------------
     estados_pendientes = ["Pendiente", "Iniciado", "En ruta"]
+    
     df_bo["es_pendiente"] = df_bo["estado_visual"].isin(estados_pendientes).astype(int)
     df_bo["es_completada"] = (df_bo["estado_visual"] == "Completado").astype(int)
-
+    df_bo["es_suspendida"] = (df_bo["estado_visual"] == "Suspendido").astype(int)
+    df_bo["es_cancelada"] = (df_bo["estado_visual"] == "Cancelado").astype(int)
+    
     df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"].copy()
-
+    
     if df_rank.empty:
         st.warning("No hay órdenes con BackOffice asignado para mostrar.")
         return
-
+    
+    # -----------------------------
+    # AGRUPACIÓN
+    # -----------------------------
     resumen = (
         df_rank.groupby("backoffice", as_index=False)
         .agg(
             total_ordenes=("estado_visual", "count"),
             completadas=("es_completada", "sum"),
             pendientes=("es_pendiente", "sum"),
+            suspendidas=("es_suspendida", "sum"),
+            canceladas=("es_cancelada", "sum"),
         )
     )
-
-    resumen["pct_pendiente"] = resumen["pendientes"] / resumen["total_ordenes"]
-    resumen = resumen.sort_values(["pct_pendiente", "pendientes"], ascending=[False, False]).reset_index(drop=True)
-
+    
+    # -----------------------------
+    # CALCULO CUMPLIMIENTO
+    # -----------------------------
+    resumen["gestionadas"] = (
+        resumen["completadas"]
+        + resumen["suspendidas"]
+        + resumen["canceladas"]
+    )
+    
+    resumen["pct_cumplimiento"] = resumen.apply(
+        lambda x: x["gestionadas"] / x["total_ordenes"] if x["total_ordenes"] > 0 else 0,
+        axis=1
+    )
+    
+    # ordenar (peor primero)
+    resumen = resumen.sort_values(
+        ["pct_cumplimiento", "pendientes"],
+        ascending=[True, False]
+    ).reset_index(drop=True)
+    
+    # -----------------------------
+    # HTML RENDER
+    # -----------------------------
     filas_html = ""
     for idx, row in resumen.iterrows():
-        porcentaje = row["pct_pendiente"] * 100
-
-        if porcentaje >= 25:
-            color_barra = "#ef4444"
-        elif porcentaje >= 15:
-            color_barra = "#f59e0b"
+        porcentaje = row["pct_cumplimiento"] * 100
+    
+        # colores según cumplimiento
+        if porcentaje >= 90:
+            color_barra = "#22c55e"  # verde
+        elif porcentaje >= 75:
+            color_barra = "#f59e0b"  # naranja
         else:
-            color_barra = "#22c55e"
-
+            color_barra = "#ef4444"  # rojo
+    
         ancho_barra = max(6, min(100, porcentaje))
-
+    
         filas_html += f"""
         <div class="fila-bo">
             <div class="bo-pos">{idx + 1}</div>
@@ -619,7 +648,7 @@ def render_pantalla_backoffice(df):
             <div class="bo-pct">{porcentaje:.1f}%</div>
         </div>
         """
-
+    
     html = f"""
     <html>
     <head>
@@ -701,13 +730,13 @@ def render_pantalla_backoffice(df):
     </head>
     <body>
         <div class="contenedor">
-            <div class="titulo-tabla">Pendiente por BackOffice</div>
+            <div class="titulo-tabla">Cumplimiento por BackOffice</div>
             {filas_html}
         </div>
     </body>
     </html>
     """
-
+    
     components.html(html, height=560, scrolling=False)
     # =========================================
     # DEBUG - TABLA DE VALIDACIÓN

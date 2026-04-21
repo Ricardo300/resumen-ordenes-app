@@ -130,6 +130,16 @@ def render_kpi(titulo, valor):
         unsafe_allow_html=True
     )
 
+
+def color_alerta_pendiente(p):
+    if p >= 0.25:
+        return "#ef4444"
+    elif p >= 0.15:
+        return "#f59e0b"
+    else:
+        return "#22c55e"
+
+
 # =========================================================
 # BLOQUE ESTADOS
 # =========================================================
@@ -384,6 +394,263 @@ def render_pantalla_tecnologia(df_bloque, nombre_pantalla, estados):
         render_gauge_tecnologia(df_bloque)
 
 # =========================================================
+# PANTALLA BACKOFFICE
+# =========================================================
+def render_pantalla_backoffice(df):
+    st.markdown(
+        '<div class="titulo-dashboard">BackOffice</div>',
+        unsafe_allow_html=True
+    )
+
+    fecha = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+    st.markdown(
+        f'<div class="subtitulo-dashboard">Corte: {fecha}</div>',
+        unsafe_allow_html=True
+    )
+
+    mapa_bo = {
+        "CAR567": "Andres Corea",
+        "CAR566": "Andres Corea",
+        "CAR453": "Andres Corea",
+        "CAR396": "Andres Corea",
+        "CAR397": "Andres Corea",
+        "CAR439": "Andres Corea",
+
+        "CAR270": "Adriana Rojas",
+        "CAR1002": "Adriana Rojas",
+        "CAR040": "Adriana Rojas",
+        "CAR455": "Adriana Rojas",
+        "CAR285": "Adriana Rojas",
+        "GCAR780": "Adriana Rojas",
+        "GCAR606": "Adriana Rojas",
+        "GCAR593": "Adriana Rojas",
+        "GCAR554": "Adriana Rojas",
+        "GCAR551": "Adriana Rojas",
+        "GCAR860": "Adriana Rojas",
+        "GCAR953": "Adriana Rojas",
+        "GCAR951": "Adriana Rojas",
+        "GCAR840": "Adriana Rojas",
+        "GCAR670": "Adriana Rojas",
+        "GCAR964": "Adriana Rojas",
+        "GCAR103": "Adriana Rojas",
+        "GCAR184": "Adriana Rojas",
+        "GCAR105": "Adriana Rojas",
+        "GCAR1033": "Adriana Rojas",
+        "GCAR1048": "Adriana Rojas",
+
+        "CAR261": "Sofia Alvarez",
+        "CAR395": "Sofia Alvarez",
+        "CAR259": "Sofia Alvarez",
+        "CAR365": "Sofia Alvarez",
+        "CAR321": "Sofia Alvarez",
+        "CAR507": "Sofia Alvarez",
+        "GCAR1001": "Sofia Alvarez",
+        "GCAR923": "Sofia Alvarez",
+        "GCAR822": "Sofia Alvarez",
+        "GCAR798": "Sofia Alvarez",
+        "GCAR608": "Sofia Alvarez",
+        "GCAR604": "Sofia Alvarez",
+        "GCAR491": "Sofia Alvarez",
+        "GCAR935": "Sofia Alvarez",
+        "GCAR880": "Sofia Alvarez",
+        "GCAR946": "Sofia Alvarez",
+        "GCAR956": "Sofia Alvarez",
+        "GCAR990": "Sofia Alvarez",
+        "GCAR986": "Sofia Alvarez",
+        "GCAR978": "Sofia Alvarez",
+        "GCAR1024": "Sofia Alvarez",
+        "GCAR996": "Sofia Alvarez",
+        "GCAR789": "Sofia Alvarez",
+
+        "GCAR906": "Harold Castillo",
+        "GCAR796": "Harold Castillo",
+        "GCAR585": "Harold Castillo",
+        "GCAR583": "Harold Castillo",
+        "GCAR955": "Harold Castillo",
+        "GCAR817": "Harold Castillo",
+        "GCAR991": "Harold Castillo",
+        "GCAR883": "Harold Castillo",
+        "GCAR887": "Harold Castillo",
+        "GCAR345": "Harold Castillo",
+        "GCAR886": "Harold Castillo",
+        "GCAR869": "Harold Castillo",
+        "GCAR2378": "Harold Castillo",
+        "GCAR349": "Harold Castillo",
+        "GCAR253": "Harold Castillo",
+        "GCAR329": "Harold Castillo",
+        "GCAR1006": "Harold Castillo",
+        "GCAR1010": "Harold Castillo",
+        "GCAR1015": "Harold Castillo",
+        "GCAR963": "Harold Castillo",
+        "GCAR781": "Harold Castillo",
+        "GCAR1029": "Harold Castillo",
+        "GCAR1028": "Harold Castillo",
+        "GCAR1034": "Harold Castillo",
+        "GCAR1025": "Harold Castillo",
+        "GCAR1043": "Harold Castillo",
+        "GCAR1022": "Harold Castillo",
+        "GCAR1039": "Harold Castillo",
+        "GCAR1027": "Harold Castillo",
+    }
+
+    if "identificador_tecnico" not in df.columns:
+        st.error("No existe la columna 'identificador_tecnico' en el archivo.")
+        return
+
+    df_bo = df.copy()
+
+    df_bo["identificador_tecnico"] = (
+        df_bo["identificador_tecnico"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    df_bo["backoffice"] = df_bo["identificador_tecnico"].map(mapa_bo).fillna("Sin-Asignar")
+
+    estados_pendientes = ["Pendiente", "Iniciado", "En ruta"]
+    df_bo["es_pendiente"] = df_bo["estado_visual"].isin(estados_pendientes).astype(int)
+    df_bo["es_completada"] = (df_bo["estado_visual"] == "Completado").astype(int)
+
+    total_ordenes = len(df_bo)
+    completadas_total = int(df_bo["es_completada"].sum())
+    pendientes_total = int(df_bo["es_pendiente"].sum())
+    sin_asignar_total = int((df_bo["backoffice"] == "Sin-Asignar").sum())
+    pct_pendiente_total = (pendientes_total / total_ordenes * 100) if total_ordenes > 0 else 0
+
+    k1, k2, k3, k4 = st.columns(4, gap="medium")
+    with k1:
+        render_kpi("Total Órdenes", total_ordenes)
+    with k2:
+        render_kpi("Completadas", completadas_total)
+    with k3:
+        render_kpi("Pendientes", pendientes_total)
+    with k4:
+        render_kpi("% Pendiente", f"{pct_pendiente_total:.1f}%")
+
+    alerta_color = "#ef4444" if sin_asignar_total > 0 else "#22c55e"
+    alerta_texto = f"🚨 ÓRDENES SIN ASIGNAR: {sin_asignar_total}" if sin_asignar_total > 0 else "✅ ÓRDENES SIN ASIGNAR: 0"
+
+    st.markdown(
+        f"""
+        <div style="
+            margin-top: 14px;
+            margin-bottom: 18px;
+            background: {alerta_color};
+            color: white;
+            border-radius: 22px;
+            padding: 20px 24px;
+            text-align: center;
+            font-size: 34px;
+            font-weight: 900;
+            box-shadow: 0 14px 28px rgba(0,0,0,0.22);
+        ">
+            {alerta_texto}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"].copy()
+
+    if df_rank.empty:
+        st.warning("No hay órdenes con BackOffice asignado para mostrar.")
+        return
+
+    resumen = (
+        df_rank.groupby("backoffice", as_index=False)
+        .agg(
+            total_ordenes=("estado_visual", "count"),
+            completadas=("es_completada", "sum"),
+            pendientes=("es_pendiente", "sum"),
+        )
+    )
+
+    resumen["pct_pendiente"] = resumen["pendientes"] / resumen["total_ordenes"]
+    resumen = resumen.sort_values(["pct_pendiente", "pendientes"], ascending=[False, False]).reset_index(drop=True)
+
+    filas_html = ""
+    for idx, row in resumen.iterrows():
+        color_pct = color_alerta_pendiente(row["pct_pendiente"])
+        filas_html += f"""
+        <div class="fila-bo">
+            <div class="bo-pos">{idx + 1}</div>
+            <div class="bo-nombre">{row['backoffice']}</div>
+            <div class="bo-completadas">{int(row['completadas'])} completadas</div>
+            <div class="bo-pendientes">{int(row['pendientes'])} pendientes</div>
+            <div class="bo-pct" style="color:{color_pct};">{row['pct_pendiente']*100:.1f}%</div>
+        </div>
+        """
+
+    html = f"""
+    <html>
+    <head>
+        <style>
+            body {{
+                margin: 0;
+                background: transparent;
+                font-family: Arial, sans-serif;
+            }}
+            .contenedor {{
+                background: linear-gradient(180deg, #0b1a34 0%, #0a1730 100%);
+                border-radius: 24px;
+                padding: 22px;
+                min-height: 500px;
+                border: 1px solid rgba(255,255,255,0.07);
+                box-shadow: 0 14px 28px rgba(0,0,0,0.22);
+            }}
+            .titulo-tabla {{
+                color: white;
+                font-size: 28px;
+                font-weight: 900;
+                margin-bottom: 16px;
+            }}
+            .fila-bo {{
+                display: grid;
+                grid-template-columns: 70px 1.5fr 1fr 1fr 140px;
+                align-items: center;
+                gap: 12px;
+                background: #12264d;
+                border-radius: 18px;
+                padding: 16px 18px;
+                margin-bottom: 12px;
+            }}
+            .bo-pos {{
+                font-size: 28px;
+                font-weight: 900;
+                color: white;
+                text-align: center;
+            }}
+            .bo-nombre {{
+                font-size: 26px;
+                font-weight: 900;
+                color: white;
+            }}
+            .bo-completadas, .bo-pendientes {{
+                font-size: 20px;
+                font-weight: 800;
+                color: #dbe7f5;
+                text-align: center;
+            }}
+            .bo-pct {{
+                font-size: 30px;
+                font-weight: 900;
+                text-align: right;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="contenedor">
+            <div class="titulo-tabla">Pendiente por BackOffice</div>
+            {filas_html}
+        </div>
+    </body>
+    </html>
+    """
+
+    components.html(html, height=560, scrolling=False)
+
+# =========================================================
 # VERIFICAR ARCHIVO
 # =========================================================
 if not os.path.exists(RUTA_ARCHIVO_FIJO):
@@ -408,8 +675,9 @@ components.html(
 # LEER ARCHIVO
 # =========================================================
 df = pd.read_excel(RUTA_ARCHIVO_FIJO, engine="openpyxl")
+df.columns = df.columns.str.strip()
 
-columnas_necesarias = ["Estado", "Tipo Actividad", "Sub Tipo de Orden"]
+columnas_necesarias = ["Estado", "Tipo Actividad", "Sub Tipo de Orden", "identificador_tecnico"]
 faltantes = [c for c in columnas_necesarias if c not in df.columns]
 if faltantes:
     st.error(f"Faltan estas columnas en el archivo: {', '.join(faltantes)}")
@@ -479,9 +747,11 @@ df_dth = df[df["tecnologia"] == "DTH"].copy()
 # =========================================================
 # ROTACIÓN
 # =========================================================
-pantalla_actual = int(time.time() / SEGUNDOS_POR_PANTALLA) % 2 + 1
+pantalla_actual = int(time.time() / SEGUNDOS_POR_PANTALLA) % 3 + 1
 
 if pantalla_actual == 1:
     render_pantalla_tecnologia(df_gpon, "GPON", estados_visibles)
-else:
+elif pantalla_actual == 2:
     render_pantalla_tecnologia(df_dth, "DTH", estados_visibles)
+else:
+    render_pantalla_backoffice(df)

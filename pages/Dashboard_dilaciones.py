@@ -307,8 +307,9 @@ pivot_exacto = pivot_exacto.reindex(range(0, max_dilacion + 1), fill_value=0)
 # Acumulado por columna
 pivot_acum = pivot_exacto.cumsum()
 
-# Armar matriz final de texto
-fechas_cols = list(pivot_acum.columns)
+# Armar matriz final:
+# cantidad exacta del día + porcentaje acumulado
+fechas_cols = list(pivot_exacto.columns)
 
 matriz = {}
 
@@ -319,29 +320,31 @@ matriz["Total creadas"] = {
 }
 
 # Filas por día
-for dia in pivot_acum.index:
+for dia in pivot_exacto.index:
     fila = {}
+
     for fecha in fechas_cols:
         total = int(totales_por_fecha.get(fecha, 0))
+        cantidad_exacta = int(pivot_exacto.loc[dia, fecha])
         acumulado = int(pivot_acum.loc[dia, fecha])
 
         if total == 0:
             fila[fecha] = ""
             continue
 
-        porcentaje = (acumulado / total) * 100
+        porcentaje_acum = (acumulado / total) * 100
 
-        # Si ya estaba en 100% en el día anterior, dejar vacío
+        # Si ya llegó al 100% en el día anterior, dejar vacío
         if dia > 0:
             acumulado_anterior = int(pivot_acum.loc[dia - 1, fecha])
             if acumulado_anterior >= total:
                 fila[fecha] = ""
                 continue
 
-        fila[fecha] = f"{acumulado} ({porcentaje:.2f}%)"
+        # Cantidad exacta del día + porcentaje acumulado
+        fila[fecha] = f"{cantidad_exacta} ({porcentaje_acum:.2f}%)"
 
     matriz[f"Día {dia}"] = fila
-
 tabla_final = pd.DataFrame(matriz).T
 
 # Renombrar columnas con formato de fecha

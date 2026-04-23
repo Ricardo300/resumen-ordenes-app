@@ -378,7 +378,7 @@ def color_celda(valor):
     else:
         return "background-color: #FFCDD2; text-align: center;"
 
-styled_tabla = tabla_final.style.applymap(color_celda)
+styled_tabla = tabla_final.style.map(color_celda)
 
 st.subheader("Matriz de cierres acumulados por fecha de creación")
 st.caption("Cada celda muestra: cantidad acumulada de órdenes cerradas y su porcentaje sobre el total creado ese día.")

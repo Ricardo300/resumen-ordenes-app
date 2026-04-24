@@ -248,7 +248,7 @@ col4.metric("🛠 Acumulado hasta día 2", f"{pct_dia_2}%")
 st.divider()
 
 # ==============================
-# TABLA MATRIZ
+# TABLA MATRIZ POR FECHA
 # ==============================
 
 totales_por_fecha = (
@@ -321,7 +321,7 @@ tabla_final = tabla_final.rename(columns=columnas_formateadas)
 st.subheader("Matriz de dilación por fecha de cierre")
 st.caption(
     "Cada columna representa las órdenes cerradas ese día. "
-    "Cada celda muestra cantidad exacta por dilación y porcentaje acumulado."
+    "Cada celda muestra cantidad exacta por dilación y porcentaje acumulado por día."
 )
 
 st.dataframe(
@@ -331,34 +331,52 @@ st.dataframe(
 )
 
 # ==============================
-# RESUMEN RÁPIDO
+# TABLA RESUMEN GENERAL
 # ==============================
 
 st.divider()
 
-resumen_dias = []
+total_por_dilacion = (
+    df_f.groupby("dilacion_dias")["orden_trabajo"]
+    .nunique()
+    .reindex(range(0, max_dilacion + 1), fill_value=0)
+)
 
-for fecha in fechas_cols:
-    total = int(totales_por_fecha.get(fecha, 0))
+total_acum = total_por_dilacion.cumsum()
 
-    dia_0 = int(pivot_exacto.loc[0, fecha]) if 0 in pivot_exacto.index else 0
-    hasta_dia_1 = int(pivot_acum.loc[1, fecha]) if 1 in pivot_acum.index else dia_0
-    hasta_dia_2 = int(pivot_acum.loc[2, fecha]) if 2 in pivot_acum.index else hasta_dia_1
+resumen_general = []
 
-    resumen_dias.append({
-        "Fecha cierre": pd.to_datetime(fecha).strftime("%d-%m-%Y"),
-        "Total cerradas": total,
-        "Día 0": f"{dia_0} ({(dia_0 / total * 100):.2f}%)" if total > 0 else "",
-        "Acum. día 1": f"{hasta_dia_1} ({(hasta_dia_1 / total * 100):.2f}%)" if total > 0 else "",
-        "Acum. día 2": f"{hasta_dia_2} ({(hasta_dia_2 / total * 100):.2f}%)" if total > 0 else ""
+resumen_general.append({
+    "Dilación": "Total cerradas",
+    "Cantidad": total_ordenes,
+    "% Acumulado": "100.00%"
+})
+
+for dia in total_por_dilacion.index:
+    cantidad = int(total_por_dilacion.loc[dia])
+
+    if cantidad == 0:
+        continue
+
+    acumulado = int(total_acum.loc[dia])
+    pct_acum = (acumulado / total_ordenes) * 100 if total_ordenes > 0 else 0
+
+    resumen_general.append({
+        "Dilación": f"Día {dia}",
+        "Cantidad": cantidad,
+        "% Acumulado": f"{pct_acum:.2f}%"
     })
 
-resumen_df = pd.DataFrame(resumen_dias)
+resumen_general_df = pd.DataFrame(resumen_general)
 
-st.subheader("Resumen rápido por fecha de cierre")
+st.subheader("Resumen general del período")
+st.caption(
+    "Este resumen consolida todos los días filtrados. "
+    "La cantidad es exacta por dilación y el porcentaje es acumulado sobre el total cerrado."
+)
 
 st.dataframe(
-    resumen_df,
+    resumen_general_df,
     use_container_width=True,
     hide_index=True
 )

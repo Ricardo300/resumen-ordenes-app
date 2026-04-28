@@ -67,6 +67,48 @@ def guardar_clasificacion(orden_trabajo, clasificacion, comentario):
     return response
 
 
+def filtro_checkbox(nombre, opciones, key_prefix):
+    st.markdown(f"### {nombre}")
+
+    if f"{key_prefix}_seleccion" not in st.session_state:
+        st.session_state[f"{key_prefix}_seleccion"] = opciones.copy()
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("✓ Todo", key=f"{key_prefix}_todo"):
+            st.session_state[f"{key_prefix}_seleccion"] = opciones.copy()
+            for opcion in opciones:
+                st.session_state[f"{key_prefix}_{opcion}"] = True
+            st.rerun()
+
+    with col2:
+        if st.button("✕ Ninguno", key=f"{key_prefix}_ninguno"):
+            st.session_state[f"{key_prefix}_seleccion"] = []
+            for opcion in opciones:
+                st.session_state[f"{key_prefix}_{opcion}"] = False
+            st.rerun()
+
+    seleccionados = []
+
+    for opcion in opciones:
+        checkbox_key = f"{key_prefix}_{opcion}"
+
+        if checkbox_key not in st.session_state:
+            st.session_state[checkbox_key] = opcion in st.session_state[f"{key_prefix}_seleccion"]
+
+        marcado = st.checkbox(
+            opcion,
+            key=checkbox_key
+        )
+
+        if marcado:
+            seleccionados.append(opcion)
+
+    st.session_state[f"{key_prefix}_seleccion"] = seleccionados
+
+    return seleccionados
+
 # =========================
 # ENCABEZADO
 # =========================
@@ -83,20 +125,43 @@ if df.empty:
     st.success("✅ No hay garantías internas pendientes de clasificación.")
     st.stop()
 
-df_filtrado = df.copy()
+# Evitar errores si algún supervisor viene vacío
+df["supervisor_atendio"] = df["supervisor_atendio"].fillna("SIN SUPERVISOR")
+
+# =========================
+# FILTRO POR SUPERVISOR
+# =========================
+with st.sidebar:
+    st.header("Filtros")
+
+    supervisores = sorted(df["supervisor_atendio"].dropna().unique().tolist())
+
+    supervisor_sel = filtro_checkbox(
+        nombre="Supervisor",
+        opciones=supervisores,
+        key_prefix="filtro_supervisor"
+    )
+
+if supervisor_sel:
+    df_filtrado = df[df["supervisor_atendio"].isin(supervisor_sel)].copy()
+else:
+    df_filtrado = df.iloc[0:0].copy()
 
 # =========================
 # KPIS
 # =========================
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.metric("Garantías pendientes", len(df_filtrado))
 
 with col2:
-    st.metric("Técnicos con pendientes", df_filtrado["tecnico_causa_garantia"].nunique())
+    st.metric("Supervisores seleccionados", len(supervisor_sel))
 
 with col3:
+    st.metric("Técnicos con pendientes", df_filtrado["tecnico_causa_garantia"].nunique())
+
+with col4:
     st.metric("Contratas con pendientes", df_filtrado["contrata_causa_garantia"].nunique())
 
 st.divider()
@@ -111,12 +176,18 @@ st.info(
     "Luego presione Aceptar para actualizar la lista."
 )
 
+if df_filtrado.empty:
+    st.warning("No hay garantías pendientes para los supervisores seleccionados.")
+    st.stop()
+
 for _, row in df_filtrado.iterrows():
     orden = row.get("orden_trabajo", "")
 
     with st.expander(
         f"Orden {orden} | Cliente {row.get('numero_cliente', '')} | "
-        f"Técnico causal: {row.get('tecnico_causa_garantia', '')}",
+        f"Supervisor: {row.get('supervisor_atendio', '')} | "
+        f"Causó: {row.get('tecnico_causa_garantia', '')} | "
+        f"Cerró: {row.get('tecnico_atendio', '')}",
         expanded=False
     ):
         col1, col2, col3, col4 = st.columns(4)
@@ -132,13 +203,15 @@ for _, row in df_filtrado.iterrows():
             st.write("**Días desde visita:**", row.get("dias_desde_visita", ""))
 
         with col3:
-            st.write("**Técnico causal:**", row.get("tecnico_causa_garantia", ""))
-            st.write("**Contrata causal:**", row.get("contrata_causa_garantia", ""))
+            st.write("**Supervisor que atendió:**", row.get("supervisor_atendio", ""))
+            st.write("**Técnico que cerró:**", row.get("tecnico_atendio", ""))
+            st.write("**Contrata que cerró:**", row.get("contrata_atendio", ""))
             st.write("**Tecnología:**", row.get("tecnologia", ""))
 
         with col4:
+            st.write("**Técnico que causó:**", row.get("tecnico_causa_garantia", ""))
+            st.write("**Contrata causal:**", row.get("contrata_causa_garantia", ""))
             st.write("**Sub tipo orden:**", row.get("sub_tipo_orden", ""))
-            st.write("**Tipo actividad:**", row.get("tipo_actividad", ""))
             st.write("**Código completado:**", row.get("codigo_completado", ""))
 
         st.markdown("### Clasificación")

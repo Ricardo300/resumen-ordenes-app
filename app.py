@@ -208,7 +208,7 @@ if archivo is not None:
     # ============================================
     # 🔥 AGREGAR CONTRATA DESDE TABLA AUXILIAR
     # ============================================
-    respuesta = supabase.table("tabla_tecnicos_contrata").select("*").execute()
+    respuesta = supabase.table("tabla_tecnicos_contrata").select("identificador_tecnico, contrata").execute()
     df_contrata = pd.DataFrame(respuesta.data)
 
     if not df_contrata.empty and "identificador_tecnico" in df_contrata.columns:

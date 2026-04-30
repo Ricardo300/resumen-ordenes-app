@@ -166,8 +166,20 @@ def obtener_datos(inicio, fin):
 
     return todos
 
+@st.cache_data(ttl=300)
+def obtener_puntajes():
+    response = (
+        supabase
+        .table("puntaje_subtipo_orden")
+        .select("sub_tipo_orden, puntaje")
+        .execute()
+    )
+    return response.data
 
 data = obtener_datos(primer_dia, primer_dia_siguiente)
+
+data_puntajes = obtener_puntajes()
+df_puntajes = pd.DataFrame(data_puntajes)
 
 if not data:
     st.warning("No hay datos para el período seleccionado.")
@@ -180,10 +192,26 @@ df = pd.DataFrame(data)
 # ==========================================
 df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
 
-for col in ["orden_trabajo", "contrata", "tecnologia", "tipo_actividad", "identificador_tecnico", "garantia", "provincia", "tipo_sla"]:
+for col in ["orden_trabajo", "contrata", "tecnologia", "tipo_actividad", "identificador_tecnico", "garantia", "provincia", "tipo_sla", "sub_tipo_orden"]:
     if col in df.columns:
         df[col] = df[col].astype(str).str.strip()
 
+# ==========================================
+# CRUCE DE PUNTAJES POR SUB TIPO DE ORDEN
+# ==========================================
+if not df_puntajes.empty:
+    df_puntajes["sub_tipo_orden"] = df_puntajes["sub_tipo_orden"].astype(str).str.strip()
+    df_puntajes["puntaje"] = pd.to_numeric(df_puntajes["puntaje"], errors="coerce").fillna(0)
+
+    df = df.merge(
+        df_puntajes,
+        on="sub_tipo_orden",
+        how="left"
+    )
+
+    df["puntaje"] = pd.to_numeric(df["puntaje"], errors="coerce").fillna(0)
+else:
+    df["puntaje"] = 0
 # ==========================================
 # FILTRO CHECKBOX + BOTONES TODO/NINGUNO
 # ==========================================
@@ -420,17 +448,30 @@ with col_tab1:
     st.dataframe(ordenes_provincia, use_container_width=True, height=300)
 
 with col_tab2:
-    st.markdown("#### 👷 Producción y Productividad por Técnico")
+    st.markdown("#### 👷 Producción, Productividad y Puntaje por Técnico")
+
     df_prod = (
         df.groupby(["identificador_tecnico", "contrata"])
         .agg(
             Producción=("orden_trabajo", "nunique"),
-            Dias_Trabajados=("fecha", "nunique")
+            Puntaje=("puntaje", "sum"),
+            Dias_Trabajados=("fecha", lambda x: x.dt.date.nunique())
         )
         .reset_index()
     )
-    df_prod["Productividad"] = (df_prod["Producción"] / df_prod["Dias_Trabajados"]).round(2)
-    df_prod = df_prod.drop(columns=["Dias_Trabajados"]).sort_values("Producción", ascending=False)
+
+    df_prod["Productividad"] = (
+        df_prod["Producción"] / df_prod["Dias_Trabajados"]
+    ).round(2)
+
+    df_prod["Puntaje"] = df_prod["Puntaje"].round(2)
+
+    df_prod = (
+        df_prod
+        .drop(columns=["Dias_Trabajados"])
+        .sort_values("Puntaje", ascending=False)
+    )
+
     st.dataframe(df_prod, use_container_width=True, height=300)
 
 # ==========================================

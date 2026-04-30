@@ -138,6 +138,8 @@ meses_dict = {
 
 df["mes"] = df["mes_num"].map(meses_dict)
 
+df["semana"] = df["fecha"].dt.isocalendar().week.astype(int)
+
 # ==============================
 # FILTROS
 # ==============================
@@ -162,6 +164,15 @@ meses_disponibles = [
 mes = st.sidebar.selectbox("Mes", meses_disponibles)
 
 df_mes = df_anio[df_anio["mes"] == mes].copy()
+
+semanas_disponibles = ["Todas"] + sorted(
+    df_mes["semana"].dropna().unique().tolist()
+)
+
+semana = st.sidebar.selectbox("Semana", semanas_disponibles)
+
+if semana != "Todas":
+    df_mes = df_mes[df_mes["semana"] == semana]
 
 opciones_tec = ["Todas"] + sorted(
     [x for x in df_mes["tecnologia"].dropna().unique().tolist() if x != ""]

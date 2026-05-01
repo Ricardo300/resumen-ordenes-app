@@ -29,14 +29,12 @@ CLASIFICACIONES = [
 # =========================
 # FUNCIONES
 # =========================
-def primer_dia_mes_actual():
-    hoy = date.today()
-    return date(hoy.year, hoy.month, 1)
-
+def fecha_inicio_clasificacion():
+    return date(2026, 4, 1)
 
 @st.cache_data(ttl=60)
 def cargar_garantias_pendientes():
-    fecha_inicio = primer_dia_mes_actual().isoformat()
+    fecha_inicio = fecha_inicio_clasificacion().isoformat()
 
     response = (
         supabase
@@ -116,7 +114,7 @@ st.title("📋 Clasificación de Garantías Internas")
 
 st.caption(
     f"Mostrando únicamente garantías internas pendientes desde el "
-    f"{primer_dia_mes_actual().strftime('%d/%m/%Y')} en adelante."
+    f"{fecha_inicio_clasificacion().strftime('%d/%m/%Y')} en adelante."
 )
 
 df = cargar_garantias_pendientes()

@@ -1,6 +1,7 @@
 import streamlit as st
 from supabase import create_client
 import pandas as pd
+import plotly.express as px
 
 st.set_page_config(
     page_title="Dashboard Dilación por Fecha de Cierre",
@@ -257,6 +258,74 @@ col3.metric("📅 Acumulado hasta día 1", f"{pct_dia_1}%")
 col4.metric("🛠 Acumulado hasta día 2", f"{pct_dia_2}%")
 
 st.divider()
+
+# ==============================
+# GRÁFICO: DÍA EN QUE SE ALCANZA EL 95% POR SEMANA
+# ==============================
+
+resumen_95 = []
+
+for semana_num, df_semana in df_f.groupby("semana"):
+    total_semana = df_semana["orden_trabajo"].nunique()
+
+    conteo_semana = (
+        df_semana.groupby("dilacion_dias")["orden_trabajo"]
+        .nunique()
+        .sort_index()
+    )
+
+    acumulado = conteo_semana.cumsum()
+    porcentaje_acum = (acumulado / total_semana) * 100
+
+    dias_cumple = porcentaje_acum[porcentaje_acum >= 95]
+
+    if not dias_cumple.empty:
+        dia_95 = int(dias_cumple.index[0])
+        estado = "Cumple"
+    else:
+        dia_95 = int(porcentaje_acum.index.max())
+        estado = "No llega al 95%"
+
+    resumen_95.append({
+        "Semana": f"Semana {semana_num}",
+        "Dia_95": dia_95,
+        "Total órdenes": total_semana,
+        "Estado": estado,
+        "% final": round(porcentaje_acum.max(), 2)
+    })
+
+df_95 = pd.DataFrame(resumen_95)
+
+st.subheader("Día en que se alcanza el 95% acumulado por semana")
+st.caption(
+    "El gráfico muestra en qué día de dilación cada semana alcanza el 95% acumulado de cierres."
+)
+
+fig_95 = px.bar(
+    df_95,
+    x="Semana",
+    y="Dia_95",
+    text="Dia_95",
+    color="Estado",
+    hover_data=["Total órdenes", "% final"],
+    labels={
+        "Dia_95": "Día en que llega al 95%",
+        "Semana": "Semana"
+    }
+)
+
+fig_95.update_traces(
+    texttemplate="Día %{text}",
+    textposition="outside"
+)
+
+fig_95.update_layout(
+    height=420,
+    yaxis=dict(dtick=1),
+    showlegend=True
+)
+
+st.plotly_chart(fig_95, use_container_width=True)
 
 # ==============================
 # TABLA MATRIZ POR FECHA

@@ -84,7 +84,7 @@ def cargar_servicios():
         response = (
             supabase
             .table("kpi_ordenes_completadas")
-            .select("orden_trabajo, fecha, contrata, tecnologia")
+            .select("orden_trabajo, fecha, contrata, tecnologia, identificador_tecnico")
             .range(inicio, inicio + limite - 1)
             .execute()
         )
@@ -497,13 +497,116 @@ with col1:
             .groupby(["tecnico_causa_garantia", "contrata_causa_garantia"], dropna=False)
             .size()
             .reset_index(name="Cantidad Garantías")
-            .sort_values("Cantidad Garantías", ascending=False)
-            .reset_index(drop=True)
         )
 
         tabla_origen.columns = ["Código Técnico", "Contrata", "Cantidad Garantías"]
 
-        st.dataframe(tabla_origen, use_container_width=True, hide_index=True)
+        servicios_tecnico = servicios_filtrados.copy()
+
+        if "identificador_tecnico" in servicios_tecnico.columns:
+            servicios_tecnico["identificador_tecnico"] = (
+                servicios_tecnico["identificador_tecnico"]
+                .fillna("SIN TECNICO")
+                .astype(str)
+                .str.strip()
+            )
+
+            servicios_tecnico["contrata"] = (
+                servicios_tecnico["contrata"]
+                .fillna("SIN CONTRATA")
+                .astype(str)
+                .str.strip()
+            )
+
+            ordenes_por_tecnico = (
+                servicios_tecnico
+                .groupby(["identificador_tecnico", "contrata"], dropna=False)["orden_trabajo"]
+                .nunique()
+                .reset_index(name="Órdenes Atendidas")
+            )
+
+            ordenes_por_tecnico.columns = ["Código Técnico", "Contrata", "Órdenes Atendidas"]
+
+            tabla_origen = tabla_origen.merge(
+                ordenes_por_tecnico,
+                on=["Código Técnico", "Contrata"],
+                how="left"
+            )
+
+            tabla_origen["Órdenes Atendidas"] = (
+                tabla_origen["Órdenes Atendidas"]
+                .fillna(0)
+                .astype(int)
+            )
+
+            tabla_origen["% Garantía"] = tabla_origen.apply(
+                lambda row: round((row["Cantidad Garantías"] / row["Órdenes Atendidas"]) * 100, 2)
+                if row["Órdenes Atendidas"] > 0 else 0,
+                axis=1
+            )
+
+            tabla_origen = tabla_origen.sort_values(
+                ["Cantidad Garantías", "% Garantía"],
+                ascending=[False, False]
+            ).reset_index(drop=True)
+
+            tabla_origen["% Garantía"] = tabla_origen["% Garantía"].astype(str) + "%"
+
+        else:
+            tabla_origen["Órdenes Atendidas"] = 0
+            tabla_origen["% Garantía"] = "0%"
+
+        @st.dialog("🔍 Detalle de garantías del técnico", width="large")
+        def mostrar_detalle_garantias(tecnico, contrata, detalle):
+            st.markdown(f"### Técnico: {tecnico}")
+            st.markdown(f"**Contrata:** {contrata}")
+            st.markdown(f"**Cantidad de garantías:** {len(detalle)}")
+
+            columnas_detalle = [
+                "orden_trabajo",
+                "numero_cliente",
+                "fecha_garantia",
+                "clasificacion_garantia",
+                "comentario_supervisor",
+                "dias_desde_visita",
+                "codigo_completado"
+            ]
+
+            columnas_existentes = [
+                col for col in columnas_detalle if col in detalle.columns
+            ]
+
+            st.dataframe(
+                detalle[columnas_existentes],
+                use_container_width=True,
+                hide_index=True
+            )
+
+
+        evento_tabla = st.dataframe(
+            tabla_origen,
+            use_container_width=True,
+            hide_index=True,
+            on_select="rerun",
+            selection_mode="single-row"
+        )
+
+        if evento_tabla.selection.rows:
+            fila_seleccionada = evento_tabla.selection.rows[0]
+
+            tecnico_seleccionado = tabla_origen.iloc[fila_seleccionada]["Código Técnico"]
+            contrata_seleccionada = tabla_origen.iloc[fila_seleccionada]["Contrata"]
+
+            detalle_garantias = df_tabla_origen[
+                (df_tabla_origen["tecnico_causa_garantia"] == tecnico_seleccionado) &
+                (df_tabla_origen["contrata_causa_garantia"] == contrata_seleccionada)
+            ].copy()
+
+            mostrar_detalle_garantias(
+                tecnico_seleccionado,
+                contrata_seleccionada,
+                detalle_garantias
+            )
 
 with col2:
     st.markdown("### 🧾 Top 10 Códigos de Cierre")

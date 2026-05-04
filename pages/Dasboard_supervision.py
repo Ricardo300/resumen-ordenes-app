@@ -69,6 +69,7 @@ def cargar_base_calidad(archivo):
         df_final["MES_NUM"] = df_final["FECHA"].dt.month
         df_final["MES"] = df_final["MES_NUM"].map(MESES_ES)
         df_final["DIA"] = df_final["FECHA"].dt.date
+        df_final["SEMANA"] = df_final["FECHA"].dt.isocalendar().week.astype(int)
 
     return df_final
 
@@ -171,6 +172,14 @@ with st.sidebar.expander("📅 Periodo", expanded=True):
     )
 
     filtro_mes = st.selectbox("Mes", meses_df["MES"].tolist())
+    semanas_disponibles = ["Todas"] + sorted(
+        df[
+            (df["AÑO"] == filtro_anio) &
+            (df["MES"] == filtro_mes)
+        ]["SEMANA"].dropna().unique().tolist()
+    )
+
+    filtro_semana = st.selectbox("Semana calendario", semanas_disponibles)
 
 tecnologias = sorted(df["TECNOLOGIA"].dropna().unique())
 filtro_tecnologia = filtro_checkbox("🛰️ Tecnología", tecnologias, "filtro_tecnologia", True)
@@ -197,7 +206,10 @@ else:
 df_filtrado = df[
     (df["AÑO"] == filtro_anio) &
     (df["MES"] == filtro_mes)
-]
+].copy()
+
+if filtro_semana != "Todas":
+    df_filtrado = df_filtrado[df_filtrado["SEMANA"] == filtro_semana]
 
 if filtro_tecnologia:
     df_filtrado = df_filtrado[df_filtrado["TECNOLOGIA"].isin(filtro_tecnologia)]

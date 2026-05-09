@@ -6,14 +6,25 @@ from datetime import datetime, timedelta
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+from supabase import create_client
+import tempfile
 
 st.set_page_config(page_title="TV Instalaciones", layout="wide")
+
+# =========================================================
+# CONFIG SUPABASE
+# =========================================================
+supabase = create_client(
+    st.secrets["SUPABASE_URL"],
+    st.secrets["SUPABASE_KEY"]
+)
 
 # =========================================================
 # CONFIG GENERAL
 # =========================================================
 SEGUNDOS_POR_PANTALLA = 20
-RUTA_ARCHIVO_FIJO = "/tmp/dashboard_eta_actual.xlsx"
+
+RUTA_ARCHIVO_FIJO = os.path.join(tempfile.gettempdir(), "dashboard_eta_actual.xlsx")
 
 # =========================================================
 # ESTILO GENERAL
@@ -88,7 +99,9 @@ header, footer {
 def normalizar_estado(valor):
     if pd.isna(valor):
         return "Sin Estado"
+
     txt = str(valor).strip().lower()
+
     mapa = {
         "pendiente": "Pendiente",
         "iniciado": "Iniciado",
@@ -97,12 +110,22 @@ def normalizar_estado(valor):
         "cancelado": "Cancelado",
         "en ruta": "En ruta",
     }
+
     return mapa.get(txt, txt.title())
 
 
 def ordenar_estados(estados):
-    orden_base = ["Pendiente", "Iniciado", "En ruta", "Suspendido", "Completado", "Cancelado"]
+    orden_base = [
+        "Pendiente",
+        "Iniciado",
+        "En ruta",
+        "Suspendido",
+        "Completado",
+        "Cancelado"
+    ]
+
     extras = [e for e in estados if e not in orden_base]
+
     return orden_base + sorted(extras)
 
 
@@ -115,6 +138,7 @@ def color_estado(estado):
         "Completado": "#22c55e",
         "Cancelado": "#7b8496",
     }
+
     return colores.get(estado, "#64748b")
 
 
@@ -128,13 +152,16 @@ def render_kpi(titulo, valor, color_fondo="#0b1a34"):
         """,
         unsafe_allow_html=True
     )
-    
+
+
 def obtener_fecha_carga():
     if os.path.exists(RUTA_ARCHIVO_FIJO):
         ts = os.path.getmtime(RUTA_ARCHIVO_FIJO)
         fecha = datetime.fromtimestamp(ts) - timedelta(hours=6)
         return fecha.strftime("%d/%m/%Y %I:%M %p")
+
     return "Sin archivo"
+
 
 def render_kpi_bo(titulo, valor, color_fondo="#0b1a34"):
     st.markdown(
@@ -169,17 +196,68 @@ def render_kpi_bo(titulo, valor, color_fondo="#0b1a34"):
         unsafe_allow_html=True
     )
 
+
+@st.cache_data(ttl=300)
+def cargar_mapa_backoffice():
+    response = (
+        supabase
+        .table("tabla_tecnicos_contrata")
+        .select("identificador_tecnico, contrata, backoffice_responsable")
+        .execute()
+    )
+
+    df_mapa = pd.DataFrame(response.data)
+
+    if df_mapa.empty:
+        return pd.DataFrame(columns=[
+            "identificador_tecnico_norm",
+            "contrata_bd",
+            "backoffice_responsable"
+        ])
+
+    df_mapa["identificador_tecnico_norm"] = (
+        df_mapa["identificador_tecnico"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    df_mapa["contrata_bd"] = (
+        df_mapa["contrata"]
+        .fillna("SIN CONTRATA")
+        .replace("", "SIN CONTRATA")
+    )
+
+    df_mapa["backoffice_responsable"] = (
+        df_mapa["backoffice_responsable"]
+        .fillna("Sin-Asignar")
+        .replace("", "Sin-Asignar")
+    )
+
+    df_mapa = df_mapa[
+        [
+            "identificador_tecnico_norm",
+            "contrata_bd",
+            "backoffice_responsable"
+        ]
+    ].drop_duplicates(subset=["identificador_tecnico_norm"])
+
+    return df_mapa
+
+
 # =========================================================
-# BLOQUE ESTADOS (PANTALLA 1 Y 2)
+# BLOQUE ESTADOS
 # =========================================================
 def render_bloque_estados(nombre, df_bloque, estados):
     total = len(df_bloque)
     conteo = df_bloque["estado_visual"].value_counts().to_dict()
 
     cards_html = ""
+
     for estado in estados:
         valor = conteo.get(estado, 0)
         color = color_estado(estado)
+
         cards_html += f"""
         <div class="card-estado" style="background:{color};">
             <div class="card-numero">{valor}</div>
@@ -269,22 +347,29 @@ def render_bloque_estados(nombre, df_bloque, estados):
     </body>
     </html>
     """
+
     components.html(html, height=560, scrolling=False)
 
+
 # =========================================================
-# GAUGE GRANDE (PANTALLA 1 Y 2)
+# GAUGE GRANDE
 # =========================================================
 def polar_to_cartesian(cx, cy, r, angle_deg):
     angle_rad = math.radians(angle_deg)
-    return (cx + r * math.cos(angle_rad), cy - r * math.sin(angle_rad))
+    return (
+        cx + r * math.cos(angle_rad),
+        cy - r * math.sin(angle_rad)
+    )
 
 
 def arc_points(cx, cy, r, start_deg, end_deg, steps=40):
     pts = []
+
     for i in range(steps + 1):
         ang = start_deg + (end_deg - start_deg) * i / steps
         x, y = polar_to_cartesian(cx, cy, r, ang)
         pts.append(f"{x:.2f},{y:.2f}")
+
     return " ".join(pts)
 
 
@@ -300,13 +385,14 @@ def needle_triangle(cx, cy, value, length=240, base_width=10):
 
     left_x = cx - base_width * px
     left_y = cy - base_width * py
+
     right_x = cx + base_width * px
     right_y = cy + base_width * py
 
     return f"{left_x:.2f},{left_y:.2f} {right_x:.2f},{right_y:.2f} {tip_x:.2f},{tip_y:.2f}"
 
 
-def render_gauge_tecnologia(df_bloque):
+def render_gauge_tecnologia(df_bloque, pendiente_asignar=0):
     conteo = df_bloque["estado_visual"].value_counts()
 
     completadas = int(conteo.get("Completado", 0))
@@ -315,6 +401,7 @@ def render_gauge_tecnologia(df_bloque):
     total = len(df_bloque)
 
     numerador = completadas + canceladas + suspendidas
+
     cumplimiento = (numerador / total * 100) if total > 0 else 0
 
     width = 980
@@ -346,6 +433,7 @@ def render_gauge_tecnologia(df_bloque):
 
     for start_deg, end_deg, color in segmentos:
         pts = arc_points(cx, cy, radius, start_deg, end_deg, steps=30)
+
         segmentos_svg += f'''
             <polyline points="{pts}"
                       fill="none"
@@ -357,20 +445,49 @@ def render_gauge_tecnologia(df_bloque):
 
     ticks = [0, 17, 33, 50, 67, 83, 100]
     ticks_svg = ""
+
     for t in ticks:
         angle = 180 - (t * 180 / 100)
-        x1, y1 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 4, angle)
-        x2, y2 = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 20, angle)
-        xt, yt = polar_to_cartesian(cx, cy, radius + arc_thickness/2 + 46, angle)
+
+        x1, y1 = polar_to_cartesian(
+            cx,
+            cy,
+            radius + arc_thickness / 2 + 4,
+            angle
+        )
+
+        x2, y2 = polar_to_cartesian(
+            cx,
+            cy,
+            radius + arc_thickness / 2 + 20,
+            angle
+        )
+
+        xt, yt = polar_to_cartesian(
+            cx,
+            cy,
+            radius + arc_thickness / 2 + 46,
+            angle
+        )
 
         ticks_svg += f'''
-            <line x1="{x1:.2f}" y1="{y1:.2f}" x2="{x2:.2f}" y2="{y2:.2f}"
+            <line x1="{x1:.2f}" y1="{y1:.2f}"
+                  x2="{x2:.2f}" y2="{y2:.2f}"
                   stroke="white" stroke-width="3" />
-            <text x="{xt:.2f}" y="{yt:.2f}" fill="white" font-size="22"
-                  font-weight="700" text-anchor="middle" dominant-baseline="middle">{t}</text>
+            <text x="{xt:.2f}" y="{yt:.2f}"
+                  fill="white" font-size="22"
+                  font-weight="700"
+                  text-anchor="middle"
+                  dominant-baseline="middle">{t}</text>
         '''
 
-    needle_points = needle_triangle(cx, cy, cumplimiento, length=245, base_width=10)
+    needle_points = needle_triangle(
+        cx,
+        cy,
+        cumplimiento,
+        length=245,
+        base_width=10
+    )
 
     svg_html = f"""
     <div style="width:100%; display:flex; justify-content:center; align-items:center;">
@@ -384,15 +501,19 @@ def render_gauge_tecnologia(df_bloque):
 
             <polygon points="{needle_points}" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" />
             <circle cx="{cx}" cy="{cy}" r="28" fill="#d1d5db" stroke="white" stroke-width="5" />
+            <rect x="{cx - 230}" y="{cy + 55}" width="460" height="58" rx="18" fill="#dc2626" />
+            <text x="{cx}" y="{cy + 92}" fill="white" font-size="26" font-weight="900" text-anchor="middle">
+                🚨 Pendiente asignar técnico: {pendiente_asignar}
+            </text>
         </svg>
     </div>
     """
+
     components.html(svg_html, height=650, scrolling=False)
 
+
 # =========================================================
-# PANTALLA 1 Y PANTALLA 2
-# PANTALLA 1 = GPON
-# PANTALLA 2 = DTH
+# PANTALLA 1 Y 2
 # =========================================================
 def render_pantalla_tecnologia(df_bloque, nombre_pantalla, estados):
     st.markdown(
@@ -401,127 +522,44 @@ def render_pantalla_tecnologia(df_bloque, nombre_pantalla, estados):
     )
 
     fecha_carga = obtener_fecha_carga()
+
     st.markdown(
         f'<div class="subtitulo-dashboard">Carga: {fecha_carga}</div>',
         unsafe_allow_html=True
     )
-    
+
     col1, col2 = st.columns([1.0, 1.35], gap="large")
 
     with col1:
         render_bloque_estados(nombre_pantalla, df_bloque, estados)
+    df_tmp = df_bloque.copy()
 
+    df_tmp["identificador_norm"] = (
+        df_tmp["Identificador Tecnico"]
+        .astype(str)
+        .str.strip()
+        .str.upper()
+    )
+
+    df_tmp["es_codigo_tecnico"] = (
+        df_tmp["identificador_norm"]
+        .str.match(r"^(GCAR|CAR)\d+$", na=False)
+    )
+
+    pendiente_asignar_tecnico = len(
+        df_tmp[
+            (~df_tmp["es_codigo_tecnico"])
+            & (df_tmp["estado_visual"].isin(["Pendiente", "Iniciado", "En ruta"]))
+        ]
+    )
     with col2:
-        render_gauge_tecnologia(df_bloque)
+        render_gauge_tecnologia(df_bloque, pendiente_asignar_tecnico)
+
 
 # =========================================================
 # PANTALLA 3 = BACKOFFICE
 # =========================================================
 def render_pantalla_backoffice(df):
-    mapa_bo = {
-        # Andres Corea
-        "CAR567": "Andres Corea",
-        "CAR566": "Andres Corea",
-        "CAR453": "Andres Corea",
-        "CAR396": "Andres Corea",
-        "CAR397": "Andres Corea",
-        "CAR439": "Andres Corea",
-        "CAR508": "Andres Corea",
-        "GCAR513": "Andres Corea",
-        "GCAR603": "Andres Corea",
-        "GCAR968": "Andres Corea",
-        "GCAR351": "Andres Corea",
-        "GCAR627": "Andres Corea",
-        "GCAR1001": "Andres Corea",
-        "GCAR1008": "Andres Corea",
-        "GCAR1016": "Andres Corea",
-        "GCAR1019": "Andres Corea",
-        "GCAR1020": "Andres Corea",
-        "GCAR1035": "Andres Corea",
-        "GCAR1037": "Andres Corea",
-
-        # Adriana Rojas
-        "CAR270": "Adriana Rojas",
-        "CAR1002": "Adriana Rojas",
-        "CAR040": "Adriana Rojas",
-        "CAR455": "Adriana Rojas",
-        "CAR285": "Adriana Rojas",
-        "GCAR780": "Adriana Rojas",
-        "GCAR606": "Adriana Rojas",
-        "GCAR593": "Adriana Rojas",
-        "GCAR554": "Adriana Rojas",
-        "GCAR551": "Adriana Rojas",
-        "GCAR506": "Adriana Rojas",
-        "GCAR860": "Adriana Rojas",
-        "GCAR953": "Adriana Rojas",
-        "GCAR951": "Adriana Rojas",
-        "GCAR840": "Adriana Rojas",
-        "GCAR670": "Adriana Rojas",
-        "GCAR964": "Adriana Rojas",
-        "GCAR103": "Adriana Rojas",
-        "GCAR869": "Adriana Rojas",
-        "GCAR105": "Adriana Rojas",
-        "GCAR184": "Adriana Rojas",
-        "GCAR1033": "Adriana Rojas",
-        "GCAR1048": "Adriana Rojas",
-
-        # Sofia Alvarez
-        "CAR261": "Sofia Alvarez",
-        "CAR395": "Sofia Alvarez",
-        "CAR259": "Sofia Alvarez",
-        "CAR365": "Sofia Alvarez",
-        "CAR321": "Sofia Alvarez",
-        "CAR507": "Sofia Alvarez",
-        "GCAR1001": "Sofia Alvarez",
-        "GCAR923": "Sofia Alvarez",
-        "GCAR822": "Sofia Alvarez",
-        "GCAR798": "Sofia Alvarez",
-        "GCAR608": "Sofia Alvarez",
-        "GCAR604": "Sofia Alvarez",
-        "GCAR570": "Sofia Alvarez",
-        "GCAR491": "Sofia Alvarez",
-        "GCAR935": "Sofia Alvarez",
-        "GCAR880": "Sofia Alvarez",
-        "GCAR946": "Sofia Alvarez",
-        "GCAR956": "Sofia Alvarez",
-        "GCAR990": "Sofia Alvarez",
-        "GCAR986": "Sofia Alvarez",
-        "GCAR978": "Sofia Alvarez",
-        "GCAR1003": "Sofia Alvarez",
-        "GCAR1024": "Sofia Alvarez",
-        "GCAR996": "Sofia Alvarez",
-        "GCAR789": "Sofia Alvarez",
-
-        # Harold Castillo
-        "GCAR906": "Harold Castillo",
-        "GCAR796": "Harold Castillo",
-        "GCAR585": "Harold Castillo",
-        "GCAR583": "Harold Castillo",
-        "GCAR955": "Harold Castillo",
-        "GCAR817": "Harold Castillo",
-        "GCAR991": "Harold Castillo",
-        "GCAR883": "Harold Castillo",
-        "GCAR887": "Harold Castillo",
-        "GCAR0345": "Harold Castillo",
-        "GCAR886": "Harold Castillo",
-        "GCAR2378": "Harold Castillo",
-        "GCAR349": "Harold Castillo",
-        "GCAR253": "Harold Castillo",
-        "GCAR329": "Harold Castillo",
-        "GCAR1006": "Harold Castillo",
-        "GCAR1010": "Harold Castillo",
-        "GCAR1015": "Harold Castillo",
-        "GCAR963": "Harold Castillo",
-        "GCAR781": "Harold Castillo",
-        "GCAR1029": "Harold Castillo",
-        "GCAR1028": "Harold Castillo",
-        "GCAR1034": "Harold Castillo",
-        "GCAR1025": "Harold Castillo",
-        "GCAR1043": "Harold Castillo",
-        "GCAR1022": "Harold Castillo",
-        "GCAR1039": "Harold Castillo",
-        "GCAR1027": "Harold Castillo",
-    }
 
     if "Identificador Tecnico" not in df.columns:
         st.error("No existe la columna 'Identificador Tecnico' en el archivo.")
@@ -529,16 +567,42 @@ def render_pantalla_backoffice(df):
 
     df_bo = df.copy()
 
-    df_bo["Identificador Tecnico"] = (
+    df_bo["identificador_norm"] = (
         df_bo["Identificador Tecnico"]
         .astype(str)
         .str.strip()
         .str.upper()
     )
 
-    df_bo["backoffice"] = df_bo["Identificador Tecnico"].map(mapa_bo).fillna("Sin-Asignar")
-    
+    # Código técnico válido: CAR123, CAR040, GCAR999, GCAR0345, etc.
+    df_bo["es_codigo_tecnico"] = (
+        df_bo["identificador_norm"]
+        .str.match(r"^(GCAR|CAR)\d+$", na=False)
+    )
+
+    df_mapa_bo = cargar_mapa_backoffice()
+
+    df_bo = df_bo.merge(
+        df_mapa_bo,
+        how="left",
+        left_on="identificador_norm",
+        right_on="identificador_tecnico_norm"
+    )
+
+    df_bo["backoffice"] = (
+        df_bo["backoffice_responsable"]
+        .fillna("Sin-Asignar BO")
+        .replace("", "Sin-Asignar BO")
+    )
+
+    df_bo["contrata_bd"] = (
+        df_bo["contrata_bd"]
+        .fillna("SIN CONTRATA")
+        .replace("", "SIN CONTRATA")
+    )
+
     fecha_carga = obtener_fecha_carga()
+
     st.markdown(
         f'<div class="subtitulo-dashboard">Carga: {fecha_carga}</div>',
         unsafe_allow_html=True
@@ -557,6 +621,7 @@ def render_pantalla_backoffice(df):
     cancelados = int(conteo_estados.get("Cancelado", 0))
 
     c1, c2, c3, c4, c5, c6 = st.columns(6, gap="medium")
+
     with c1:
         render_kpi_bo("Pendiente", pendientes, "#f4a300")
     with c2:
@@ -571,54 +636,104 @@ def render_pantalla_backoffice(df):
         render_kpi_bo("Cancelado", cancelados, "#7b8496")
 
     # -----------------------------------------
-    # ALERTA SIN ASIGNAR (SEPARADA)
+    # PENDIENTE DE ASIGNAR TÉCNICO
+    # No son códigos CAR/GCAR válidos
     # -----------------------------------------
-    sin_asignar_total = int((df_bo["backoffice"] == "Sin-Asignar").sum())
+    df_pendiente_asignar = df_bo[
+        (~df_bo["es_codigo_tecnico"])
+        & (df_bo["estado_visual"].isin(["Pendiente", "Iniciado", "En ruta"]))
+    ].copy()
 
-    color_alerta = "#dc2626" if sin_asignar_total > 0 else "#16a34a"
-    icono_alerta = "🚨" if sin_asignar_total > 0 else "✅"
+    pendiente_asignar_total = len(df_pendiente_asignar)
+    pendiente_asignar_gpon = int((df_pendiente_asignar["tecnologia"] == "GPON").sum())
+    pendiente_asignar_dth = int((df_pendiente_asignar["tecnologia"] == "DTH").sum())
 
-    st.markdown(
-        f"""
+    html_pendiente_asignar = f"""
+    <div style="
+        margin-top: 14px;
+        margin-bottom: 18px;
+        display:flex;
+        justify-content:center;
+        gap:16px;
+        flex-wrap:wrap;
+    ">
         <div style="
-            margin-top: 14px;
-            margin-bottom: 18px;
-            width: 380px;
-            margin-left: auto;
-            margin-right: auto;
-            background: {color_alerta};
-            color: white;
-            border-radius: 18px;
-            padding: 14px 18px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: 900;
-            box-shadow: 0 12px 24px rgba(0,0,0,0.20);
+            background:#dc2626;
+            color:white;
+            border-radius:18px;
+            padding:14px 22px;
+            text-align:center;
+            font-size:22px;
+            font-weight:900;
+            box-shadow:0 12px 24px rgba(0,0,0,0.20);
         ">
-            {icono_alerta} Sin asignar: {sin_asignar_total}
+            🚨 Pendiente asignar técnico: {pendiente_asignar_total}
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <div style="
+            background:#1d4ed8;
+            color:white;
+            border-radius:18px;
+            padding:14px 22px;
+            text-align:center;
+            font-size:22px;
+            font-weight:900;
+            box-shadow:0 12px 24px rgba(0,0,0,0.20);
+        ">
+            GPON: {pendiente_asignar_gpon}
+        </div>
+
+        <div style="
+            background:#7c3aed;
+            color:white;
+            border-radius:18px;
+            padding:14px 22px;
+            text-align:center;
+            font-size:22px;
+            font-weight:900;
+            box-shadow:0 12px 24px rgba(0,0,0,0.20);
+        ">
+            DTH: {pendiente_asignar_dth}
+        </div>
+    </div>
+    """
+
+    components.html(html_pendiente_asignar, height=90, scrolling=False)
+    
 
     # -----------------------------------------
-    # RANKING POR BACKOFFICE (CUMPLIMIENTO)
+    # RANKING POR BACKOFFICE
+    # Solo entran códigos técnicos válidos
     # -----------------------------------------
     estados_pendientes = ["Pendiente", "Iniciado", "En ruta"]
 
-    df_bo["es_pendiente"] = df_bo["estado_visual"].isin(estados_pendientes).astype(int)
-    df_bo["es_completada"] = (df_bo["estado_visual"] == "Completado").astype(int)
-    df_bo["es_suspendida"] = (df_bo["estado_visual"] == "Suspendido").astype(int)
-    df_bo["es_cancelada"] = (df_bo["estado_visual"] == "Cancelado").astype(int)
-
-    df_rank = df_bo[df_bo["backoffice"] != "Sin-Asignar"].copy()
+    df_rank = df_bo[df_bo["es_codigo_tecnico"]].copy()
 
     if df_rank.empty:
-        st.warning("No hay órdenes con BackOffice asignado para mostrar.")
+        st.warning("No hay órdenes con código técnico válido para mostrar.")
         return
 
+    df_rank["es_pendiente"] = (
+        df_rank["estado_visual"]
+        .isin(estados_pendientes)
+        .astype(int)
+    )
+
+    df_rank["es_completada"] = (
+        df_rank["estado_visual"] == "Completado"
+    ).astype(int)
+
+    df_rank["es_suspendida"] = (
+        df_rank["estado_visual"] == "Suspendido"
+    ).astype(int)
+
+    df_rank["es_cancelada"] = (
+        df_rank["estado_visual"] == "Cancelado"
+    ).astype(int)
+
     resumen = (
-        df_rank.groupby("backoffice", as_index=False)
+        df_rank
+        .groupby("backoffice", as_index=False)
         .agg(
             total_ordenes=("estado_visual", "count"),
             completadas=("es_completada", "sum"),
@@ -635,16 +750,23 @@ def render_pantalla_backoffice(df):
     )
 
     resumen["pct_cumplimiento"] = resumen.apply(
-        lambda x: x["gestionadas"] / x["total_ordenes"] if x["total_ordenes"] > 0 else 0,
+        lambda x: x["gestionadas"] / x["total_ordenes"]
+        if x["total_ordenes"] > 0
+        else 0,
         axis=1
     )
 
-    resumen = resumen.sort_values(
-        ["pct_cumplimiento", "pendientes"],
-        ascending=[False, True]
-    ).reset_index(drop=True)
+    resumen = (
+        resumen
+        .sort_values(
+            ["pct_cumplimiento", "pendientes"],
+            ascending=[False, True]
+        )
+        .reset_index(drop=True)
+    )
 
     filas_html = ""
+
     for idx, row in resumen.iterrows():
         porcentaje = row["pct_cumplimiento"] * 100
 
@@ -761,20 +883,25 @@ def render_pantalla_backoffice(df):
     """
 
     components.html(html, height=560, scrolling=False)
-    
+
     # =========================================
     # DEBUG - TABLA DE VALIDACIÓN
     # =========================================
-    st.markdown("### 🔍 Validación de clasificación (debug)")
+    st.markdown("### 🔍 Validación de clasificación desde Supabase")
 
     df_debug = df_bo.copy()
 
     columnas_debug = []
+
     if "Orden de Trabajo" in df_debug.columns:
         columnas_debug.append("Orden de Trabajo")
 
     columnas_debug += [
         "Identificador Tecnico",
+        "identificador_norm",
+        "es_codigo_tecnico",
+        "tecnologia",
+        "contrata_bd",
         "backoffice",
         "Estado",
         "estado_visual"
@@ -782,25 +909,28 @@ def render_pantalla_backoffice(df):
 
     df_debug = df_debug[columnas_debug].copy()
 
-    st.markdown("#### 🚨 Registros SIN ASIGNAR")
+    st.markdown("#### 🚨 Pendiente de asignar técnico")
+
     st.dataframe(
-        df_debug[df_debug["backoffice"] == "Sin-Asignar"].head(1000),
+        df_debug[df_debug["es_codigo_tecnico"] == False].head(1000),
         use_container_width=True
     )
 
-    st.markdown("#### 📊 Muestra general")
+    st.markdown("#### ⚠️ Código técnico válido sin BackOffice")
+
     st.dataframe(
-        df_debug.head(1000),
+        df_debug[
+            (df_debug["es_codigo_tecnico"] == True)
+            & (df_debug["backoffice"] == "Sin-Asignar BO")
+        ].head(1000),
         use_container_width=True
     )
 
-    # =========================================
-    # DEBUG - VALIDACIÓN DIRECTA CON ESTADO
-    # =========================================
     st.markdown("### 🔎 Validación por BackOffice usando columna Estado")
 
     tabla_bo_estado = (
-        df_bo.groupby(["backoffice", "Estado"], as_index=False)
+        df_rank
+        .groupby(["backoffice", "Estado"], as_index=False)
         .size()
         .rename(columns={"size": "cantidad"})
         .sort_values(["backoffice", "Estado"])
@@ -808,10 +938,10 @@ def render_pantalla_backoffice(df):
 
     st.dataframe(tabla_bo_estado, use_container_width=True)
 
-    st.markdown("### 🔎 Pendientes por BackOffice (Pendiente + Iniciado + En ruta)")
+    st.markdown("### 🔎 Pendientes por BackOffice")
 
     tabla_pendientes_bo = (
-        df_bo[df_bo["Estado"].isin(["Pendiente", "Iniciado", "En ruta"])]
+        df_rank[df_rank["Estado"].isin(["Pendiente", "Iniciado", "En ruta"])]
         .groupby(["backoffice", "Estado"], as_index=False)
         .size()
         .rename(columns={"size": "cantidad"})
@@ -847,16 +977,31 @@ components.html(
 df = pd.read_excel(RUTA_ARCHIVO_FIJO, engine="openpyxl")
 df.columns = df.columns.str.strip()
 
-columnas_necesarias = ["Estado", "Tipo Actividad", "Sub Tipo de Orden", "Identificador Tecnico"]
-faltantes = [c for c in columnas_necesarias if c not in df.columns]
+columnas_necesarias = [
+    "Estado",
+    "Tipo Actividad",
+    "Sub Tipo de Orden",
+    "Identificador Tecnico"
+]
+
+faltantes = [
+    c for c in columnas_necesarias
+    if c not in df.columns
+]
+
 if faltantes:
     st.error(f"Faltan estas columnas en el archivo: {', '.join(faltantes)}")
     st.stop()
 
-df = df[~df["Tipo Actividad"].astype(str).str.strip().isin([
-    "Tiempo Almuerzo LU",
-    "Tiempo de almuerzo"
-])].copy()
+df = df[
+    ~df["Tipo Actividad"]
+    .astype(str)
+    .str.strip()
+    .isin([
+        "Tiempo Almuerzo LU",
+        "Tiempo de almuerzo"
+    ])
+].copy()
 
 # =========================================================
 # MAPEO TECNOLOGÍA
@@ -910,11 +1055,28 @@ df["tecnologia"] = (
     .fillna("NO_CLASIFICADO")
 )
 
+# Si viene vacío el Sub Tipo, asumir GPON
+df.loc[
+    df["Sub Tipo de Orden"].astype(str).str.strip().isin(["", "nan", "None"]),
+    "tecnologia"
+] = "GPON"
+
 df["estado_visual"] = df["Estado"].apply(normalizar_estado)
-estados = ordenar_estados(list(df["estado_visual"].dropna().unique()))
+
+estados = ordenar_estados(
+    list(df["estado_visual"].dropna().unique())
+)
+
 estados_visibles = [
     e for e in estados
-    if e in ["Pendiente", "Iniciado", "En ruta", "Suspendido", "Completado", "Cancelado"]
+    if e in [
+        "Pendiente",
+        "Iniciado",
+        "En ruta",
+        "Suspendido",
+        "Completado",
+        "Cancelado"
+    ]
 ]
 
 # =========================================================
@@ -925,9 +1087,6 @@ df_dth = df[df["tecnologia"] == "DTH"].copy()
 
 # =========================================================
 # ROTACIÓN DE PANTALLAS
-# PANTALLA 1 = GPON
-# PANTALLA 2 = DTH
-# PANTALLA 3 = BACKOFFICE
 # =========================================================
 pantalla_actual = int(time.time() / SEGUNDOS_POR_PANTALLA) % 3 + 1
 

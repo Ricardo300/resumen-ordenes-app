@@ -3,7 +3,10 @@ import streamlit as st
 
 st.set_page_config(page_title="Cargar Archivo ETA", layout="wide")
 
-RUTA_ARCHIVO_FIJO = "/tmp/dashboard_eta_actual.xlsx"
+import tempfile
+import os
+
+RUTA_ARCHIVO_FIJO = os.path.join(tempfile.gettempdir(), "dashboard_eta_actual.xlsx")
 
 st.title("Cargar Archivo ETA")
 

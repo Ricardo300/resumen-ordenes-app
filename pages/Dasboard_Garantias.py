@@ -655,6 +655,111 @@ with col2:
         st.plotly_chart(fig_codigos, use_container_width=True)
 
 # =====================================
+# TABLA % GARANTÍA SOLO ATRIBUIBLE AL TÉCNICO
+# =====================================
+
+st.markdown("### 🎯 Porcentaje de Garantía Atribuible al Técnico")
+
+df_garantia_tecnico = df_filtrado[
+    (df_filtrado["tipo_garantia"] == "INTERNA") &
+    (df_filtrado["clasificacion_garantia"] == "TECNICO")
+].copy()
+
+if df_garantia_tecnico.empty:
+    st.warning("No hay garantías atribuibles al técnico con los filtros seleccionados.")
+else:
+    df_garantia_tecnico["tecnico_causa_garantia"] = (
+        df_garantia_tecnico["tecnico_causa_garantia"]
+        .fillna("SIN TECNICO")
+        .astype(str)
+        .str.strip()
+    )
+
+    df_garantia_tecnico["contrata_causa_garantia"] = (
+        df_garantia_tecnico["contrata_causa_garantia"]
+        .fillna("SIN CONTRATA")
+        .astype(str)
+        .str.strip()
+    )
+
+    tabla_garantia_tecnico = (
+        df_garantia_tecnico
+        .groupby(["tecnico_causa_garantia", "contrata_causa_garantia"], dropna=False)
+        .size()
+        .reset_index(name="Garantías Atribuibles Técnico")
+    )
+
+    tabla_garantia_tecnico.columns = [
+        "Código Técnico",
+        "Contrata",
+        "Garantías Atribuibles Técnico"
+    ]
+
+    servicios_base_tecnico = servicios_filtrados.copy()
+
+    servicios_base_tecnico["identificador_tecnico"] = (
+        servicios_base_tecnico["identificador_tecnico"]
+        .fillna("SIN TECNICO")
+        .astype(str)
+        .str.strip()
+    )
+
+    servicios_base_tecnico["contrata"] = (
+        servicios_base_tecnico["contrata"]
+        .fillna("SIN CONTRATA")
+        .astype(str)
+        .str.strip()
+    )
+
+    ordenes_atendidas_tecnico = (
+        servicios_base_tecnico
+        .groupby(["identificador_tecnico", "contrata"], dropna=False)["orden_trabajo"]
+        .nunique()
+        .reset_index(name="Órdenes Atendidas")
+    )
+
+    ordenes_atendidas_tecnico.columns = [
+        "Código Técnico",
+        "Contrata",
+        "Órdenes Atendidas"
+    ]
+
+    tabla_garantia_tecnico = tabla_garantia_tecnico.merge(
+        ordenes_atendidas_tecnico,
+        on=["Código Técnico", "Contrata"],
+        how="left"
+    )
+
+    tabla_garantia_tecnico["Órdenes Atendidas"] = (
+        tabla_garantia_tecnico["Órdenes Atendidas"]
+        .fillna(0)
+        .astype(int)
+    )
+
+    tabla_garantia_tecnico["% Garantía Técnico"] = tabla_garantia_tecnico.apply(
+        lambda row: round(
+            (row["Garantías Atribuibles Técnico"] / row["Órdenes Atendidas"]) * 100,
+            2
+        ) if row["Órdenes Atendidas"] > 0 else 0,
+        axis=1
+    )
+
+    tabla_garantia_tecnico = tabla_garantia_tecnico.sort_values(
+        "% Garantía Técnico",
+        ascending=False
+    ).reset_index(drop=True)
+
+    tabla_garantia_tecnico["% Garantía Técnico"] = (
+        tabla_garantia_tecnico["% Garantía Técnico"].astype(str) + "%"
+    )
+
+    st.dataframe(
+        tabla_garantia_tecnico,
+        use_container_width=True,
+        hide_index=True
+    )
+
+# =====================================
 # DEBUG
 # =====================================
 

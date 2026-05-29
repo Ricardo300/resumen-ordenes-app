@@ -247,8 +247,13 @@ if st.button("Cargar datos"):
             "CANTIDAD"
         ].sum()
 
+        UTP_VALIDOS = [
+            "CABLE UTP CAT5 P/INTERIORES 66445532AM",
+            "CABLE UTP CAT5 PARA INTERIORES"
+        ]
+
         utp_total = grupo.loc[
-            grupo["MATERIAL"] == "CABLE UTP CAT5 P/INTERIORES 66445532AM",
+            grupo["MATERIAL"].isin(UTP_VALIDOS),
             "CANTIDAD"
         ].sum()
 

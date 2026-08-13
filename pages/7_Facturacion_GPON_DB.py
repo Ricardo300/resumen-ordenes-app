@@ -182,6 +182,11 @@ if st.button("Cargar datos"):
         "SWITCH DLINK DGS105"
     ]
 
+    MESH_VALIDOS = [
+    "MESH TWO PACK ZTE H3601 P",
+    "MESH ZTE H3601 P"
+    ]
+
     # ==========================================
     # RECORRER ÓRDENES
     # ==========================================
@@ -267,6 +272,11 @@ if st.button("Cargar datos"):
             "CANTIDAD"
         ].sum()
 
+        mesh_count = grupo.loc[
+            grupo["MATERIAL"].isin(MESH_VALIDOS),
+            "CANTIDAD"
+        ].sum()
+        
         # ================================
         # DEFINIR TV SEGÚN TIPO DE ORDEN
         # ================================
@@ -283,6 +293,7 @@ if st.button("Cargar datos"):
             "STB_COUNT": stb_count,
             "SWITCH_COUNT": switch_count,
             "TV_COUNT": tv_count
+            "MESH_COUNT": mesh_count
         })
 
         # ========================================

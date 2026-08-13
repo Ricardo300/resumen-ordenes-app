@@ -292,7 +292,7 @@ if st.button("Cargar datos"):
             "UTP_TOTAL": utp_total,
             "STB_COUNT": stb_count,
             "SWITCH_COUNT": switch_count,
-            "TV_COUNT": tv_count
+            "TV_COUNT": tv_count,
             "MESH_COUNT": mesh_count
         })
 
